@@ -282,7 +282,7 @@
         }
     }
 
-    var tocCSS = "/* EVERYTHING HERE WILL BE '!IMPORTANT'  */\n\n/* reset */\n\n#smarttoc {\n  all: initial;\n}\n\n#smarttoc * {\n  all: unset;\n}\n\n/* container */\n\n#smarttoc {\n  display: flex;\n  flex-direction: column;\n  align-items: stretch;\n  position: fixed;\n  max-width: 22em;\n  min-width: 14em;\n  max-height: calc(100vh - 100px);\n  z-index: 10000;\n  box-sizing: border-box;\n  background-color: #fff;\n  color: gray;\n  font-size: calc(12px + 0.1vw);\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  line-height: 1.5;\n  font-weight: normal;\n  border: 1px solid rgba(158, 158, 158, 0.22);\n  -webkit-font-smoothing: subpixel-antialiased;\n  font-smoothing: subpixel-antialiased;\n  overflow: hidden;\n  will-change: transform, max-width;\n  transition: max-width 0.3s;\n  contain: content;\n}\n\n#smarttoc:hover {\n  max-width: 33vw;\n}\n\n#smarttoc.hidden {\n  display: none;\n}\n\n#smarttoc .handle {\n  -webkit-user-select: none;\n  user-select: none;\n\n  border-bottom: 1px solid rgba(158, 158, 158, 0.22);\n  padding: 0.1em 0.7em;\n  font-variant-caps: inherit;\n  font-variant: small-caps;\n  font-size: 0.9em;\n  color: #bbb;\n  cursor: pointer;\n  text-align: center;\n  opacity: 0;\n  will-change: opacity;\n  transition: opacity 0.3s;\n}\n\n#smarttoc:hover .handle {\n  max-width: 33vw;\n  opacity: 1;\n}\n\n#smarttoc .handle:hover,\n#smarttoc .handle:active {\n  cursor: move;\n}\n\n#smarttoc .handle:active {\n  background: #f9f9f9;\n}\n\n#smarttoc > ul {\n  flex-grow: 1;\n  padding: 0 1.3em 1.3em 1em;\n  overflow-y: auto;\n}\n\n/* all headings  */\n\n#smarttoc ul,\n#smarttoc li {\n  list-style: none;\n  display: block;\n}\n\n#smarttoc a {\n  text-decoration: none;\n  color: gray;\n  display: block;\n  line-height: 1.3;\n  padding-top: 0.2em;\n  padding-bottom: 0.2em;\n  text-overflow: ellipsis;\n  overflow-x: hidden;\n  white-space: nowrap;\n}\n\n#smarttoc a:hover,\n#smarttoc a:active {\n  border-left-color: rgba(86, 61, 124, 0.5);\n  color: #563d7c;\n}\n\n#smarttoc li.active > a {\n  border-left-color: #563d7c;\n  color: #563d7c;\n}\n\n/* heading level: 1 */\n\n#smarttoc ul {\n  line-height: 2;\n}\n\n#smarttoc ul a {\n  font-size: 1em;\n  padding-left: 1.3em;\n cursor:pointer \n}\n\n#smarttoc ul a:hover,\n#smarttoc ul a:active,\n#smarttoc ul li.active > a {\n  border-left-width: 3px;\n  border-left-style: solid;\n  padding-left: calc(1.3em - 3px);\n}\n\n#smarttoc ul li.active > a {\n  font-weight: 700;\n}\n\n/* heading level: 2 (hidden only when there are too many headings)  */\n\n#smarttoc ul ul {\n  line-height: 1.8;\n}\n\n#smarttoc.lengthy ul ul {\n  display: none;\n}\n\n#smarttoc.lengthy ul li.active > ul {\n  display: block;\n}\n\n#smarttoc ul ul a {\n  font-size: 1em;\n  padding-left: 2.7em;\n}\n\n#smarttoc ul ul a:hover,\n#smarttoc ul ul a:active,\n#smarttoc ul ul li.active > a {\n  border-left-width: 2px;\n  border-left-style: solid;\n  padding-left: calc(2.7em - 2px);\n  font-weight: normal;\n}\n\n/* heading level: 3 (hidden unless parent is active) */\n\n#smarttoc ul ul ul {\n  line-height: 1.7;\n  display: none;\n}\n\n#smarttoc ul ul li.active > ul {\n  display: block;\n}\n\n#smarttoc ul ul ul a {\n  font-size: 1em;\n  padding-left: 4em;\n}\n\n#smarttoc ul ul ul a:hover,\n#smarttoc ul ul ul a:active,\n#smarttoc ul ul ul li.active > a {\n  border-left-width: 1px;\n  border-left-style: solid;\n  padding-left: calc(4em - 1px);\n  font-weight: normal;\n}\n";
+    var tocCSS = "/* EVERYTHING HERE WILL BE '!IMPORTANT'  */\n\n/* reset */\n\n#smarttoc {\n  all: initial;\n}\n\n#smarttoc * {\n  all: unset;\n}\n\n/* container */\n\n#smarttoc {\n  opacity: 0.9;\n  display: flex;\n  flex-direction: column;\n  align-items: stretch;\n  position: fixed;\n  max-width: 16em;\n  min-width: 8em;\n  max-height: calc(100vh - 100px);\n  z-index: 10000;\n  box-sizing: border-box;\n  background-color: #fff;\n  color: gray;\n  font-size: calc(12px + 0.1vw);\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  line-height: 1.5;\n  font-weight: normal;\n  border: 1px solid rgba(158, 158, 158, 0.22);\n  -webkit-font-smoothing: subpixel-antialiased;\n  font-smoothing: subpixel-antialiased;\n  overflow: hidden;\n  will-change: opacity, transform, max-width, max-height;\n  transition: max-width 0.6s;\n  contain: content;\n}\n\n#smarttoc:hover {\n  max-width: 33vw; \n opacity: 1 \n }\n\n#smarttoc.hidden {\n  display: none;\n}\n\n#smarttoc .handle {\n  -webkit-user-select: none;\n  user-select: none;\n\n  border-bottom: 1px solid rgba(158, 158, 158, 0.22);\n  padding: 0.1em 0.7em;\n  font-variant-caps: inherit;\n  font-variant: small-caps;\n  font-size: 0.9em;\n  color: #bbb;\n  cursor: pointer;\n  text-align: center;\n  opacity: 1;\n  will-change: opacity;\n  transition: opacity 0.3s;\n}\n\n#smarttoc:hover .handle {\n  max-width: 33vw;\n  opacity: 1;\n}\n\n#smarttoc .handle:hover,\n#smarttoc .handle:active {\n  cursor: move;\n}\n\n#smarttoc .handle:active {\n  background: #f9f9f9;\n}\n\n#smarttoc > ul {\n  flex-grow: 1;\n  padding: 0 1.3em 1.3em 1em;\n  overflow-y: auto;\n}\n\n/* all headings  */\n\n#smarttoc ul,\n#smarttoc li {\n  list-style: none;\n  display: block;\n}\n\n#smarttoc a {\n  text-decoration: none;\n  color: gray;\n  display: block;\n  line-height: 1.3;\n  padding-top: 0.2em;\n  padding-bottom: 0.2em;\n  text-overflow: ellipsis;\n  overflow-x: hidden;\n  white-space: nowrap;\n}\n\n#smarttoc a:hover,\n#smarttoc a:active {\n  border-left-color: rgba(86, 61, 124, 0.5);\n  color: #563d7c;\n}\n\n#smarttoc li.active > a {\n  border-left-color: #563d7c;\n  color: #563d7c;\n}\n\n/* heading level: 1 */\n\n#smarttoc ul {\n  line-height: 2;\n}\n\n#smarttoc ul a {\n  font-size: 1em;\n  padding-left: 1.3em;\n cursor:pointer \n}\n\n#smarttoc ul a:hover,\n#smarttoc ul a:active,\n#smarttoc ul li.active > a {\n  border-left-width: 3px;\n  border-left-style: solid;\n  padding-left: calc(1.3em - 3px);\n}\n\n#smarttoc ul li.active > a {\n  font-weight: 700;\n}\n\n/* heading level: 2 (hidden only when there are too many headings)  */\n\n#smarttoc ul ul {\n  line-height: 1.8;\n}\n\n#smarttoc.lengthy ul ul {\n  display: none;\n}\n\n#smarttoc.lengthy ul li.active > ul {\n  display: block;\n}\n\n#smarttoc ul ul a {\n  font-size: 1em;\n  padding-left: 2.7em;\n}\n\n#smarttoc ul ul a:hover,\n#smarttoc ul ul a:active,\n#smarttoc ul ul li.active > a {\n  border-left-width: 2px;\n  border-left-style: solid;\n  padding-left: calc(2.7em - 2px);\n  font-weight: normal;\n}\n\n/* heading level: 3 (hidden unless parent is active) */\n\n#smarttoc ul ul ul {\n  line-height: 1.7;\n  display: none;\n}\n\n#smarttoc ul ul li.active > ul {\n  display: block;\n}\n\n#smarttoc ul ul ul a {\n  font-size: 1em;\n  padding-left: 4em;\n}\n\n#smarttoc ul ul ul a:hover,\n#smarttoc ul ul ul a:active,\n#smarttoc ul ul ul li.active > a {\n  border-left-width: 1px;\n  border-left-style: solid;\n  padding-left: calc(4em - 1px);\n  font-weight: normal;\n}\n";
 
     const proto = {
         subscribe(cb, emitOnSubscribe = true) {
@@ -357,7 +357,7 @@
 
         streams.forEach((s, i) => {
             const dependent = {
-                update(val) {
+                update(val) {                           
                     cached[i] = val
                     combined.update(combiner(...cached))
                 },
@@ -1760,6 +1760,12 @@
             window.removeEventListener('mousemove', onDrag)
             window.removeEventListener('mouseup', onDragEnd)
             e.redraw = false
+
+            var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
+            domain2offset[window.location.host] = $userOffset()
+            GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", domain2offset)
+            console.log('[auto-toc, update domain offset]', domain2offset[window.location.host])
+            console.log('[auto-toc, update domain offset, domain2offset]', domain2offset)
         }
 
         const onDragStart = e => {
@@ -1789,6 +1795,7 @@
     }
 
     const ARTICLE_TOC_GAP = 150
+    const TOP_MARGIN = 88
 
     const makeSticky = function (options) {
         let {
@@ -1802,6 +1809,7 @@
             $offset,
             $topMargin
         } = options
+
         let $refRect = Stream.combine($refChange, () => {
             let refRect = ref.getBoundingClientRect()
             let refStyle = window.getComputedStyle(ref)
@@ -1833,20 +1841,44 @@
             $topMargin,
             (ref, [scrollX, scrollY], [offsetX, offsetY], topMargin) => {
                 // console.log("[makeSticky, direction]", direction)
-                direction = "right" // 强制到右边, 我比较偏爱右边
-                let x =
-                    direction === 'right'
-                        ? ref.right + gap
-                        : ref.left - gap - popperMetric.width
+                // let x =
+                //     direction === 'right'
+                //         ? ref.right + gap
+                //         : ref.left - gap - popperMetric.width
+                // let y = Math.max(scrollableTop + topMargin, ref.top - scrollY)
+                // let y = Math.max(scrollableTop + topMargin, 288 - scrollY)
+
+                // 我们假定 topMargin 为 TOP_MARGIN (88), 方便固定 toc 在网页的位置
+                let y = scrollableTop + TOP_MARGIN
+                let final_y = y + offsetY
+                // let y = Math.max((scrollableTop + TOP_MARGIN), 888 - scrollY)
+                // let final_y = Math.max(TOP_MARGIN, offsetY + Math.max((scrollableTop + TOP_MARGIN), 288 - scrollY))
+                // let final_y = Math.max(TOP_MARGIN, offsetY + Math.max((scrollableTop + TOP_MARGIN), 288 - scrollY))
+
                 // 把 window.innerWidth 换成 window.outerWidth: 解决 safari 双指缩放导致 toc 居中遮挡网页内容的问题
-                x = Math.min(Math.max(0, x), window.outerWidth - popperMetric.width) // restrict to visible area
-                // x = 0
-                let y = Math.max(scrollableTop + topMargin, ref.top - scrollY)
+                // popperMetric.width 是 toc 挂件的宽度
+                // x = Math.min(Math.max(0, x), window.outerWidth - popperMetric.width) // restrict to visible area
+                
+                // 我们假定 popperMetric.width 为 288, 方便固定 toc 在网页的位置
+                let final_x = offsetX + Math.max(0, window.outerWidth - 288) // restrict to visible area
+
+                // console.log('[auto-toc, makeSticky, final_y]', Math.max((scrollableTop + TOP_MARGIN), 888 - scrollY), final_y)
+                // console.log('[auto-toc, makeSticky, scrollableTop, topMargin]',scrollableTop, topMargin)
+                // console.log('[auto-toc, makeSticky, window.outerWidth, popperMetric.width]',window.outerWidth, popperMetric.width)
+                // console.log('[auto-toc, makeSticky, ref.right, gap]',ref.right, gap)
+                // console.log('[auto-toc, makeSticky, x, window.outerWidth - popperMetric.width]', x, window.outerWidth - popperMetric.width)
+                // console.log('[auto-toc, makeSticky, x, y, offsetX, offsetY]', x, y, offsetX, offsetY)
+                // console.log('[auto-toc, makeSticky, scrollableTop, topMargin, ref.top, scrollY)', scrollableTop, topMargin, ref.top, scrollY)
+                // // console.log('[auto-toc, makeSticky, scrollableTop + topMargin, ref.top - scrollY)', scrollableTop + topMargin, ref.top - scrollY)
+                // console.log('[auto-toc, makeSticky, 3*(scrollableTop + TOP_MARGIN), 888 - scrollY', 3*(scrollableTop + TOP_MARGIN), 888 - scrollY)
+                // console.log('[auto-toc, makeSticky, x + offsetX, y + offsetY]',x + offsetX, y + offsetY)
+                // console.log('[auto-toc, makeSticky, ref.top, gap]',ref.top, gap)
                 return {
                     position: 'fixed',
                     left: 0,
                     top: 0,
-                    transform: translate3d(x + offsetX, y + offsetY)
+                    // transform: translate3d(x + offsetX, y + offsetY)
+                    transform: translate3d(final_x, final_y)
                 }
             }
         )
@@ -1932,7 +1964,8 @@
                     popper: dom,
                     direction: direction,
                     gap: ARTICLE_TOC_GAP,
-                    $topMargin: $topbarHeight.map(h => (h || 0) + 50),
+                    // $topMargin: $topbarHeight.map(h => (h || 0) + 50),
+                    $topMargin: $topbarHeight.map(h => TOP_MARGIN),
                     $refChange: $relayout,
                     $scroll: $scroll,
                     $offset: $userOffset
@@ -2144,14 +2177,14 @@
             targetElem: node,
             scrollElem: scrollElem,
             topMargin: topMargin,
-            maxDuration: 300,
+            maxDuration: 666,
             callback: onScrollEnd && onScrollEnd.bind(null, node)
         })
     }
 
     const getTopBarHeight = function (topElem) {
         // 默认网页的顶部有个 bar, 而且默认这个 bar 的高度是 88, 保证点击 toc 的时候跳转可以网页多往下移一点, 免得被各种检测不出来的 bar 挡住
-        return 88
+        return TOP_MARGIN
 
         const findFixedParent = function (elem) {
             const isFixed = elem => {
@@ -2223,6 +2256,14 @@
         $headings: $headings_,
         userOffset = [0, 0]
     }) {
+        var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
+        var lastOffset = domain2offset[window.location.host]
+        console.log('[auto-toc, lastOffset]', lastOffset)
+        if (lastOffset != null) {
+            userOffset = lastOffset
+        }
+        console.log('[auto-toc, init userOffset]', userOffset)
+
         const $headings = $headings_.map(addAnchors)
         insertCSS(tocCSS, 'smarttoc__css')
 
@@ -2944,9 +2985,9 @@
                     //     }
                     // );
 
-                    // console.log("debug ssss 88, aa")
+                    // console.log("debug ssss , aa")
                     // console.log(menu_ID)
-                    // console.log("debug ssss 88, bb")
+                    // console.log("debug ssss , bb")
                 }
                 // menu_ID[menu_ID.length] = GM_registerMenuCommand(`🏁 当前版本 ${version}`);
                 //menu_ID[menu_ID.length] = GM_registerMenuCommand('💬 反馈 & 建议', function () {window.GM_openInTab('', {active: true,insert: true,setParent: true});});
@@ -2956,17 +2997,20 @@
             function menu_switch(localStorageKeyName) {
                 // console.log("debug ssss 33")
                 var domain2isShow = GM_getValue(`${localStorageKeyName}`)
+                var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
                 console.log('[menu_switch]', domain2isShow);
                 var isCurrShow = domain2isShow[window.location.host]
-                if (isCurrShow == null || isCurrShow == false) {
+                if (isCurrShow == null || !isCurrShow) {
                     domain2isShow[window.location.host] = true
                     toast('Turn On TOC.');
                 } else {
                     // domain2isShow[window.location.host] = false
                     delete domain2isShow[window.location.host]
+                    delete domain2offset[window.location.host]
                     toast('Turn Off TOC.');
                 }
                 GM_setValue(`${localStorageKeyName}`, domain2isShow);
+                GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", domain2offset);
                 // if((/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
                 //     alert("这是safari")
                 // }
@@ -2980,6 +3024,10 @@
         }
 
         handleMenu();
+
+        if (GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset") == null) {
+            GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", {})
+        }
         handleToc();
 
         // setTimeout(function() {
