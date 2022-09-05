@@ -2928,7 +2928,7 @@
                 toc = doGenerateToc()
                 console.log('[handleToc toc]', toc);
                 // 如果生成的toc有问题或者toc没生成出来, 那就 n 秒之后再生成一次(比如掘金的很多文章得过几秒钟再生成才行)
-                // toast('Will generate TOC in 2.8 seconds ...');
+                toast('Will generate TOC in 2.8 seconds ...');
                 setTimeout(() => {
                     if ((toc && !toc.isValid()) || toc == null) {
                         toast('No article/headings are detected.');
