@@ -2,7 +2,7 @@
                   
 Generate TOC(table of contents) for any website. 可以为任何网站生成TOC网站目录大纲.
 
-Switch black and white themes automatically.会自动切换黑白主题.
+Switch black/white themes automatically according to your compupter's light/dark mode. 会根据你的电脑的黑夜白天模式自动切换黑白主题.
 ![light](auto_toc_demo_light.png)
 
 ![dark](auto_toc_demo_dark.png)
