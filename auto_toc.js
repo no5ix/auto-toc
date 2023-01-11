@@ -244,7 +244,7 @@
 
     const toast = (function toastFactory() {
         let timers = []
-        return function toast(msg) {
+        return function toast(msg, display_duration=3000/* ms */) {
             let toast
             insertCSS(toastCSS, 'smarttoc-toast__css')
             if (document.getElementById('smarttoc-toast')) {
@@ -264,9 +264,9 @@
             toast.classList = 'enter'
             timers = [
                 set('enter enter-active', 0),
-                set('leave', 3000),
-                set('leave leave-active', 3000),
-                set('', 3000 + 200)
+                set('leave', display_duration),
+                set('leave leave-active', display_duration),
+                set('', display_duration + 200)
             ]
         }
     })()
@@ -282,7 +282,207 @@
         }
     }
 
-    var tocCSS = "/* EVERYTHING HERE WILL BE '!IMPORTANT'  */\n\n/* reset */\n \n @media (prefers-color-scheme: dark) { \n #smarttoc.dark-scheme { \n    background-color: #5a5c5e \n}  \n} \n \n#smarttoc {\n  all: initial;\n}\n\n#smarttoc * {\n  all: unset;\n}\n\n/* container */\n\n#smarttoc {\n  \n  display: flex; flex-direction: column;\n  align-items: stretch;\n  position: fixed;\n  width: 26em;\n  max-height: 22px;\n  z-index: 10000;\n  box-sizing: border-box;\n  background-color: rgb(125, 115, 114);\n  color: gray;\n  font-size: calc(12px + 0.1vw);\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  line-height: 1.5;\n  font-weight: normal;\n  border: 1px solid rgba(158, 158, 158, 0.22);\n  -webkit-font-smoothing: subpixel-antialiased;\n  font-smoothing: subpixel-antialiased;\n  overflow: hidden;\n  \n  contain: content;\n}\n\n#smarttoc:hover {\n  max-width: 33vw;max-height: calc(100vh - 100px);\n}\n\n#smarttoc.hidden {\n  display: none;\n}\n\n#smarttoc .handle {\n  -webkit-user-select: none;\n  user-select: none;\n\n  border-bottom: 1px solid #6e6969;\n  padding: 0.1em 0.7em;\n  font-variant-caps: inherit;\n  font-variant: small-caps;\n  font-size: 0.9em;\n  color: #dbdbfd;\n  cursor: pointer;\n  text-align: left;\n  opacity: 1;\n  will-change: opacity;\n  transition: opacity 0.3s;\n}\n\n#smarttoc:hover .handle {\n  max-width: 33vw;\n  opacity: 1;\n}\n\n#smarttoc .handle:hover,\n#smarttoc .handle:active {\n  cursor: move;\n}\n\n#smarttoc .handle:active {\n  \n}\n\n#smarttoc > ul {\n  flex-grow: 1;\n  padding: 1em 1.3em 1.3em 1em;\n  overflow-y: auto;\n}\n\n/* all headings  */\n\n#smarttoc ul,\n#smarttoc li {\n  list-style: none;\n  display: block;\n}\n\n#smarttoc a {\n  text-decoration: none;\n  color: #ccc;\n  display: block;\n  line-height: 1.3;\n  padding-top: 0.2em;\n  padding-bottom: 0.2em;\n  text-overflow: ellipsis;\n  overflow-x: hidden;\n  white-space: nowrap;\n}\n\n#smarttoc a:hover,\n#smarttoc a:active {\n  border-left-color: #f6f6f6;\n  color: #fff;\n}\n\n#smarttoc li.active > a {\n  border-left-color: #f6f6f6;\n  color: #fff;\n}\n\n/* heading level: 1 */\n\n#smarttoc ul {\n  line-height: 2;\n}\n\n#smarttoc ul a {\n  font-size: 1em;\n  padding-left: 1.3em;\n cursor:pointer \n}\n\n#smarttoc ul a:hover,\n#smarttoc ul a:active,\n#smarttoc ul li.active > a {\n  border-left-width: 3px;\n  border-left-style: solid;\n  padding-left: calc(1.3em - 3px);\n}\n\n#smarttoc ul li.active > a {\n  font-weight: 700;\n}\n\n/* heading level: 2 (hidden only when there are too many headings)  */\n\n#smarttoc ul ul {\n  line-height: 1.8;\n}\n\n#smarttoc.lengthy ul ul {\n  display: none;\n}\n\n#smarttoc.lengthy ul li.active > ul {\n  display: block;\n}\n\n#smarttoc ul ul a {\n  font-size: 1em;\n  padding-left: 2.7em;\n}\n\n#smarttoc ul ul a:hover,\n#smarttoc ul ul a:active,\n#smarttoc ul ul li.active > a {\n  border-left-width: 2px;\n  border-left-style: solid;\n  padding-left: calc(2.7em - 2px);\n  font-weight: normal;\n}\n\n/* heading level: 3 (hidden unless parent is active) */\n\n#smarttoc ul ul ul {\n  line-height: 1.7;\n  display: none;\n}\n\n#smarttoc ul ul li.active > ul {\n  display: block;\n}\n\n#smarttoc ul ul ul a {\n  font-size: 1em;\n  padding-left: 4em;\n}\n\n#smarttoc ul ul ul a:hover,\n#smarttoc ul ul ul a:active,\n#smarttoc ul ul ul li.active > a {\n  border-left-width: 1px;\n  border-left-style: solid;\n  padding-left: calc(4em - 1px);\n  font-weight: normal;\n}\n";
+
+    var tocCSS = `
+    @media (prefers-color-scheme: dark) {
+        #smarttoc.dark-scheme {
+            background-color: rgb(48, 52, 54);
+        }
+    
+        #smarttoc.dark-scheme .handle {
+            color: #ffffff;
+        }
+    
+        #smarttoc.dark-scheme a {
+            color: #ccc;
+        }
+    
+        #smarttoc.dark-scheme a:hover,
+        #smarttoc.dark-scheme a:active {
+            border-left-color: #f6f6f6;
+            color: #fff;
+        }
+    
+        #smarttoc.dark-scheme li.active>a {
+            border-left-color: rgb(46, 82, 154);
+            color: rgb(131, 174, 218)
+        }
+    }
+    
+    #smarttoc {
+        all: initial;
+    }
+    
+    #smarttoc * {
+        all: unset;
+    }
+    
+    /* container */
+    #smarttoc {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        position: fixed;
+        max-width: 22em;
+        min-width: 14em;
+        max-height: 22px;
+        z-index: 10000;
+        box-sizing: border-box;
+        background-color: #fff;
+        color: gray;
+        font-size: calc(12px + 0.1vw);
+        font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;
+        line-height: 1.5;
+        font-weight: normal;
+        border: 1px solid rgba(158, 158, 158, 0.22);
+        -webkit-font-smoothing: subpixel-antialiased;
+        font-smoothing: subpixel-antialiased;
+        overflow: hidden;
+        contain: content;
+    }
+    
+    #smarttoc:hover {
+        max-width: 33vw;
+        max-height: calc(100vh - 100px);
+    }
+    
+    #smarttoc.hidden {
+        display: none;
+    }
+    
+    #smarttoc .handle {
+        -webkit-user-select: none;
+        user-select: none;
+        border-bottom: 1px solid rgba(158, 158, 158, 0.22);
+        padding: 0.1em 0.7em;
+        font-variant-caps: inherit;
+        font-variant: small-caps;
+        font-size: 0.9em;
+        color: rgb(0, 0, 0);
+        cursor: pointer;
+        text-align: center;
+        opacity: 1;
+    }
+    
+    #smarttoc .handle:hover,
+    #smarttoc .handle:active {
+        cursor: move;
+    }
+    
+    #smarttoc .handle:active {
+    
+    }
+    
+    #smarttoc>ul {
+        flex-grow: 1;
+        padding: 0 1.3em 1.3em 1em;
+        overflow-y: auto;
+    }
+    
+    /* all headings  */
+    #smarttoc ul,
+    #smarttoc li {
+        list-style: none;
+        display: block;
+    }
+    
+    #smarttoc a {
+        text-decoration: none;
+        color: gray;
+        display: block;
+        line-height: 1.3;
+        padding-top: 0.2em;
+        padding-bottom: 0.2em;
+        text-overflow: ellipsis;
+        overflow-x: hidden;
+        white-space: nowrap;
+    }
+    
+    #smarttoc a:hover,
+    #smarttoc a:active {
+        border-left-color: rgba(86, 61, 124, 0.5);
+        color: #563d7c;
+    }
+    
+    #smarttoc li.active>a {
+        border-left-color: #563d7c;
+        color: #563d7c;
+    }
+    
+    /* heading level: 1 */
+    #smarttoc ul {
+        line-height: 2;
+    }
+    
+    #smarttoc ul a {
+        font-size: 1em;
+        padding-left: 1.3em;
+        cursor: pointer
+    }
+    
+    #smarttoc ul a:hover,
+    #smarttoc ul a:active,
+    #smarttoc ul li.active>a {
+        border-left-width: 3px;
+        border-left-style: solid;
+        padding-left: calc(1.3em - 3px);
+    }
+    
+    #smarttoc ul li.active>a {
+        font-weight: 700;
+    }
+    
+    /* heading level: 2 (hidden only when there are too many headings)  */
+    #smarttoc ul ul {
+        line-height: 1.8;
+    }
+    
+    #smarttoc.lengthy ul ul {
+        display: none;
+    }
+    
+    #smarttoc.lengthy ul li.active>ul {
+        display: block;
+    }
+    
+    #smarttoc ul ul a {
+        font-size: 1em;
+        padding-left: 2.7em;
+    }
+    
+    #smarttoc ul ul a:hover,
+    #smarttoc ul ul a:active,
+    #smarttoc ul ul li.active>a {
+        border-left-width: 2px;
+        border-left-style: solid;
+        padding-left: calc(2.7em - 2px);
+        font-weight: normal;
+    }
+    
+    /* heading level: 3 (hidden unless parent is active) */
+    #smarttoc ul ul ul {
+        line-height: 1.7;
+        display: none;
+    }
+    
+    #smarttoc ul ul li.active>ul {
+        display: block;
+    }
+    
+    #smarttoc ul ul ul a {
+        font-size: 1em;
+        padding-left: 4em;
+    }
+    
+    #smarttoc ul ul ul a:hover,
+    #smarttoc ul ul ul a:active,
+    #smarttoc ul ul ul li.active>a {
+        border-left-width: 1px;
+        border-left-style: solid;
+        padding-left: calc(4em - 1px);
+        font-weight: normal;
+    }
+    `;
 
     const proto = {
         subscribe(cb, emitOnSubscribe = true) {
@@ -357,7 +557,7 @@
 
         streams.forEach((s, i) => {
             const dependent = {
-                update(val) {                           
+                update(val) {
                     cached[i] = val
                     combined.update(combiner(...cached))
                 },
@@ -1788,7 +1988,7 @@
                     {
                         onmousedown: onDragStart
                     },
-                    'table of contents'
+                    '□ ○ ○ □'
                 )
             }
         }
@@ -1858,7 +2058,7 @@
                 // 把 window.innerWidth 换成 window.outerWidth: 解决 safari 双指缩放导致 toc 居中遮挡网页内容的问题
                 // popperMetric.width 是 toc 挂件的宽度
                 // x = Math.min(Math.max(0, x), window.outerWidth - popperMetric.width) // restrict to visible area
-                
+
                 // 我们假定 popperMetric.width 为 288, 方便固定 toc 在网页的位置
                 let final_x = offsetX + Math.max(0, window.outerWidth - 288) // restrict to visible area
 
@@ -2928,7 +3128,7 @@
                 toc = doGenerateToc()
                 console.log('[handleToc toc]', toc);
                 // 如果生成的toc有问题或者toc没生成出来, 那就 n 秒之后再生成一次(比如掘金的很多文章得过几秒钟再生成才行)
-                toast('Will generate TOC in 2.8 seconds ...');
+                // toast('Will generate TOC in 2.8 seconds ...', 1600);
                 setTimeout(() => {
                     if ((toc && !toc.isValid()) || toc == null) {
                         toast('No article/headings are detected.');
