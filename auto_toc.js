@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      0.88
+// @version      0.90
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time. Inspired by: https://github.com/FallenMax/smart-toc & https://chrome.google.com/webstore/detail/lifgeihcfpkmmlfjbailfpfhbahhibba & https://greasyfork.org/en/scripts/415856-bc-smarttoc
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否.
@@ -272,217 +272,236 @@
     })()
 
     const insertCSS = function (css, id) {
-        if (!document.getElementById(id)) {
+        // if (!document.getElementById(id)) {
             let style = document.createElement('STYLE')
             style.type = 'text/css'
             style.id = id
             style.textContent = css
             document.head.appendChild(style)
-            return
-        }
+            // return
+        // }
     }
 
+    function shouldCollapseToc() {
+        var domain2isCollapse = GM_getValue("menu_GAEEScript_auto_collapse_toc")
+        var isCurrCollapse = domain2isCollapse[window.location.host]
+        return !(isCurrCollapse == null || !isCurrCollapse)
+    }
 
-    var tocCSS = `
-    @media (prefers-color-scheme: dark) {
-        #smarttoc.dark-scheme {
-            background-color: rgb(48, 52, 54);
-        }
-    
-        #smarttoc.dark-scheme .handle {
-            color: #ffffff;
-        }
-    
-        #smarttoc.dark-scheme a {
-            color: #ccc;
-        }
-    
-        #smarttoc.dark-scheme a:hover,
-        #smarttoc.dark-scheme a:active {
-            border-left-color: #f6f6f6;
-            color: #fff;
-        }
-    
-        #smarttoc.dark-scheme li.active>a {
-            border-left-color: rgb(46, 82, 154);
-            color: rgb(131, 174, 218)
-        }
+    function getTocCss() {
+        var shouldCollapse = shouldCollapseToc();
+        console.log('[getTocCss]', shouldCollapse)
+        return `
+            @media (prefers-color-scheme: dark) {
+                #smarttoc.dark-scheme {
+                    background-color: rgb(48, 52, 54);
+                }
+            
+                #smarttoc.dark-scheme .handle {
+                    color: #ffffff;
+                }
+            
+                #smarttoc.dark-scheme a {
+                    color: #ccc;
+                }
+            
+                #smarttoc.dark-scheme a:hover,
+                #smarttoc.dark-scheme a:active {
+                    border-left-color: #f6f6f6;
+                    color: #fff;
+                }
+            
+                #smarttoc.dark-scheme li.active>a {
+                    border-left-color: rgb(46, 82, 154);
+                    color: rgb(131, 174, 218)
+                }
+            }
+            
+            #smarttoc {
+                all: initial;
+            }
+            
+            #smarttoc * {
+                all: unset;
+            }
+            
+            /* container */
+            #smarttoc {
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                position: fixed;
+                max-width: 22em;
+                min-width: 14em;
+            `
+            + (shouldCollapse ? "max-height: 22px;" : "max-height: calc(100vh - 100px);")
+            + `
+                z-index: 10000;
+                box-sizing: border-box;
+                background-color: #fff;
+                color: gray;
+                font-size: calc(12px + 0.1vw);
+                font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;
+                line-height: 1.5;
+                font-weight: normal;
+                border: 1px solid rgba(158, 158, 158, 0.22);
+                -webkit-font-smoothing: subpixel-antialiased;
+                font-smoothing: subpixel-antialiased;
+                overflow: hidden;
+                contain: content;
+            }
+            
+            #smarttoc:hover {
+                max-width: 33vw;
+            `
+            + (shouldCollapse ? "max-height: calc(100vh - 100px);" : "")
+            + `
+            }
+            
+            #smarttoc.hidden {
+                display: none;
+            }
+            
+            #smarttoc .handle {
+                -webkit-user-select: none;
+                user-select: none;
+                border-bottom: 1px solid rgba(158, 158, 158, 0.22);
+                padding: 0.1em 0.7em;
+                font-variant-caps: inherit;
+                font-variant: small-caps;
+                font-size: 0.9em;
+                color: rgb(0, 0, 0);
+                cursor: pointer;
+                text-align: center;
+                opacity: 1;
+            }
+            
+            #smarttoc .handle:hover,
+            #smarttoc .handle:active {
+                cursor: move;
+            }
+            
+            #smarttoc .handle:active {
+            
+            }
+            
+            #smarttoc>ul {
+                flex-grow: 1;
+                padding: 0 1.3em 1.3em 1em;
+                overflow-y: auto;
+            }
+            
+            /* all headings  */
+            #smarttoc ul,
+            #smarttoc li {
+                list-style: none;
+                display: block;
+            }
+            
+            #smarttoc a {
+                text-decoration: none;
+                color: gray;
+                display: block;
+                line-height: 1.3;
+                padding-top: 0.2em;
+                padding-bottom: 0.2em;
+                text-overflow: ellipsis;
+                overflow-x: hidden;
+                white-space: nowrap;
+            }
+            
+            #smarttoc a:hover,
+            #smarttoc a:active {
+                border-left-color: rgba(86, 61, 124, 0.5);
+                color: #563d7c;
+            }
+            
+            #smarttoc li.active>a {
+                border-left-color: #563d7c;
+                color: #563d7c;
+            }
+            
+            /* heading level: 1 */
+            #smarttoc ul {
+                line-height: 2;
+            }
+            
+            #smarttoc ul a {
+                font-size: 1em;
+                padding-left: 1.3em;
+                cursor: pointer
+            }
+            
+            #smarttoc ul a:hover,
+            #smarttoc ul a:active,
+            #smarttoc ul li.active>a {
+                border-left-width: 3px;
+                border-left-style: solid;
+                padding-left: calc(1.3em - 3px);
+                margin-bottom: 0.3px;
+                margin-top: 0.3px;
+            }
+            
+            #smarttoc ul li.active>a {
+                font-weight: 700;
+            }
+            
+            /* heading level: 2 (hidden only when there are too many headings)  */
+            #smarttoc ul ul {
+                line-height: 1.8;
+            }
+            
+            #smarttoc.lengthy ul ul {
+                display: none;
+            }
+            
+            #smarttoc.lengthy ul li.active>ul {
+                display: block;
+            }
+            
+            #smarttoc ul ul a {
+                font-size: 1em;
+                padding-left: 2.7em;
+            }
+            
+            #smarttoc ul ul a:hover,
+            #smarttoc ul ul a:active,
+            #smarttoc ul ul li.active>a {
+                border-left-width: 1.6px;
+                border-left-style: solid;
+                padding-left: calc(2.7em - 2px);
+                font-weight: normal;
+                margin-bottom: 0.3px;
+                margin-top: 0.3px;
+            }
+            
+            /* heading level: 3 (hidden unless parent is active) */
+            #smarttoc ul ul ul {
+                line-height: 1.7;
+                display: none;
+            }
+            
+            #smarttoc ul ul li.active>ul {
+                display: block;
+            }
+            
+            #smarttoc ul ul ul a {
+                font-size: 1em;
+                padding-left: 4em;
+            }
+            
+            #smarttoc ul ul ul a:hover,
+            #smarttoc ul ul ul a:active,
+            #smarttoc ul ul ul li.active>a {
+                border-left-width: 0.8px;
+                border-left-style: solid;
+                padding-left: calc(4em - 1px);
+                font-weight: normal;
+                margin-bottom: 0.3px;
+                margin-top: 0.3px;
+            }
+        `;
     }
-    
-    #smarttoc {
-        all: initial;
-    }
-    
-    #smarttoc * {
-        all: unset;
-    }
-    
-    /* container */
-    #smarttoc {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        position: fixed;
-        max-width: 22em;
-        min-width: 14em;
-        max-height: 22px;
-        z-index: 10000;
-        box-sizing: border-box;
-        background-color: #fff;
-        color: gray;
-        font-size: calc(12px + 0.1vw);
-        font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;
-        line-height: 1.5;
-        font-weight: normal;
-        border: 1px solid rgba(158, 158, 158, 0.22);
-        -webkit-font-smoothing: subpixel-antialiased;
-        font-smoothing: subpixel-antialiased;
-        overflow: hidden;
-        contain: content;
-    }
-    
-    #smarttoc:hover {
-        max-width: 33vw;
-        max-height: calc(100vh - 100px);
-    }
-    
-    #smarttoc.hidden {
-        display: none;
-    }
-    
-    #smarttoc .handle {
-        -webkit-user-select: none;
-        user-select: none;
-        border-bottom: 1px solid rgba(158, 158, 158, 0.22);
-        padding: 0.1em 0.7em;
-        font-variant-caps: inherit;
-        font-variant: small-caps;
-        font-size: 0.9em;
-        color: rgb(0, 0, 0);
-        cursor: pointer;
-        text-align: center;
-        opacity: 1;
-    }
-    
-    #smarttoc .handle:hover,
-    #smarttoc .handle:active {
-        cursor: move;
-    }
-    
-    #smarttoc .handle:active {
-    
-    }
-    
-    #smarttoc>ul {
-        flex-grow: 1;
-        padding: 0 1.3em 1.3em 1em;
-        overflow-y: auto;
-    }
-    
-    /* all headings  */
-    #smarttoc ul,
-    #smarttoc li {
-        list-style: none;
-        display: block;
-    }
-    
-    #smarttoc a {
-        text-decoration: none;
-        color: gray;
-        display: block;
-        line-height: 1.3;
-        padding-top: 0.2em;
-        padding-bottom: 0.2em;
-        text-overflow: ellipsis;
-        overflow-x: hidden;
-        white-space: nowrap;
-    }
-    
-    #smarttoc a:hover,
-    #smarttoc a:active {
-        border-left-color: rgba(86, 61, 124, 0.5);
-        color: #563d7c;
-    }
-    
-    #smarttoc li.active>a {
-        border-left-color: #563d7c;
-        color: #563d7c;
-    }
-    
-    /* heading level: 1 */
-    #smarttoc ul {
-        line-height: 2;
-    }
-    
-    #smarttoc ul a {
-        font-size: 1em;
-        padding-left: 1.3em;
-        cursor: pointer
-    }
-    
-    #smarttoc ul a:hover,
-    #smarttoc ul a:active,
-    #smarttoc ul li.active>a {
-        border-left-width: 3px;
-        border-left-style: solid;
-        padding-left: calc(1.3em - 3px);
-    }
-    
-    #smarttoc ul li.active>a {
-        font-weight: 700;
-    }
-    
-    /* heading level: 2 (hidden only when there are too many headings)  */
-    #smarttoc ul ul {
-        line-height: 1.8;
-    }
-    
-    #smarttoc.lengthy ul ul {
-        display: none;
-    }
-    
-    #smarttoc.lengthy ul li.active>ul {
-        display: block;
-    }
-    
-    #smarttoc ul ul a {
-        font-size: 1em;
-        padding-left: 2.7em;
-    }
-    
-    #smarttoc ul ul a:hover,
-    #smarttoc ul ul a:active,
-    #smarttoc ul ul li.active>a {
-        border-left-width: 2px;
-        border-left-style: solid;
-        padding-left: calc(2.7em - 2px);
-        font-weight: normal;
-    }
-    
-    /* heading level: 3 (hidden unless parent is active) */
-    #smarttoc ul ul ul {
-        line-height: 1.7;
-        display: none;
-    }
-    
-    #smarttoc ul ul li.active>ul {
-        display: block;
-    }
-    
-    #smarttoc ul ul ul a {
-        font-size: 1em;
-        padding-left: 4em;
-    }
-    
-    #smarttoc ul ul ul a:hover,
-    #smarttoc ul ul ul a:active,
-    #smarttoc ul ul ul li.active>a {
-        border-left-width: 1px;
-        border-left-style: solid;
-        padding-left: calc(4em - 1px);
-        font-weight: normal;
-    }
-    `;
 
     const proto = {
         subscribe(cb, emitOnSubscribe = true) {
@@ -2465,7 +2484,7 @@
         console.log('[auto-toc, init userOffset]', userOffset)
 
         const $headings = $headings_.map(addAnchors)
-        insertCSS(tocCSS, 'smarttoc__css')
+        insertCSS(getTocCss(), 'smarttoc__css')
 
         const scrollable = getScrollParent(article)
         const theme = getTheme(article)
@@ -3145,7 +3164,8 @@
         function handleMenu() {
             // console.log("")
             var menu_ALL = [
-                ['menu_GAEEScript_auto_open_toc', '当前网站TOC开关', {}],
+                ['menu_GAEEScript_auto_open_toc', 'Enable TOC on current site(当前网站TOC开关)', {}],
+                ['menu_GAEEScript_auto_collapse_toc', 'Collapse TOC on current site(当前网站TOC自动折叠开关', {}],
             ], menu_ID = [];
             for (let i = 0; i < menu_ALL.length; i++) { // 如果读取到的值为 null 就写入默认值
                 // console.log("debug ssss")
@@ -3162,7 +3182,7 @@
                     // console.log("debug ssss 22, aa")
                     // console.log(menu_ID)
 
-                    // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑
+                    // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
                     if (!(/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
                         // alert("非safari");
                         GM_unregisterMenuCommand(menu_ID[i]);
@@ -3196,24 +3216,38 @@
             //切换选项
             function menu_switch(localStorageKeyName) {
                 // console.log("debug ssss 33")
-                var domain2isShow = GM_getValue(`${localStorageKeyName}`)
-                var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
-                console.log('[menu_switch]', domain2isShow);
-                var isCurrShow = domain2isShow[window.location.host]
-                if (isCurrShow == null || !isCurrShow) {
-                    domain2isShow[window.location.host] = true
-                    toast('Turn On TOC.');
-                } else {
-                    // domain2isShow[window.location.host] = false
-                    delete domain2isShow[window.location.host]
-                    delete domain2offset[window.location.host]
-                    toast('Turn Off TOC.');
+                if (localStorageKeyName == "menu_GAEEScript_auto_open_toc") {
+                    var domain2isShow = GM_getValue(`${localStorageKeyName}`)
+                    var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
+                    console.log('[menu_switch menu_GAEEScript_auto_open_toc]', domain2isShow);
+                    var isCurrShow = domain2isShow[window.location.host]
+                    if (isCurrShow == null || !isCurrShow) {
+                        domain2isShow[window.location.host] = true
+                        toast('Turn On TOC.');
+                    } else {
+                        // domain2isShow[window.location.host] = false
+                        delete domain2isShow[window.location.host]
+                        delete domain2offset[window.location.host]
+                        toast('Turn Off TOC.');
+                    }
+                    GM_setValue(`${localStorageKeyName}`, domain2isShow);
+                    GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", domain2offset);
                 }
-                GM_setValue(`${localStorageKeyName}`, domain2isShow);
-                GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", domain2offset);
+                else if (localStorageKeyName == "menu_GAEEScript_auto_collapse_toc") {
+                    var domain2isCollapse = GM_getValue(`${localStorageKeyName}`)
+                    console.log('[menu_switch menu_GAEEScript_auto_collapse_toc]', domain2isCollapse);
+                    var isCurrCollapse = domain2isCollapse[window.location.host]
+                    if (isCurrCollapse == null || !isCurrCollapse) {
+                        domain2isCollapse[window.location.host] = true
+                    } else {
+                        delete domain2isCollapse[window.location.host]
+                    }
+                    GM_setValue(`${localStorageKeyName}`, domain2isCollapse);
+                }
                 // if((/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
                 //     alert("这是safari")
                 // }
+                // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
                 if (!(/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
                     // alert("非safari");
                     registerMenuCommand(); // 重新注册脚本菜单
