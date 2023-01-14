@@ -21,7 +21,7 @@ Switch black/white themes automatically according to your compupter's light/dark
 - Drag the panel to your preferred position
 - Only runs when you actually use it
 - Dark mode, automatically
-- Up to 6 heading levels (free version capped to 2)
+- 6 heading levels
 - Expand all headings to a specific level
 - Support HTML label:
   - `H1`, `H2`, `H3`, `H4`, `H5`, `H6`
