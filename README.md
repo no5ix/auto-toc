@@ -1,5 +1,7 @@
 # auto-toc
-                  
+
+Displays a table of contents for any website, making it easier to read and navigate long articles, documentations, and online books.
+
 Generate TOC(table of contents) for any website. 可以为任何网站生成TOC网站目录大纲.
 
 Switch black/white themes automatically according to your compupter's light/dark mode. 会根据你的电脑的黑夜白天模式自动切换黑白主题.
@@ -8,11 +10,23 @@ Switch black/white themes automatically according to your compupter's light/dark
 
 ![dark](auto_toc_demo_dark.png)
 
-support HTML label:                
 
-- `H1`, `H2`, `H3`, `H4`, `H5`, `H6`
-- `<strong>`
-- `<b>`
+# Features
+
+- Work properly on any website that conforms to the HTML standard and uses HTML heading tags properly (e.g. Wikipedia.com). 
+- Accurate article and heading detection
+- A clean user interface
+- Highlight current heading
+- Click to jump to headings
+- Drag the panel to your preferred position
+- Only runs when you actually use it
+- Dark mode, automatically
+- Up to 6 heading levels (free version capped to 2)
+- Expand all headings to a specific level
+- Support HTML label:
+  - `H1`, `H2`, `H3`, `H4`, `H5`, `H6`
+  - `<strong>`
+  - `<b>`
 
 
 # Installation & Usage
