@@ -349,7 +349,7 @@
                 font-smoothing: subpixel-antialiased;
                 overflow: hidden;
                 contain: content;
-                box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+                box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 20%), 0px 0px 8px 0 rgb(0 0 0 / 19%);
             }
             
             #smarttoc:hover {
@@ -2008,7 +2008,7 @@
                     {
                         onmousedown: onDragStart
                     },
-                    '□ ○ ○ □'
+                    '○ ○ ○'
                 )
             }
         }
