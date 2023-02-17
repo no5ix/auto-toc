@@ -409,8 +409,8 @@
                 text-overflow: ellipsis;
                 overflow-x: hidden;
                 white-space: nowrap;
-                margin-bottom: 0.6px;
-                margin-top: 0.6px;
+                margin-bottom: 0.8px;
+                margin-top: 0.8px;
             }
             
             #smarttoc a:hover,
