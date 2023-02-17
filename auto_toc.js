@@ -409,6 +409,8 @@
                 text-overflow: ellipsis;
                 overflow-x: hidden;
                 white-space: nowrap;
+                margin-bottom: 0.6px;
+                margin-top: 0.6px;
             }
             
             #smarttoc a:hover,
@@ -439,8 +441,6 @@
                 border-left-width: 3px;
                 border-left-style: solid;
                 padding-left: calc(1.3em - 3px);
-                margin-bottom: 0.6px;
-                margin-top: 0.6px;
             }
             
             #smarttoc ul li.active>a {
@@ -472,8 +472,6 @@
                 border-left-style: solid;
                 padding-left: calc(2.7em - 2px);
                 font-weight: normal;
-                margin-bottom: 0.6px;
-                margin-top: 0.6px;
             }
             
             /* heading level: 3 (hidden unless parent is active) */
@@ -498,8 +496,6 @@
                 border-left-style: solid;
                 padding-left: calc(4em - 1px);
                 font-weight: normal;
-                margin-bottom: 0.6px;
-                margin-top: 0.6px;
             }
         `;
     }
