@@ -33,6 +33,16 @@ Switch black/white themes automatically according to your compupter's light/dark
   - `<b>`
 
 
+# 捐赠
+
+捐赠! 让作者更有动力给 auto-toc 加新功能! ^_^
+
+- 微信
+  - ![微信](https://github.com/no5ix/no5ix.github.io/blob/source/source/img/sux/donate_wechat.png)
+- 支付宝
+  - ![支付宝](https://github.com/no5ix/no5ix.github.io/blob/source/source/img/sux/donate_alipay.png)
+
+
 # Installation & Usage
 
 - English: https://greasyfork.org/en/scripts/458022-auto-toc?locale_override=1
