@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         auto-toc
 // @name:zh-CN   auto-toc
-// @namespace    AUTO_TOC
+// @namespace    EX
 // @version      0.99
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
