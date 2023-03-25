@@ -76,9 +76,9 @@
             padding: 1em;
             z-index: 10000;
             box-sizing: border-box;
-            background-color: rgb(48, 52, 54);
+            background-color: #017afe;
             border: 1px solid rgba(158, 158, 158, 0.22);
-            color: orange;
+            color: #ffffff;
             font-size: calc(12px + 0.15vw);
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             font-weight: normal;
