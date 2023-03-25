@@ -78,7 +78,7 @@
             box-sizing: border-box;
             background-color: rgb(48, 52, 54);
             border: 1px solid rgba(158, 158, 158, 0.22);
-            color: #fff;
+            color: orange;
             font-size: calc(12px + 0.15vw);
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
             font-weight: normal;
