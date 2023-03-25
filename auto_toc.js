@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      0.97
+// @version      0.98
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time. 
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否.
@@ -331,8 +331,8 @@
                 flex-direction: column;
                 align-items: stretch;
                 position: fixed;
-                max-width: 22em;
-                min-width: 14em;
+                max-width: 16em;
+                min-width: 12em;
             `
             + (shouldCollapse ? "max-height: 22px;" : "max-height: calc(100vh - 100px);")
             + `
@@ -354,7 +354,6 @@
             }
             
             #smarttoc:hover {
-                max-width: 33vw;
             `
             + (shouldCollapse ? "max-height: calc(100vh - 100px);" : "")
             + `
@@ -1916,7 +1915,7 @@
                 { class: heading && heading.isActive ? 'active' : '', key: index },
                 [
                     heading &&
-                    mithril('a', { href: `#${heading.anchor}` }, heading.node.textContent),
+                    mithril('a', { href: `#${heading.anchor}`, title: heading.node.textContent }, heading.node.textContent),
                     children && children.length && UL(children)
                 ].filter(Boolean)
             )
@@ -1979,9 +1978,17 @@
             e.redraw = false
 
             var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
+            if (domain2offset[window.location.host].toString() === $userOffset().toString()) {
+                // 判断之前toc 的位置和现在的, 如果相等的话, 说明只是点击了一下, 那就直接切换"折叠开关"
+                console.log('[auto-toc, click handle section]')
+                menu_switch("menu_GAEEScript_auto_collapse_toc")
+                handleToc()
+                return
+            }
             domain2offset[window.location.host] = $userOffset()
             GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", domain2offset)
             console.log('[auto-toc, update domain offset]', domain2offset[window.location.host])
+            console.log('[auto-toc, $userOffset()]', $userOffset())
             console.log('[auto-toc, update domain offset, domain2offset]', domain2offset)
         }
 
@@ -1998,12 +2005,18 @@
             e.redraw = false
         }
 
+        // const onDoubleClick = e => {
+        //     menu_switch("menu_GAEEScript_auto_collapse_toc")
+        //     handleToc()
+        // }
+
         return {
             view() {
                 return mithril(
                     '.handle',
                     {
-                        onmousedown: onDragStart
+                        onmousedown: onDragStart,
+                        // ondblclick: onDoubleClick,
                     },
                     '○ ○ ○'
                 )
@@ -3068,9 +3081,110 @@
     }
 
 
+////////////////////////////////
+
+    let toc
+
+    const doGenerateToc = function (option = {}) {
+        let [article, $headings] = extract()
+        if (article && $headings && $headings().length) {
+
+            console.log("createTOC before old begin aaa")
+            console.log($headings())
+            console.log("createTOC before old end bbb")
+
+            return createTOC(Object.assign({ article, $headings }, option))
+        } else {
+            return null
+        }
+    }
+
+    function handleToc() {
+        var domain2shouldShow = GM_getValue("menu_GAEEScript_auto_open_toc")
+        console.log('[handleToc domain2shouldShow]', domain2shouldShow);
+        console.log('[handleToc window.location.host]', window.location.host);
+        console.log('[domain2shouldShow[window.location.host]]', domain2shouldShow[window.location.host]);
+
+        var timerId = setInterval(() => {
+            // console.log('[handleToc regen toc window.location.host]', window.location.host);
+            // clearInterval(timerId);
+            if (!domain2shouldShow[window.location.host]) {
+                // 防止正在循环尝试生成 toc 的时候用户关闭了 toc 开关
+                return;
+            }
+            if (toc && !toc.isValid()) {
+                let lastState = toc.dispose()
+                toc = doGenerateToc(lastState)
+            } else if (toc == null) {
+                toc = doGenerateToc()
+            }
+        }, 1600)
+
+        if (domain2shouldShow[window.location.host]) {
+            toc = doGenerateToc()
+            console.log('[handleToc toc]', toc);
+            // 如果生成的toc有问题或者toc没生成出来, 那就 n 秒之后再生成一次(比如掘金的很多文章得过几秒钟再生成才行)
+            // toast('Will generate TOC in 2.8 seconds ...', 1600);
+            setTimeout(() => {
+                if ((toc && !toc.isValid()) || toc == null) {
+                    toast('No article/headings are detected.');
+                }
+            }, 3800)
+        } else {
+            console.log('[handleToc should not show]', toc);
+            if (toc) {
+                toc.dispose()
+            }
+        }
+    }
+
+    //切换选项
+    function menu_switch(localStorageKeyName) {
+        // console.log("debug ssss 33")
+        if (localStorageKeyName == "menu_GAEEScript_auto_open_toc") {
+            var domain2isShow = GM_getValue(`${localStorageKeyName}`)
+            var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
+            console.log('[menu_switch menu_GAEEScript_auto_open_toc]', domain2isShow);
+            var isCurrShow = domain2isShow[window.location.host]
+            if (isCurrShow == null || !isCurrShow) {
+                domain2isShow[window.location.host] = true
+                toast('Turn On TOC.');
+            } else {
+                // domain2isShow[window.location.host] = false
+                delete domain2isShow[window.location.host]
+                delete domain2offset[window.location.host]
+                toast('Turn Off TOC.');
+            }
+            GM_setValue(`${localStorageKeyName}`, domain2isShow);
+            GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", domain2offset);
+        }
+        else if (localStorageKeyName == "menu_GAEEScript_auto_collapse_toc") {
+            var domain2isCollapse = GM_getValue(`${localStorageKeyName}`)
+            console.log('[menu_switch menu_GAEEScript_auto_collapse_toc]', domain2isCollapse);
+            var isCurrCollapse = domain2isCollapse[window.location.host]
+            if (isCurrCollapse == null || !isCurrCollapse) {
+                domain2isCollapse[window.location.host] = true
+            } else {
+                delete domain2isCollapse[window.location.host]
+            }
+            GM_setValue(`${localStorageKeyName}`, domain2isCollapse);
+        }
+        // if((/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
+        //     alert("这是safari")
+        // }
+        // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
+        if (!(/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
+            // alert("非safari");
+            registerMenuCommand(); // 重新注册脚本菜单
+        }
+        handleToc();
+        // location.reload(); // 刷新网页
+    }
+
+
     if (isMasterFrame(window)) {
     // if (true) {
-        console.log("ex-smart-toc running !!!")
+        console.log("auto_toc running !!!")
         // 貌似无用
         // 可以检查pageshow 事件的persisted属性，当页面初始化加载的时候，persisted被设置为false，当页面从缓存中加载的时候，persisted被设置为true。因此，上面代码的意思就是：
         // 如果页面是从缓存中加载的，那么页面重新加载。
@@ -3104,60 +3218,6 @@
         // console.log("ex-smart-toc innerWidth", window.innerWidth)
         // console.log("ex-smart-toc outerWidth", window.outerWidth)
 
-        let toc
-
-        const doGenerateToc = function (option = {}) {
-            let [article, $headings] = extract()
-            if (article && $headings && $headings().length) {
-
-                console.log("createTOC before old begin aaa")
-                console.log($headings())
-                console.log("createTOC before old end bbb")
-
-                return createTOC(Object.assign({ article, $headings }, option))
-            } else {
-                return null
-            }
-        }
-
-        function handleToc() {
-            var domain2shouldShow = GM_getValue("menu_GAEEScript_auto_open_toc")
-            console.log('[handleToc domain2shouldShow]', domain2shouldShow);
-            console.log('[handleToc window.location.host]', window.location.host);
-            console.log('[domain2shouldShow[window.location.host]]', domain2shouldShow[window.location.host]);
-
-            var timerId = setInterval(() => {
-                // console.log('[handleToc regen toc window.location.host]', window.location.host);
-                // clearInterval(timerId);
-                if (!domain2shouldShow[window.location.host]) {
-                    // 防止正在循环尝试生成 toc 的时候用户关闭了 toc 开关
-                    return;
-                }
-                if (toc && !toc.isValid()) {
-                    let lastState = toc.dispose()
-                    toc = doGenerateToc(lastState)
-                } else if (toc == null) {
-                    toc = doGenerateToc()
-                }
-            }, 1600)
-
-            if (domain2shouldShow[window.location.host]) {
-                toc = doGenerateToc()
-                console.log('[handleToc toc]', toc);
-                // 如果生成的toc有问题或者toc没生成出来, 那就 n 秒之后再生成一次(比如掘金的很多文章得过几秒钟再生成才行)
-                // toast('Will generate TOC in 2.8 seconds ...', 1600);
-                setTimeout(() => {
-                    if ((toc && !toc.isValid()) || toc == null) {
-                        toast('No article/headings are detected.');
-                    }
-                }, 3800)
-            } else {
-                console.log('[handleToc should not show]', toc);
-                if (toc) {
-                    toc.dispose()
-                }
-            }
-        }
 
         function handleMenu() {
             // console.log("")
@@ -3209,49 +3269,6 @@
                 }
                 // menu_ID[menu_ID.length] = GM_registerMenuCommand(`🏁 当前版本 ${version}`);
                 //menu_ID[menu_ID.length] = GM_registerMenuCommand('💬 反馈 & 建议', function () {window.GM_openInTab('', {active: true,insert: true,setParent: true});});
-            }
-
-            //切换选项
-            function menu_switch(localStorageKeyName) {
-                // console.log("debug ssss 33")
-                if (localStorageKeyName == "menu_GAEEScript_auto_open_toc") {
-                    var domain2isShow = GM_getValue(`${localStorageKeyName}`)
-                    var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
-                    console.log('[menu_switch menu_GAEEScript_auto_open_toc]', domain2isShow);
-                    var isCurrShow = domain2isShow[window.location.host]
-                    if (isCurrShow == null || !isCurrShow) {
-                        domain2isShow[window.location.host] = true
-                        toast('Turn On TOC.');
-                    } else {
-                        // domain2isShow[window.location.host] = false
-                        delete domain2isShow[window.location.host]
-                        delete domain2offset[window.location.host]
-                        toast('Turn Off TOC.');
-                    }
-                    GM_setValue(`${localStorageKeyName}`, domain2isShow);
-                    GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", domain2offset);
-                }
-                else if (localStorageKeyName == "menu_GAEEScript_auto_collapse_toc") {
-                    var domain2isCollapse = GM_getValue(`${localStorageKeyName}`)
-                    console.log('[menu_switch menu_GAEEScript_auto_collapse_toc]', domain2isCollapse);
-                    var isCurrCollapse = domain2isCollapse[window.location.host]
-                    if (isCurrCollapse == null || !isCurrCollapse) {
-                        domain2isCollapse[window.location.host] = true
-                    } else {
-                        delete domain2isCollapse[window.location.host]
-                    }
-                    GM_setValue(`${localStorageKeyName}`, domain2isCollapse);
-                }
-                // if((/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
-                //     alert("这是safari")
-                // }
-                // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
-                if (!(/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
-                    // alert("非safari");
-                    registerMenuCommand(); // 重新注册脚本菜单
-                }
-                handleToc();
-                // location.reload(); // 刷新网页
             }
         }
 
