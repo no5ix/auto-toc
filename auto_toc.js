@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name         auto-toc
 // @name:zh-CN   auto-toc
-// @namespace    EX
+// @namespace    AUTO_TOC
 // @version      0.99
 // @license MIT
-// @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time. 
+// @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否.
 // @include      http://*
 // @include      https://*
@@ -57,7 +57,62 @@
         return w === master
     }
 
-    var toastCSS = "#smarttoc-toast {\n  all: initial;\n}\n\n#smarttoc-toast * {\n  all: unset;\n}\n\n#smarttoc-toast {\n  display: none;\n  position: fixed;\n  right: 0;\n  top: 0;\n  margin: 1em 2em;\n  padding: 1em;\n  z-index: 10000;\n  box-sizing: border-box;\n  background-color: #fff;\n  border: 1px solid rgba(158, 158, 158, 0.22);\n  color: gray;\n  font-size: calc(12px + 0.15vw);\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-weight: normal;\n  -webkit-font-smoothing: subpixel-antialiased;\n  font-smoothing: subpixel-antialiased;\n  transition: opacity 200ms ease-out, transform 200ms ease-out;\n}\n\n#smarttoc-toast.enter {\n  display: block;\n  opacity: 0.01;\n  transform: translate3d(0, -2em, 0);\n}\n\n#smarttoc-toast.enter.enter-active {\n  display: block;\n  opacity: 1;\n  transform: translate3d(0, 0, 0);\n}\n\n#smarttoc-toast.leave {\n  display: block;\n  opacity: 1;\n  transform: translate3d(0, 0, 0);\n}\n\n#smarttoc-toast.leave.leave-active {\n  display: block;\n  opacity: 0.01;\n  transform: translate3d(0, -2em, 0);\n}\n";
+    var toastCSS =
+        `
+        #smarttoc-toast {
+            all: initial;
+        }
+        
+        #smarttoc-toast * {
+            all: unset;
+        }
+        
+        #smarttoc-toast {
+            display: none;
+            position: fixed;
+            right: 0;
+            top: 0;
+            margin: 1em 2em;
+            padding: 1em;
+            z-index: 10000;
+            box-sizing: border-box;
+            background-color: rgb(48, 52, 54);
+            border: 1px solid rgba(158, 158, 158, 0.22);
+            color: #fff;
+            font-size: calc(12px + 0.15vw);
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-weight: normal;
+            -webkit-font-smoothing: subpixel-antialiased;
+            font-smoothing: subpixel-antialiased;
+            transition: opacity 200ms ease-out, transform 200ms ease-out;
+            border-radius: 18px;
+            box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 20%), 0px 0px 8px 0 rgb(0 0 0 / 19%);
+        }
+        
+        #smarttoc-toast.enter {
+            display: block;
+            opacity: 0.01;
+            transform: translate3d(0, -2em, 0);
+        }
+        
+        #smarttoc-toast.enter.enter-active {
+            display: block;
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+        
+        #smarttoc-toast.leave {
+            display: block;
+            opacity: 1;
+            transform: translate3d(0, 0, 0);
+        }
+        
+        #smarttoc-toast.leave.leave-active {
+            display: block;
+            opacity: 0.01;
+            transform: translate3d(0, -2em, 0);
+        }
+    `;
 
     function log() {
         if (false) { }
@@ -283,13 +338,14 @@
     }
 
     function shouldCollapseToc() {
-        var domain2isCollapse = GM_getValue("menu_GAEEScript_auto_collapse_toc")
-        var isCurrCollapse = domain2isCollapse[window.location.host]
-        return !(isCurrCollapse == null || !isCurrCollapse)
+        const domain2isCollapse = GM_getValue("menu_GAEEScript_auto_collapse_toc");
+        // console.log('[shouldCollapseToc cccccccccccccccccccccccccccccc]', domain2isCollapse);
+        // alert(domain2isCollapse[window.location.host])
+        return domain2isCollapse[window.location.host]
     }
 
     function getTocCss() {
-        var shouldCollapse = shouldCollapseToc();
+        const shouldCollapse = shouldCollapseToc();
         console.log('[getTocCss]', shouldCollapse)
         return `
             @media (prefers-color-scheme: dark) {
@@ -1961,6 +2017,8 @@
         e.preventDefault()
     }
 
+    let multi_click_cnt = 0
+
     const Handle = function ({ $userOffset }) {
         let [sClientX, sClientY] = [0, 0]
         let [sOffsetX, sOffsetY] = [0, 0]
@@ -1978,11 +2036,26 @@
             e.redraw = false
 
             var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
-            if (domain2offset[window.location.host].toString() === $userOffset().toString()) {
-                // 判断之前toc 的位置和现在的, 如果相等的话, 说明只是点击了一下, 那就直接切换"折叠开关"
-                console.log('[auto-toc, click handle section]')
-                menu_switch("menu_GAEEScript_auto_collapse_toc")
-                handleToc()
+            // 判断之前toc 的位置和现在的, 如果相等的话, 说明只是原地点击
+            if (sOffsetX === $userOffset()[0] && sOffsetY === $userOffset()[1]) {
+                if (multi_click_cnt > 0) { // setInterval 已经启动, 所以我们记录单击次数
+                    multi_click_cnt += 1
+                    return
+                }
+                multi_click_cnt = 1
+                setTimeout(() => {
+                    if (multi_click_cnt === 1 ) {
+                        // 单击逻辑, 走折叠 toc 逻辑
+                        console.log('[auto-toc, click handle section]')
+                        menu_switch("menu_GAEEScript_auto_collapse_toc")
+                    } else if (multi_click_cnt === 2) {
+                        // 说明是双击, 走关闭 toc 逻辑
+                        console.log('[auto-toc, double click handle section]')
+                        menu_switch("menu_GAEEScript_auto_open_toc")
+                    }
+                    handleToc()
+                    multi_click_cnt = 0
+                }, 222)
                 return
             }
             domain2offset[window.location.host] = $userOffset()
@@ -2005,10 +2078,11 @@
             e.redraw = false
         }
 
-        // const onDoubleClick = e => {
-        //     menu_switch("menu_GAEEScript_auto_collapse_toc")
-        //     handleToc()
-        // }
+        const onDoubleClick = e => {
+            console.log('[auto-toc, onDoubleClick]')
+            menu_switch("menu_GAEEScript_auto_open_toc")
+            handleToc()
+        }
 
         return {
             view() {
@@ -3141,7 +3215,8 @@
     //切换选项
     function menu_switch(localStorageKeyName) {
         // console.log("debug ssss 33")
-        if (localStorageKeyName == "menu_GAEEScript_auto_open_toc") {
+        var domain2isCollapse = GM_getValue("menu_GAEEScript_auto_collapse_toc")
+        if (localStorageKeyName === "menu_GAEEScript_auto_open_toc") {
             var domain2isShow = GM_getValue(`${localStorageKeyName}`)
             var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
             console.log('[menu_switch menu_GAEEScript_auto_open_toc]', domain2isShow);
@@ -3150,22 +3225,25 @@
                 domain2isShow[window.location.host] = true
                 toast('Turn On TOC.');
             } else {
-                // domain2isShow[window.location.host] = false
                 delete domain2isShow[window.location.host]
                 delete domain2offset[window.location.host]
+                delete domain2isCollapse[window.location.host]
+
                 toast('Turn Off TOC.');
             }
             GM_setValue(`${localStorageKeyName}`, domain2isShow);
             GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", domain2offset);
+            GM_setValue("menu_GAEEScript_auto_collapse_toc", domain2isCollapse);
         }
-        else if (localStorageKeyName == "menu_GAEEScript_auto_collapse_toc") {
-            var domain2isCollapse = GM_getValue(`${localStorageKeyName}`)
+        else if (localStorageKeyName === "menu_GAEEScript_auto_collapse_toc") {
             console.log('[menu_switch menu_GAEEScript_auto_collapse_toc]', domain2isCollapse);
             var isCurrCollapse = domain2isCollapse[window.location.host]
             if (isCurrCollapse == null || !isCurrCollapse) {
                 domain2isCollapse[window.location.host] = true
+                toast('Turn On TOC Auto Collapse.');
             } else {
                 delete domain2isCollapse[window.location.host]
+                toast('Turn Off TOC Auto Collapse.');
             }
             GM_setValue(`${localStorageKeyName}`, domain2isCollapse);
         }
@@ -3276,6 +3354,9 @@
 
         if (GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset") == null) {
             GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", {})
+        }
+        if (GM_getValue("menu_GAEEScript_auto_collapse_toc") == null) {
+            GM_setValue("menu_GAEEScript_auto_collapse_toc", {})
         }
         handleToc();
 
