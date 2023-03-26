@@ -407,6 +407,7 @@
                 contain: content;
                 box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 20%), 0px 0px 8px 0 rgb(0 0 0 / 19%);
                 border-radius: 6px;
+                transition: max-height 0.3s ease-in-out;
             }
             
             #smarttoc:hover {
