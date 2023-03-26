@@ -407,12 +407,15 @@
                 contain: content;
                 box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 20%), 0px 0px 8px 0 rgb(0 0 0 / 19%);
                 border-radius: 6px;
-                transition: max-height 0.3s ease-in-out;
+                transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            `
+            + (shouldCollapse ? "opacity: 0.6;" : "opacity: 1;")
+            + `
             }
             
             #smarttoc:hover {
             `
-            + (shouldCollapse ? "max-height: calc(100vh - 100px);" : "")
+            + (shouldCollapse ? "max-height: calc(100vh - 100px); opacity: 1" : "")
             + `
             }
             
@@ -437,10 +440,6 @@
             #smarttoc .handle:hover,
             #smarttoc .handle:active {
                 cursor: move;
-            }
-            
-            #smarttoc .handle:active {
-            
             }
             
             #smarttoc>ul {
