@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.02
+// @version      1.03
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -2038,6 +2038,7 @@
             var domain2offset = GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset")
             // 判断之前toc 的位置和现在的, 如果相等的话, 说明只是原地点击
             if (sOffsetX === $userOffset()[0] && sOffsetY === $userOffset()[1]) {
+                console.log('[auto-toc, 原地点击, multi_click_cnt:]', multi_click_cnt)
                 if (multi_click_cnt > 0) { // setInterval 已经启动, 所以我们记录单击次数
                     multi_click_cnt += 1
                     return
@@ -3212,6 +3213,61 @@
         }
     }
 
+
+    var menu_ALL = [
+        ['menu_GAEEScript_auto_open_toc', 'Enable TOC on current site(当前网站TOC开关)', {}],
+        ['menu_GAEEScript_auto_collapse_toc', 'Collapse TOC on current site(当前网站TOC自动折叠开关)', {}],
+    ], menu_ID = [];
+    
+    function handleMenu() {
+        // console.log("")
+        for (let i = 0; i < menu_ALL.length; i++) { // 如果读取到的值为 null 就写入默认值
+            // console.log("debug ssss")
+            if (GM_getValue(menu_ALL[i][0]) == null) {
+                // console.log("debug ssss 11")
+                GM_setValue(menu_ALL[i][0], menu_ALL[i][2])
+            };
+        }
+        registerMenuCommand();
+    }
+
+    // 注册脚本菜单
+    function registerMenuCommand() {
+        for (let i = 0; i < menu_ID.length; i++) {
+            // console.log("debug ssss 22, aa")
+            // console.log(menu_ID)
+
+            // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
+            if (!(/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
+                // alert("非safari");
+                GM_unregisterMenuCommand(menu_ID[i]);
+            }
+            // console.log("debug ssss 22, bb")
+        }
+        for (let i = 0; i < menu_ALL.length; i++) { // 循环注册脚本菜单
+            var currLocalStorage = GM_getValue(menu_ALL[i][0]);
+            menu_ID[menu_ID.length + 1] = GM_registerMenuCommand(
+                `${currLocalStorage[window.location.host] ? '✅' : '❎'} ${menu_ALL[i][1]}`,
+                // `${menu_ALL[i][1]}`,
+                function () {
+                    menu_switch(`${menu_ALL[i][0]}`)
+                }
+            );
+            // menu_ID[menu_ID.length + 1] = GM_registerMenuCommand(
+            //     `${currLocalStorage[window.location.host] ? '✅' : '❎'} ${window.location.host}`,
+            //     function () {
+            //         menu_switch(`${menu_ALL[i][0]}`)
+            //     }
+            // );
+
+            // console.log("debug ssss , aa")
+            // console.log(menu_ID)
+            // console.log("debug ssss , bb")
+        }
+        // menu_ID[menu_ID.length] = GM_registerMenuCommand(`🏁 当前版本 ${version}`);
+        //menu_ID[menu_ID.length] = GM_registerMenuCommand('💬 反馈 & 建议', function () {window.GM_openInTab('', {active: true,insert: true,setParent: true});});
+    }
+
     //切换选项
     function menu_switch(localStorageKeyName) {
         // console.log("debug ssss 33")
@@ -3295,60 +3351,6 @@
 
         // console.log("ex-smart-toc innerWidth", window.innerWidth)
         // console.log("ex-smart-toc outerWidth", window.outerWidth)
-
-
-        function handleMenu() {
-            // console.log("")
-            var menu_ALL = [
-                ['menu_GAEEScript_auto_open_toc', 'Enable TOC on current site(当前网站TOC开关)', {}],
-                ['menu_GAEEScript_auto_collapse_toc', 'Collapse TOC on current site(当前网站TOC自动折叠开关)', {}],
-            ], menu_ID = [];
-            for (let i = 0; i < menu_ALL.length; i++) { // 如果读取到的值为 null 就写入默认值
-                // console.log("debug ssss")
-                if (GM_getValue(menu_ALL[i][0]) == null) {
-                    // console.log("debug ssss 11")
-                    GM_setValue(menu_ALL[i][0], menu_ALL[i][2])
-                };
-            }
-            registerMenuCommand();
-
-            // 注册脚本菜单
-            function registerMenuCommand() {
-                for (let i = 0; i < menu_ID.length; i++) {
-                    // console.log("debug ssss 22, aa")
-                    // console.log(menu_ID)
-
-                    // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
-                    if (!(/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
-                        // alert("非safari");
-                        GM_unregisterMenuCommand(menu_ID[i]);
-                    }
-                    // console.log("debug ssss 22, bb")
-                }
-                for (let i = 0; i < menu_ALL.length; i++) { // 循环注册脚本菜单
-                    var currLocalStorage = GM_getValue(menu_ALL[i][0]);
-                    menu_ID[menu_ID.length + 1] = GM_registerMenuCommand(
-                        `${currLocalStorage[window.location.host] ? '✅' : '❎'} ${menu_ALL[i][1]}`,
-                        // `${menu_ALL[i][1]}`,
-                        function () {
-                            menu_switch(`${menu_ALL[i][0]}`)
-                        }
-                    );
-                    // menu_ID[menu_ID.length + 1] = GM_registerMenuCommand(
-                    //     `${currLocalStorage[window.location.host] ? '✅' : '❎'} ${window.location.host}`,
-                    //     function () {
-                    //         menu_switch(`${menu_ALL[i][0]}`)
-                    //     }
-                    // );
-
-                    // console.log("debug ssss , aa")
-                    // console.log(menu_ID)
-                    // console.log("debug ssss , bb")
-                }
-                // menu_ID[menu_ID.length] = GM_registerMenuCommand(`🏁 当前版本 ${version}`);
-                //menu_ID[menu_ID.length] = GM_registerMenuCommand('💬 反馈 & 建议', function () {window.GM_openInTab('', {active: true,insert: true,setParent: true});});
-            }
-        }
 
         handleMenu();
 
