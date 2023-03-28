@@ -445,7 +445,7 @@
             #smarttoc>ul {
                 flex-grow: 1;
                 padding: 0 1.3em 1.3em 1em;
-                overflow-y: auto;
+                overflow-y: hidden;
             }
             
             /* all headings  */
