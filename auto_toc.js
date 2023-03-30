@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.06
+// @version      1.07
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -74,6 +74,8 @@
             right: 0;
             top: 0;
             margin: 1em 2em;
+            min-width: 16em;
+            text-align: center;
             padding: 1em;
             z-index: 10000;
             box-sizing: border-box;
@@ -3026,6 +3028,7 @@
     };
 
     let multi_click_cnt = 0;
+    let last_click_ts = 0;
 
     const Handle = function ({ $userOffset }) {
         let [sClientX, sClientY] = [0, 0];
@@ -3055,25 +3058,39 @@
                     "[auto-toc, 原地点击, multi_click_cnt:]",
                     multi_click_cnt
                 );
-                if (multi_click_cnt > 0) {
-                    // setInterval 已经启动, 所以我们记录单击次数
-                    multi_click_cnt += 1;
-                    return;
-                }
-                multi_click_cnt = 1;
-                setTimeout(() => {
-                    if (multi_click_cnt === 1) {
-                        // 单击逻辑, 走折叠 toc 逻辑
-                        console.log("[auto-toc, click handle section]");
-                        menuSwitch("menu_GAEEScript_auto_collapse_toc");
-                    } else if (multi_click_cnt === 2) {
-                        // 说明是双击, 走关闭 toc 逻辑
-                        console.log("[auto-toc, double click handle section]");
-                        menuSwitch("menu_GAEEScript_auto_open_toc");
-                    }
+                if (Date.now() - last_click_ts < 233) {
+                    // 说明是双击, 走关闭 toc 逻辑
+                    console.log("[auto-toc, double click handle section]");
+                    menuSwitch("menu_GAEEScript_auto_open_toc");
                     handleToc();
-                    multi_click_cnt = 0;
-                }, 222);
+                    return
+                }
+                // 单击逻辑, 走折叠 toc 逻辑
+                console.log("[auto-toc, click handle section]");
+                menuSwitch("menu_GAEEScript_auto_collapse_toc");
+                handleToc();
+                last_click_ts = Date.now();
+
+                ////////////////////////////////////////// 以下这种实现方案导致单击有延迟, 故不采用
+                // if (multi_click_cnt > 0) {
+                //     // setInterval 已经启动, 所以我们记录单击次数
+                //     multi_click_cnt += 1;
+                //     return;
+                // }
+                // multi_click_cnt = 1;
+                // setTimeout(() => {
+                //     if (multi_click_cnt === 1) {
+                //         // 单击逻辑, 走折叠 toc 逻辑
+                //         console.log("[auto-toc, click handle section]");
+                //         menuSwitch("menu_GAEEScript_auto_collapse_toc");
+                //     } else if (multi_click_cnt === 2) {
+                //         // 说明是双击, 走关闭 toc 逻辑
+                //         console.log("[auto-toc, double click handle section]");
+                //         menuSwitch("menu_GAEEScript_auto_open_toc");
+                //     }
+                //     handleToc();
+                //     multi_click_cnt = 0;
+                // }, 222);
                 return;
             }
             domain2offset[window.location.host] = $userOffset();
