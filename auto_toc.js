@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.07
+// @version      1.08
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -71,7 +71,8 @@
         #smarttoc-toast {
             display: none;
             position: fixed;
-            right: 0;
+            left: 50%;
+            transform: translateX(-50%);
             top: 0;
             margin: 1em 2em;
             min-width: 16em;
@@ -95,25 +96,25 @@
         #smarttoc-toast.enter {
             display: block;
             opacity: 0.01;
-            transform: translate3d(0, -2em, 0);
+            transform: translate3d(-50%, -2em, 0);
         }
         
         #smarttoc-toast.enter.enter-active {
             display: block;
             opacity: 1;
-            transform: translate3d(0, 0, 0);
+            transform: translate3d(-50%, 0, 0);
         }
         
         #smarttoc-toast.leave {
             display: block;
             opacity: 1;
-            transform: translate3d(0, 0, 0);
+            transform: translate3d(-50%, 0, 0);
         }
         
         #smarttoc-toast.leave.leave-active {
             display: block;
             opacity: 0.01;
-            transform: translate3d(0, -2em, 0);
+            transform: translate3d(-50%, -2em, 0);
         }
     `;
 
