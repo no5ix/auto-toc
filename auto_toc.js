@@ -3717,15 +3717,15 @@
             })
         );
 
-        // now show what we've found
-        if (article.getBoundingClientRect().top > window.innerHeight - 50) {
-            scrollToHeading(
-                $headings()[0],
-                scrollable,
-                onScrollEnd,
-                ($topbarHeight() || 0) + 10
-            );
-        }
+        // // now show what we've found
+        // if (article.getBoundingClientRect().top > window.innerHeight - 50) {
+        //     scrollToHeading(
+        //         $headings()[0],
+        //         scrollable,
+        //         onScrollEnd,
+        //         ($topbarHeight() || 0) + 10
+        //     );
+        // }
 
         return {
             isValid: () =>
