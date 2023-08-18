@@ -470,9 +470,8 @@
             }
             
             #smarttoc>ul {
-                width: 15em;
                 flex-grow: 1;
-                padding: 0 1.3em 1.3em 1em;
+                padding: 1em 1.3em 1.3em 1em;
                 overflow-y: auto;
                 overflow-x: hidden;
             }
