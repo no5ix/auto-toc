@@ -558,10 +558,10 @@
                 font-weight: normal;
             }
             
-            /* heading level: 3 (hidden unless parent is active) */
+            /* heading level: 3 */
             #smarttoc ul ul ul {
                 line-height: 1.7;
-                display: none;
+                /* display: none; */  /* (hidden unless parent is active) */
             }
             
             #smarttoc ul ul li.active>ul {
@@ -4169,9 +4169,10 @@
             };
         });
         var mm1 = headingGroup
-            .filter(function (group) {
-                return group.score >= 10 && group.elems.length > 0;
-            })
+            // 注释下面这三行代码(用于筛选score小于10的标题), 免得被认为是不显示某些标题的bug(比如这种情况: https://github.com/no5ix/auto-toc/issues/5)
+            // .filter(function (group) {
+            //     return group.score >= 10 && group.elems.length > 0;
+            // })
             .filter(function (group) {
                 return isVisible(group);
             })
