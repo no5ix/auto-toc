@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.09
+// @version      1.10
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -522,7 +522,7 @@
             #smarttoc ul a:hover,
             #smarttoc ul a:active,
             #smarttoc ul li.active>a {
-                border-left-width: 3px;
+                border-left-width: 6px;
                 border-left-style: solid;
                 padding-left: calc(1.3em - 3px);
             }
@@ -552,7 +552,7 @@
             #smarttoc ul ul a:hover,
             #smarttoc ul ul a:active,
             #smarttoc ul ul li.active>a {
-                border-left-width: 1.6px;
+                border-left-width: 4.6px;
                 border-left-style: solid;
                 padding-left: calc(2.7em - 2px);
                 font-weight: normal;
@@ -576,9 +576,81 @@
             #smarttoc ul ul ul a:hover,
             #smarttoc ul ul ul a:active,
             #smarttoc ul ul ul li.active>a {
-                border-left-width: 0.8px;
+                border-left-width: 3px;
                 border-left-style: solid;
                 padding-left: calc(4em - 1px);
+                font-weight: normal;
+            }
+            
+            /* heading level: 4 */
+            #smarttoc ul ul ul ul {
+                line-height: 1.7;
+                /* display: none; */  /* (hidden unless parent is active) */
+            }
+            
+            #smarttoc ul ul ul li.active>ul {
+                display: block;
+            }
+            
+            #smarttoc ul ul ul ul a {
+                font-size: 1em;
+                padding-left: 5em;
+            }
+            
+            #smarttoc ul ul ul ul a:hover,
+            #smarttoc ul ul ul ul a:active,
+            #smarttoc ul ul ul ul li.active>a {
+                border-left-width: 2.2px;
+                border-left-style: solid;
+                padding-left: calc(5em - 0.5px);
+                font-weight: normal;
+            }
+            
+            /* heading level: 5 */
+            #smarttoc ul ul ul ul ul {
+                line-height: 1.7;
+                /* display: none; */  /* (hidden unless parent is active) */
+            }
+            
+            #smarttoc ul ul ul ul li.active>ul {
+                display: block;
+            }
+            
+            #smarttoc ul ul ul ul ul a {
+                font-size: 1em;
+                padding-left: 6em;
+            }
+            
+            #smarttoc ul ul ul ul ul a:hover,
+            #smarttoc ul ul ul ul ul a:active,
+            #smarttoc ul ul ul ul ul li.active>a {
+                border-left-width: 1.6px;
+                border-left-style: solid;
+                padding-left: calc(6em - 0.25px);
+                font-weight: normal;
+            }
+            
+            /* heading level: 6 */
+            #smarttoc ul ul ul ul ul ul {
+                line-height: 1.7;
+                /* display: none; */  /* (hidden unless parent is active) */
+            }
+            
+            #smarttoc ul ul ul ul ul li.active>ul {
+                display: block;
+            }
+            
+            #smarttoc ul ul ul ul ul ul a {
+                font-size: 1em;
+                padding-left: 7em;
+            }
+            
+            #smarttoc ul ul ul ul ul ul a:hover,
+            #smarttoc ul ul ul ul ul ul a:active,
+            #smarttoc ul ul ul ul ul ul li.active>a {
+                border-left-width: 0.8px;
+                border-left-style: solid;
+                padding-left: calc(7em - 0.1px);
                 font-weight: normal;
             }
         `
@@ -4176,7 +4248,7 @@
             .filter(function (group) {
                 return isVisible(group);
             })
-            .slice(0, 3);
+            .slice(0, 8);
         headingGroup = mm1;
 
         // use document sequence
