@@ -6,9 +6,14 @@ Generate TOC(table of contents) for any website. 可以为任何网站生成TOC�
 
 Switch black/white themes automatically according to your computer's light/dark mode. 会根据你的电脑的黑夜白天模式自动切换黑白主题.
 
-**高级技巧**: 
+**高级技巧 Advanced Skills**: 
+
+- Clicking on the TOC drag bar can automatically collapse the TOC.
 - 单击 TOC拖动栏 可以自动折叠 TOC
+- Double-clicking on the TOC drag bar can close the TOC.
 - 双击 TOC拖动栏 可以关闭 TOC
+- now you can resize auto-toc by puting the pointer on the bottom right corner of auto-toc and draging it.
+- 现在你可以设置auto-toc的宽度了, 把你鼠标放到auto-toc的右下角然后拖动即可
 
 ![light](auto_toc_demo_light.png)
 
