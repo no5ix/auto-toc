@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.10
+// @version      1.11
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -366,6 +366,8 @@
         return domain2isCollapse[window.location.host];
     }
 
+    let toc_dom = null;
+    
     function getTocCss() {
         const shouldCollapse = shouldCollapseToc();
         console.log("[getTocCss]", shouldCollapse);
@@ -410,8 +412,9 @@
                 flex-direction: column;
                 align-items: stretch;
                 position: fixed;
-                max-width: 16em;
                 min-width: 12em;
+                resize: horizontal;
+                width: 18em;
             ` +
             (shouldCollapse
                 ? "max-height: 22px;"
@@ -2527,6 +2530,10 @@
                     return false;
                 }
                 function render(dom, vnodes) {
+                    let lastWidth = "";
+                    if (toc_dom) {
+                        lastWidth = toc_dom.getBoundingClientRect().width;
+                    }
                     if (!dom)
                         throw new Error(
                             "Ensure the DOM element being passed to m.route/m.mount/m.render is not undefined."
@@ -2551,6 +2558,11 @@
                     dom.vnodes = vnodes;
                     for (var i = 0; i < hooks.length; i++) hooks[i]();
                     if ($doc.activeElement !== active) active.focus();
+
+                    // 保证toc拉宽了之后, 当点击标题或滚动页面的时候不会恢复原来的宽度
+                    if (toc_dom) {
+                        toc_dom.style.width = lastWidth + "px";
+                    }
                 }
                 return { render: render, setEventCallback: setEventCallback };
             };
@@ -3380,6 +3392,7 @@
         const toc = TOC({ $headings, $activeHeading, onClickHeading });
         return {
             oncreate({ dom }) {
+                toc_dom = dom;
                 const { direction } = getOptimalContainerPos(article);
                 this.$style = makeSticky({
                     ref: article,
@@ -3757,9 +3770,13 @@
         };
 
         const onClickHeading = function (e) {
+            e.redraw = false;
             e.preventDefault();
             e.stopPropagation();
-            const anchor = e.target.getAttribute("href").substr(1);
+            const temp = e.target.getAttribute("href")
+            if (!temp)
+                return;
+            const anchor = temp.substr(1);
             const heading = $headings().find(
                 (heading) => heading.anchor === anchor
             );
