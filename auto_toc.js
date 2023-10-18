@@ -367,7 +367,7 @@
     }
 
     let toc_dom = null;
-    
+
     function getTocCss() {
         const shouldCollapse = shouldCollapseToc();
         console.log("[getTocCss]", shouldCollapse);
@@ -3147,7 +3147,7 @@
                     console.log("[auto-toc, double click handle section]");
                     menuSwitch("menu_GAEEScript_auto_open_toc");
                     handleToc();
-                    return
+                    return;
                 }
                 // 单击逻辑, 走折叠 toc 逻辑
                 console.log("[auto-toc, click handle section]");
@@ -3297,7 +3297,8 @@
                 // 放在右侧
                 // 我们假定 popperMetric.width 为 288, 方便固定 toc 在网页的位置
                 // 我们假定用户都开启了Edge浏览器侧边栏, 所以往左多移 36
-                let final_x = offsetX + Math.max(0, window.outerWidth - (288 + 36)); // restrict to visible area
+                let final_x =
+                    offsetX + Math.max(0, window.outerWidth - (288 + 36)); // restrict to visible area
 
                 // // 放在左侧, 多加 36, 免得靠浏览器左侧太近
                 // let final_x = offsetX + 36; // restrict to visible area
@@ -3778,9 +3779,8 @@
             e.redraw = false;
             e.preventDefault();
             e.stopPropagation();
-            const temp = e.target.getAttribute("href")
-            if (!temp)
-                return;
+            const temp = e.target.getAttribute("href");
+            if (!temp) return;
             const anchor = temp.substr(1);
             const heading = $headings().find(
                 (heading) => heading.anchor === anchor
@@ -4585,6 +4585,28 @@
         }
         handleToc();
 
+        if (window.location.host == "www.zhihu.com") {
+            let style = "";
+            let style_3 = `/* 向下翻时自动隐藏顶栏*/
+                header.is-hidden {display: none;}
+            `
+            style += style_3;
+            let style_Add = document.createElement('style');
+
+            if (document.lastChild) {
+                document.lastChild.appendChild(style_Add).textContent = style;
+            } else {
+                // 避免网站加载速度太慢的备用措施
+                let timer1 = setInterval(function () {
+                    // 每 10 毫秒检查一下 html 是否已存在
+                    if (document.lastChild) {
+                        clearInterval(timer1); // 取消定时器
+                        document.lastChild.appendChild(style_Add).textContent =
+                            style;
+                    }
+                });
+            }
+        }
         // setTimeout(function() {
         //     handleToc();
         // }, 2800);
