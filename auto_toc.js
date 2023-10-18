@@ -357,6 +357,13 @@
         // }
     };
 
+    const removeCSS = function (id) {
+        let styleElement = document.querySelector(`#${id}`);
+        if (styleElement) {
+            styleElement.parentNode.removeChild(styleElement);
+        }
+    };
+
     function shouldCollapseToc() {
         const domain2isCollapse = GM_getValue(
             "menu_GAEEScript_auto_collapse_toc"
@@ -4415,53 +4422,34 @@
         let cssTxt = '';
         Array.from(document.getElementsByTagName('*')).forEach(ele=>{
             if (ele.tagName === 'IMG') {
-                // if (['.png', '.jpg', '.gif'].some(i=>location.href.includes(i)))
-                //     return;
-                // //忽略图片预览类网址
-                // const imgWidthStr = getComputedStyle(ele).width;
-                // const imgWidthRes = imgWidthStr.match(/^([+-]?(?:\d*\.\d+|\d+\.?)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$/);
-                // if (imgWidthRes) {
-                //     const num = imgWidthRes.at(1);
-                //     const unit = imgWidthRes.at(2);
-                //     const isTooBig = unit === 'rem' ? Number(num) > 10 : Number(num) > 500
-                //     if (isTooBig) {
-                        //hover时恢复图片尺寸
-                        // const noAnimation = ['all 0s ease 0s', "none 0s ease 0s"].includes(getComputedStyle(ele).transition);
-
-                        // if (noAnimation) {
-                            const genCSSSelector = (ele)=>{
-                                if (ele.id)
-                                    return `img[id="${ele.id}"]:hover`
-                                else {
-                                    if(ele.src.startsWith('data:')) return `img[src="${ele.src}"]`;//base64的src
-                                    else{
-                                        const the_src = ele.src || ele.getAttribute('_src')
+                const genCSSSelector = (ele)=>{
+                    if (ele.id)
+                        return `img[id="${ele.id}"]:hover`
+                    else {
+                        if(ele.src.startsWith('data:')) return `img[src="${ele.src}"]`;//base64的src
+                        else{
+                            const the_src = ele.src || ele.getAttribute('_src')
 || '找不到可用选择器';
-                                        //http的src
-                                        const url = new URL(the_src)//_src是一些网站懒加载的
-                                        return `img[src="${url.pathname + url.search}"]:hover,img[src="${the_src}"]:hover`;
-                                    }
-                                }
-                            }
-                            cssTxt += `${genCSSSelector(ele)}{` +
-                                (shouldNotShrink ? "" : `width:${ele.width}px !important;height:${ele.height}px !important;`) +
-                             `}`;
-                        // }
-
-                        //变小
-                        ele.style.width = shouldNotShrink ? 'auto' : "150px";
-                        ele.style.height = 'auto';
-                    // }
-
-                    //使用
-
-                // }
+                            //http的src
+                            const url = new URL(the_src)//_src是一些网站懒加载的
+                            return `img[src="${url.pathname + url.search}"]:hover,img[src="${the_src}"]:hover`;
+                        }
+                    }
+                }
+                cssTxt += `${genCSSSelector(ele)}{` +
+                    // (shouldNotShrink ? "" : `width:${ele.width}px !important;height:${ele.height}px !important;`) +
+                    `width:${ele.width}px !important;height:${ele.height}px !important;` +
+                 `}`;
+                ele.style.width = shouldNotShrink ? 'auto' : "150px";
+                ele.style.height = 'auto';
             }
-
         }
         )
-
-        insertCSS(cssTxt, "shrinkimg__css");
+        if (shouldNotShrink) {
+            removeCSS("shrinkimg__css");
+        } else {
+            insertCSS(cssTxt, "shrinkimg__css");
+        }
         console.log('缩小图片完成');
     }
 
