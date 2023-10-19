@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.14
+// @version      1.15
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4420,14 +4420,19 @@
             return;
         }
         let cssTxt = '';
-        const shrinkWidth = "88px";
+        const shrinkWidth = "88";
+        const shrinkWidthStr = shrinkWidth + "px";
         Array.from(document.getElementsByTagName('*')).forEach(ele=>{
             if (ele.tagName === 'IMG') {
                 if (shouldNotShrink) {
-                    ele.style.width = '';
-                    ele.style.height = '';
+                    ele.style.width = ele.style.originalWidth;
+                    ele.style.height = ele.style.originalHeight;
+                    ele.style.maxHeight = ele.style.originalMaxHeight;
+                    ele.style.minHeight = ele.style.originalMinHeight;
+                    ele.style.maxWidth = ele.style.originalMaxWidth;
+                    ele.style.minWidth = ele.style.originalMinWidth;
                 } else {
-                    // if (ele.style.width != shrinkWidth) {  // 防止多次缩小同一个图片
+                    if (ele.width > shrinkWidth) {  // 防止多次缩小同一个图片, 也防止放大本身就很小的图片
                         const genCSSSelector = (ele)=>{
                             if (ele.id)
                                 return `img[id="${ele.id}"]:hover`
@@ -4442,15 +4447,23 @@
                             }
                         }
                         if (!ele.style.originalWidth) {
-                            ele.style.originalWidth = ele.width;
-                            ele.style.originalHeight = ele.height;
+                            ele.style.originalWidth = ele.width + "px";
+                            ele.style.originalHeight = ele.height + "px";
+                            ele.style.originalMaxHeight = ele.style.maxHeight;
+                            ele.style.originalMinHeight = ele.style.minHeight;
+                            ele.style.originalMaxWidth = ele.style.maxWidth;
+                            ele.style.originalMinWidth = ele.style.minWidth;
                         }
                         cssTxt += `${genCSSSelector(ele)}{` +
-                            `width:${ele.style.originalWidth}px !important;height:${ele.style.originalHeight}px !important;` +
+                            `width:${ele.width}px !important;height:${ele.height}px !important;` +
                         `}`;
-                        ele.style.width = shrinkWidth;
+                        ele.style.width = shrinkWidthStr;
                         ele.style.height = 'auto';
-                    // }
+                        ele.style.maxHeight = "";
+                        ele.style.minHeight = "";
+                        ele.style.maxWidth = "";
+                        ele.style.minWidth = "";
+                    }
                 }
             }
         }
