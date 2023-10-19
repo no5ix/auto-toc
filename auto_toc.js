@@ -4441,8 +4441,14 @@
                                 else{
                                     const the_src = ele.src || ele.getAttribute('_src') || '找不到可用选择器';
                                     //http的src
-                                    const url = new URL(the_src)//_src是一些网站懒加载的
-                                    return `img[src="${url.pathname + url.search}"]:hover,img[src="${the_src}"]:hover`;
+                                    // try {
+                                        const url = new URL(the_src)//_src是一些网站懒加载的
+                                        return `img[src="${url.pathname + url.search}"]:hover,img[src="${the_src}"]:hover`;
+                                    // } catch(e) {
+                                    //     console.log(
+                                    //         "[shrink_img] ERROR: " + e.message
+                                    //     );
+                                    // }
                                 }
                             }
                         }
@@ -4455,7 +4461,8 @@
                             ele.style.originalMinWidth = ele.style.minWidth;
                         }
                         cssTxt += `${genCSSSelector(ele)}{` +
-                            `width:${ele.width}px !important;height:${ele.height}px !important;` +
+                            // `width:${ele.width}px !important;height:${ele.height}px !important;` +
+                            `width:${ele.width}px !important;height:auto !important;` +
                         `}`;
                         ele.style.width = shrinkWidthStr;
                         ele.style.height = 'auto';
