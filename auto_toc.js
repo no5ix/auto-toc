@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.15
+// @version      1.16
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4426,7 +4426,7 @@
             if (ele.tagName === 'IMG') {
                 if (shouldNotShrink) {
                     ele.style.width = ele.style.originalWidth;
-                    ele.style.height = ele.style.originalHeight;
+                    // ele.style.height = ele.style.originalHeight;
                     ele.style.maxHeight = ele.style.originalMaxHeight;
                     ele.style.minHeight = ele.style.originalMinHeight;
                     ele.style.maxWidth = ele.style.originalMaxWidth;
@@ -4437,39 +4437,48 @@
                             if (ele.id)
                                 return `img[id="${ele.id}"]:hover`
                             else {
-                                if(ele.src.startsWith('data:')) return `img[src="${ele.src}"]`;//base64的src
+                                // if(ele.src.startsWith('data:')) return `img[src="${ele.src}"]:hover`;//base64的src
+                                if(ele.src.startsWith('data:')) return "";//base64的src
                                 else{
                                     const the_src = ele.src || ele.getAttribute('_src') || '找不到可用选择器';
                                     //http的src
-                                    // try {
+                                    try {
                                         const url = new URL(the_src)//_src是一些网站懒加载的
                                         return `img[src="${url.pathname + url.search}"]:hover,img[src="${the_src}"]:hover`;
-                                    // } catch(e) {
-                                    //     console.log(
-                                    //         "[shrink_img] ERROR: " + e.message
-                                    //     );
-                                    // }
+                                    } catch(e) {
+                                        console.log(
+                                            "[shrink_img] ERROR: " + e.message
+                                        );
+                                        return ""
+                                    }
                                 }
                             }
                         }
-                        if (!ele.style.originalWidth) {
-                            ele.style.originalWidth = ele.width + "px";
-                            ele.style.originalHeight = ele.height + "px";
-                            ele.style.originalMaxHeight = ele.style.maxHeight;
-                            ele.style.originalMinHeight = ele.style.minHeight;
-                            ele.style.originalMaxWidth = ele.style.maxWidth;
-                            ele.style.originalMinWidth = ele.style.minWidth;
+                        let cssSelectorStr = genCSSSelector(ele)
+                        if (cssSelectorStr != "" ) {
+                            if (!ele.style.originalWidth || from_menu_switch) {  // 防止不是打开开关导致的多次缩小同一个图片
+                                ele.style.originalWidth = ele.width + "px";
+                                // ele.style.originalHeight = ele.height + "px";  // 不记录这个了, 时不时拿到的是0
+                                ele.style.originalMaxHeight = ele.style.maxHeight;
+                                ele.style.originalMinHeight = ele.style.minHeight;
+                                ele.style.originalMaxWidth = ele.style.maxWidth;
+                                ele.style.originalMinWidth = ele.style.minWidth;
+                                ele.style.cssSelectorStr = cssSelectorStr;
+                             
+                                cssTxt += cssSelectorStr + 
+                                `{` +
+                                    // `width:${ele.width}px !important;height:${ele.height}px !important;` +
+                                    // `width:${ele.width}px !important;height:auto !important;` +
+                                    `width:${ele.width}px !important;` +
+                                `}`;
+                                ele.style.width = shrinkWidthStr;
+                                ele.style.height = "";
+                                ele.style.maxHeight = "";
+                                ele.style.minHeight = "";
+                                ele.style.maxWidth = "";
+                                ele.style.minWidth = "";
+                            }
                         }
-                        cssTxt += `${genCSSSelector(ele)}{` +
-                            // `width:${ele.width}px !important;height:${ele.height}px !important;` +
-                            `width:${ele.width}px !important;height:auto !important;` +
-                        `}`;
-                        ele.style.width = shrinkWidthStr;
-                        ele.style.height = 'auto';
-                        ele.style.maxHeight = "";
-                        ele.style.minHeight = "";
-                        ele.style.maxWidth = "";
-                        ele.style.minWidth = "";
                     }
                 }
             }
@@ -4763,7 +4772,7 @@
         );
         setTimeout(shrink_img, 10);
         setTimeout(shrink_img, 500);
-        for (let i = 1; i <= 66; i++) {
+        for (let i = 1; i <= 6666; i++) {
             setTimeout(shrink_img, 1000 * i);
         }
 
