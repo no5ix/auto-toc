@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.17
+// @version      1.18
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -23,6 +23,9 @@
 (function () {
     "use strict";
 
+    function isSafari()  {
+        return (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))
+    }
     function getRootWindow() {
         let w = window;
         while (w !== w.parent) {
@@ -4478,8 +4481,8 @@
                                 ele.style.minHeight = "";
                                 ele.style.maxWidth = "";
                                 ele.style.minWidth = "";
-                                ele.style.transition = "width 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s, height 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s";
-                                
+                                ele.style.transition = isSafari() ? "width 0.2s ease, height 0.2s ease": "width 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s, height 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s";
+
                             }
                         }
                     }
@@ -4538,12 +4541,7 @@
             // console.log(menu_ID)
 
             // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
-            if (
-                !(
-                    /Safari/.test(navigator.userAgent) &&
-                    !/Chrome/.test(navigator.userAgent)
-                )
-            ) {
+            if (!isSafari()) {
                 // alert("非safari");
                 GM_unregisterMenuCommand(menu_ID[i]);
             }
@@ -4641,16 +4639,8 @@
             GM_setValue(`${localStorageKeyName}`, domain2shouldShrinkImg);
             shrink_img(true);
         }
-        // if((/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
-        //     alert("这是safari")
-        // }
         // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
-        if (
-            !(
-                /Safari/.test(navigator.userAgent) &&
-                !/Chrome/.test(navigator.userAgent)
-            )
-        ) {
+        if (!isSafari()) {
             // alert("非safari");
             registerMenuCommand(); // 重新注册脚本菜单
         }
@@ -4805,6 +4795,9 @@
         } else if (selectors[urlObj.host]) {
             location.replace(document.querySelector(selectors[urlObj.host]).innerHTML);
         }
+
+        // console.log("isSafari-");
+        // console.log(isSafari());
 
     }
 })();
