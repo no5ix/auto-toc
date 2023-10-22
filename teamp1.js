@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.19
+// @version      1.13
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -23,9 +23,6 @@
 (function () {
     "use strict";
 
-    function isSafari()  {
-        return (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))
-    }
     function getRootWindow() {
         let w = window;
         while (w !== w.parent) {
@@ -358,13 +355,6 @@
         document.head.appendChild(style);
         // return
         // }
-    };
-
-    const removeCSS = function (id) {
-        let styleElement = document.querySelector(`#${id}`);
-        if (styleElement) {
-            styleElement.parentNode.removeChild(styleElement);
-        }
     };
 
     function shouldCollapseToc() {
@@ -4415,91 +4405,64 @@
     function shrink_img(from_menu_switch=false) {
         var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
         var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
-        // console.log(
-        //     "[shrink_img] begin"
-        // );
+        console.log(
+            "[shrink_img]"
+        );
         let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg
         if (!from_menu_switch && shouldNotShrink) {
             return;
         }
         let cssTxt = '';
-        const shrinkWidth = "88";
-        const shrinkWidthStr = shrinkWidth + "px";
         Array.from(document.getElementsByTagName('*')).forEach(ele=>{
-            if (ele.tagName === 'IMG' && !ele.closest('header')) {
-                if (shouldNotShrink) {
-                    ele.style.width = ele.style.originalWidth;
-                    // ele.style.height = ele.style.originalHeight;
-                    ele.style.maxHeight = ele.style.originalMaxHeight;
-                    ele.style.minHeight = ele.style.originalMinHeight;
-                    ele.style.maxWidth = ele.style.originalMaxWidth;
-                    ele.style.minWidth = ele.style.originalMinWidth;
-                    ele.style.transition = "";
-                } else {
-                    if (ele.width > shrinkWidth) {  // 防止多次缩小同一个图片, 也防止放大本身就很小的图片
-                        const genCSSSelector = (ele)=>{
-                            if (ele.id)
-                                return `img[id="${ele.id}"]:hover`
-                            else {
-                                // if(ele.src.startsWith('data:')) return `img[src="${ele.src}"]:hover`;//base64的src
-                                if(ele.src.startsWith('data:')) return "";//base64的src
-                                else{
-                                    const the_src = ele.src || ele.getAttribute('_src') || '找不到可用选择器';
-                                    //http的src
-                                    try {
+            if (ele.tagName === 'IMG') {
+                // if (['.png', '.jpg', '.gif'].some(i=>location.href.includes(i)))
+                //     return;
+                // //忽略图片预览类网址
+                // const imgWidthStr = getComputedStyle(ele).width;
+                // const imgWidthRes = imgWidthStr.match(/^([+-]?(?:\d*\.\d+|\d+\.?)(?:[eE][+-]?\d+)?)\s*([a-zA-Z]*)$/);
+                // if (imgWidthRes) {
+                //     const num = imgWidthRes.at(1);
+                //     const unit = imgWidthRes.at(2);
+                //     const isTooBig = unit === 'rem' ? Number(num) > 10 : Number(num) > 500
+                //     if (isTooBig) {
+                        //hover时恢复图片尺寸
+                        // const noAnimation = ['all 0s ease 0s', "none 0s ease 0s"].includes(getComputedStyle(ele).transition);
+
+                        // if (noAnimation) {
+                            const genCSSSelector = (ele)=>{
+                                if (ele.id)
+                                    return `img[id="${ele.id}"]:hover`
+                                else {
+                                    if(ele.src.startsWith('data:')) return `img[src="${ele.src}"]`;//base64的src
+                                    else{
+                                        const the_src = ele.src || ele.getAttribute('_src')
+|| '找不到可用选择器';
+                                        //http的src
                                         const url = new URL(the_src)//_src是一些网站懒加载的
                                         return `img[src="${url.pathname + url.search}"]:hover,img[src="${the_src}"]:hover`;
-                                    } catch(e) {
-                                        console.log(
-                                            "[shrink_img] ERROR: " + e.message
-                                        );
-                                        return ""
                                     }
                                 }
                             }
-                        }
-                        let cssSelectorStr = genCSSSelector(ele)
-                        if (cssSelectorStr != "" ) {
-                            if (!ele.style.originalWidth || from_menu_switch) {  // 防止不是打开开关导致的多次缩小同一个图片
-                                ele.style.originalWidth = ele.width + "px";
-                                // ele.style.originalHeight = ele.height + "px";  // 不记录这个了, 时不时拿到的是0
-                                ele.style.originalMaxHeight = ele.style.maxHeight;
-                                ele.style.originalMinHeight = ele.style.minHeight;
-                                ele.style.originalMaxWidth = ele.style.maxWidth;
-                                ele.style.originalMinWidth = ele.style.minWidth;
-                                ele.style.cssSelectorStr = cssSelectorStr;
+                            cssTxt += `${genCSSSelector(ele)}{` +
+                                (shouldNotShrink ? "" : `width:${ele.width}px !important;height:${ele.height}px !important;`) +
+                             `}`;
+                        // }
 
-                                cssTxt += cssSelectorStr +
-                                `{` +
-                                    // `width:${ele.width}px !important;height:${ele.height}px !important;` +
-                                    `width:${ele.width}px !important;height:auto !important;` +
-                                    // `width:${ele.width}px !important;` +
-                                `}`;
-                                ele.style.width = shrinkWidthStr;
-                                ele.style.height = "auto";
-                                ele.style.maxHeight = "";
-                                ele.style.minHeight = "";
-                                ele.style.maxWidth = "";
-                                ele.style.minWidth = "";
-                                ele.style.transition = isSafari() ? "width 0.2s ease, height 0.2s ease": "width 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s, height 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s";
+                        //变小
+                        ele.style.width = shouldNotShrink ? 'auto' : "150px";
+                        ele.style.height = 'auto';
+                    // }
 
-                            }
-                        }
-                    }
-                }
+                    //使用
+
+                // }
             }
+
         }
         )
 
-        if (shouldNotShrink) {
-            removeCSS("shrinkimg__css");
-        } else {
-            // removeCSS("shrinkimg__css");
-            insertCSS(cssTxt, "shrinkimg__css");
-        }
-        // console.log(
-        //     "[shrink_img] end"
-        // );
+        insertCSS(cssTxt, "shrinkimg__css");
+        console.log('缩小图片完成');
     }
 
     var menu_ALL = [
@@ -4515,7 +4478,7 @@
             ],
             [
                 "menu_GAEEScript_shrink_img",
-                "Touch Fish on current site(当前网站摸鱼开关)",
+                "Shrink IMG on current site(当前网站缩小图片开关)",
                 {},
             ],
         ],
@@ -4541,7 +4504,12 @@
             // console.log(menu_ID)
 
             // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
-            if (!isSafari()) {
+            if (
+                !(
+                    /Safari/.test(navigator.userAgent) &&
+                    !/Chrome/.test(navigator.userAgent)
+                )
+            ) {
                 // alert("非safari");
                 GM_unregisterMenuCommand(menu_ID[i]);
             }
@@ -4639,20 +4607,23 @@
             GM_setValue(`${localStorageKeyName}`, domain2shouldShrinkImg);
             shrink_img(true);
         }
+        // if((/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))) {
+        //     alert("这是safari")
+        // }
         // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
-        if (!isSafari()) {
+        if (
+            !(
+                /Safari/.test(navigator.userAgent) &&
+                !/Chrome/.test(navigator.userAgent)
+            )
+        ) {
             // alert("非safari");
             registerMenuCommand(); // 重新注册脚本菜单
         }
         // location.reload(); // 刷新网页
     }
 
-    let isMf = false;
-    try {
-        isMf = isMasterFrame(window)
-    } catch(e) {
-    }
-    if (isMf) {
+    if (isMasterFrame(window)) {
         // if (true) {
         console.log("auto_toc running !!!");
         // 貌似无用
@@ -4698,13 +4669,9 @@
         }
         handleToc();
 
-
         const urlObj = new URL(window.location.href);
         if (urlObj.host === "www.zhihu.com") {
             //////////////////////////////////////// 知乎-向下翻时自动隐藏顶栏
-            console.log(
-                "[hide-top-bar-when-scroll-down]"
-            );
             let style = "";
             let style_3 = `/* 向下翻时自动隐藏顶栏*/
                 header.is-hidden {display: none;}
@@ -4727,9 +4694,6 @@
             }
         } else if (urlObj.host === "www.google.com") {
             //////////////////////////////////////// google-禁止重定向
-            console.log(
-                "[anti-google-redirect]"
-            );
             var url = window.location.href.toLowerCase();
             if (url.indexOf("/search") >= 0 || url.indexOf("/url") >= 0) {
                 function clean() {
@@ -4754,43 +4718,38 @@
                             links[i].setAttribute('href', decodeURIComponent(match[1]));
                         }
                         link.removeAttribute('data-jsarwt');
-
-                        if (link.hasAttribute("onmousedown")) {
-                            link.removeAttribute("onmousedown");
-                            link.setAttribute("target", "_blank");
-                        }
-
-                        // 避免泄露来源
-                        let rel = link.getAttribute("rel");
-                        if (rel != null) {
-                            if (!rel.includes("noreferrer")) {
-                                link.setAttribute("rel", rel + " noreferrer");
-                            }
-                        } else {
-                            link.setAttribute("rel", "noreferrer");
-                        }
                     }
                 }
                 setTimeout(clean, 10);
                 setTimeout(clean, 500);
-                for (let i = 1; i <= 66; i++) {
+                for (let i = 1; i <= 240; i++) {
                     setTimeout(clean, 1000 * i);
                 }
             }
         }
 
         //////////////////////////////////////// 所有网站-缩小图片
-        console.log(
-            "[shrink_img]"
-        );
-        setTimeout(shrink_img, 10);
-        setTimeout(shrink_img, 500);
-        for (let i = 1; i <= 6666; i++) {
-            setTimeout(shrink_img, 1000 * i);
-        }
+        shrink_img();
+        setTimeout(shrink_img, 1888);
 
-        // console.log("isSafari-");
-        // console.log(isSafari());
+        //////////////////////////////////////// 所有网站-anti-jump-warning
+        const parameters = {
+            'link.zhihu.com': 'target',
+            'link.csdn.net': 'target',
+            'link.juejin.cn': 'target',
+            'www.jianshu.com': 'url',
+            'www.oschina.net': 'url',
+            'gitee.com': 'target',
+            'weibo.cn': 'u',
+        };
+        const selectors = {
+            'jump2.bdimg.com': 'body > div > div.warning_info > p.link',
+        };
+        if (parameters[urlObj.host]) {
+            location.replace(urlObj.searchParams.get(parameters[urlObj.host]));
+        } else if (selectors[urlObj.host]) {
+            location.replace(document.querySelector(selectors[urlObj.host]).innerHTML);
+        }
 
     }
 })();
