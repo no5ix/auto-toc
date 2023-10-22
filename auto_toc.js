@@ -3237,7 +3237,7 @@
     };
 
     const ARTICLE_TOC_GAP = 150;
-    const TOP_MARGIN = 88;
+    const TOP_MARGIN = 66;
 
     const makeSticky = function (options) {
         let {
@@ -4469,6 +4469,14 @@
                                 ele.style.originalMinWidth = ele.style.minWidth;
                                 ele.style.cssSelectorStr = cssSelectorStr;
 
+                                // 加这个div的原因: 为了解决当img缩小之后导致标题间隔变化, toc 跳转会不准
+                                let parent = document.createElement('div');//  新建父元素
+                                ele.parentNode.replaceChild(parent,ele);//  获取子元素原来的父元素并将新父元素代替子元素
+                                parent.appendChild(ele);//  在新父元素下添加原来的子元素
+                                // 设置新div元素的样式
+                                parent.style.width = ele.width + "px";
+                                parent.style.height = ele.height + "px";
+
                                 cssTxt += cssSelectorStr +
                                 `{` +
                                     // `width:${ele.width}px !important;height:${ele.height}px !important;` +
@@ -4482,7 +4490,6 @@
                                 ele.style.maxWidth = "";
                                 ele.style.minWidth = "";
                                 ele.style.transition = isSafari() ? "width 0.2s ease, height 0.2s ease": "width 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s, height 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s";
-
                             }
                         }
                     }
@@ -4690,14 +4697,6 @@
 
         handleMenu();
 
-        if (GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset") == null) {
-            GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", {});
-        }
-        if (GM_getValue("menu_GAEEScript_auto_collapse_toc") == null) {
-            GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
-        }
-        handleToc();
-
 
         const urlObj = new URL(window.location.href);
         if (urlObj.host === "www.zhihu.com") {
@@ -4730,8 +4729,8 @@
             console.log(
                 "[anti-google-redirect]"
             );
-            var url = window.location.href.toLowerCase();
-            if (url.indexOf("/search") >= 0 || url.indexOf("/url") >= 0) {
+            // var url = window.location.href.toLowerCase();
+            // if (url.indexOf("/search") >= 0 || url.indexOf("/url") >= 0) {
                 function clean() {
                     // 获取id为"center_col"的div元素
                     const centerCol = document.getElementById('center_col');
@@ -4776,7 +4775,7 @@
                 for (let i = 1; i <= 66; i++) {
                     setTimeout(clean, 1000 * i);
                 }
-            }
+            // }
         }
 
         //////////////////////////////////////// 所有网站-缩小图片
@@ -4786,8 +4785,17 @@
         setTimeout(shrink_img, 10);
         setTimeout(shrink_img, 500);
         for (let i = 1; i <= 6666; i++) {
-            setTimeout(shrink_img, 1000 * i);
+            setTimeout(shrink_img, 800 * i);
         }
+
+        //////////////////////////////////////// 所有网站-生成toc
+        if (GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset") == null) {
+            GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", {});
+        }
+        if (GM_getValue("menu_GAEEScript_auto_collapse_toc") == null) {
+            GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
+        }
+        handleToc();
 
         // console.log("isSafari-");
         // console.log(isSafari());
