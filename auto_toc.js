@@ -4770,10 +4770,12 @@
                         }
                     }
                 }
-                setTimeout(clean, 10);
-                setTimeout(clean, 500);
-                for (let i = 1; i <= 66; i++) {
-                    setTimeout(clean, 1000 * i);
+                if (!isSafari()) {
+                    setTimeout(clean, 10);
+                    setTimeout(clean, 500);
+                    for (let i = 1; i <= 66; i++) {
+                        setTimeout(clean, 1000 * i);
+                    }
                 }
             // }
         }
