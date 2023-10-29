@@ -22,10 +22,6 @@ Switch black/white themes automatically according to your computer's light/dark 
 
 # Features
 
-- Anti-Google-Redirect
-- Anti-Jumping-Warnings
-- Hide-Zhihu-Top-Bar-When-Scrolling-Down
-- Touch-Fish(Shrink IMG)
 - Work properly on any website that conforms to the HTML standard and uses HTML heading tags properly (e.g. Wikipedia.com). 
 - Accurate article and heading detection
 - A clean user interface
@@ -40,6 +36,10 @@ Switch black/white themes automatically according to your computer's light/dark 
   - `H1`, `H2`, `H3`, `H4`, `H5`, `H6`
   - `<strong>`
   - `<b>`
+- Anti-Google-Redirect
+- Anti-Jumping-Warnings
+- Hide-Zhihu-Top-Bar-When-Scrolling-Down
+- Touch-Fish(Shrink IMG)
 
 
 # 捐赠
