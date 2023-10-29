@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.20
+// @version      1.21
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4505,6 +4505,7 @@
         } else {
             // removeCSS("shrinkimg__css");
             insertCSS(cssTxt, "shrinkimg__css");
+            setTimeout(shrink_img, 800);
         }
         // console.log(
         //     "[shrink_img] end"
@@ -4702,10 +4703,24 @@
 
         const urlObj = new URL(window.location.href);
         if (urlObj.host === "www.zhihu.com") {
-            //////////////////////////////////////// 知乎-向下翻时自动隐藏顶栏
+            //////////////////////////////////////// 知乎-向下翻时自动隐藏顶栏&自动重定向
             console.log(
-                "[hide-top-bar-when-scroll-down]"
+                "[hide-top-bar-when-scroll-down-and-auto-redirect]"
             );
+
+            function zhihu_auto_redirect() {
+                let nodes = document.querySelectorAll(".RichText a[href*='//link.zhihu.com/?target']");
+                for (let i = 0; i < nodes.length; i++) {
+                let url = decodeURIComponent(nodes[i].href.replace(/https?:\/\/link\.zhihu\.com\/\?target=/, ""));
+                nodes[i].href = url;
+                }
+            }
+            setTimeout(zhihu_auto_redirect, 10);
+            setTimeout(zhihu_auto_redirect, 500);
+            for (let i = 1; i <= 66; i++) {
+                setTimeout(zhihu_auto_redirect, 1000 * i);
+            }
+
             let style = "";
             let style_3 = `/* 向下翻时自动隐藏顶栏*/
                 header.is-hidden {display: none;}
@@ -4726,70 +4741,42 @@
                     }
                 });
             }
-        } else if (urlObj.host === "www.google.com") {
+        // } else if (urlObj.host === "www.google.com") {
+        } else if (urlObj.host.indexOf("www.google.com") >= 0) {
             //////////////////////////////////////// google-禁止重定向
             console.log(
                 "[anti-google-redirect]"
             );
-            // var url = window.location.href.toLowerCase();
-            // if (url.indexOf("/search") >= 0 || url.indexOf("/url") >= 0) {
-                function clean() {
-                    // 获取id为"center_col"的div元素
-                    const centerCol = document.getElementById('center_col');
-
-                    // 获取所有超链接
-                    var links = centerCol.getElementsByTagName('a');
-
-                    // 遍历超链接并移除不必要的属性
-                    let url
-                    for (let i = 0; i < links.length; i++) {
-                        const link = links[i];
-                        // 移除不必要的属性
-                        if (link.hasAttribute('button')) {
-                            continue;
-                            //alert("found!");
-                        }
-                        url = links[i].getAttribute('href');
-                        var match = /url=(.*?)&/.exec(url);
-                        if (match) {
-                            links[i].setAttribute('href', decodeURIComponent(match[1]));
-                        }
-                        link.removeAttribute('data-jsarwt');
-
-                        if (link.hasAttribute("onmousedown")) {
-                            link.removeAttribute("onmousedown");
-                            link.setAttribute("target", "_blank");
-                        }
-
-                        // 避免泄露来源
-                        let rel = link.getAttribute("rel");
-                        if (rel != null) {
-                            if (!rel.includes("noreferrer")) {
-                                link.setAttribute("rel", rel + " noreferrer");
-                            }
-                        } else {
-                            link.setAttribute("rel", "noreferrer");
-                        }
+            function RedirectHandle() {
+                try {
+                    let resultNodes = document.querySelectorAll(".g .rc a, #rs, #rso .g a");
+                    for (let i = 0; i < resultNodes.length; i++) {
+                        let one = resultNodes[i];
+                        one.setAttribute("onmousedown", ""); // 谷歌去重定向干扰
+                        one.setAttribute("target", "_blank"); // 谷歌链接新标签打开
+                        one.setAttribute("data-jsarwt", "0"); // Firefox谷歌去重定向干扰
                     }
+                } catch (e) {
+                console.log(e);
                 }
-                if (!isSafari()) {
-                    setTimeout(clean, 10);
-                    setTimeout(clean, 500);
-                    for (let i = 1; i <= 66; i++) {
-                        setTimeout(clean, 1000 * i);
-                    }
-                }
-            // }
+            }
+
+            setTimeout(RedirectHandle, 10);
+            setTimeout(RedirectHandle, 500);
+            for (let i = 1; i <= 66; i++) {
+                setTimeout(RedirectHandle, 1000 * i);
+            }
         }
 
         //////////////////////////////////////// 所有网站-缩小图片
         console.log(
             "[shrink_img]"
         );
-        setTimeout(shrink_img, 10);
-        setTimeout(shrink_img, 500);
-        for (let i = 1; i <= 6666; i++) {
-            setTimeout(shrink_img, 800 * i);
+        var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
+        var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
+        let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg
+        if (!shouldNotShrink) {
+            setTimeout(shrink_img, 10);
         }
 
         //////////////////////////////////////// 所有网站-生成toc
