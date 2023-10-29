@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.19
+// @version      1.20
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4474,6 +4474,8 @@
                                 ele.parentNode.replaceChild(parent,ele);//  获取子元素原来的父元素并将新父元素代替子元素
                                 parent.appendChild(ele);//  在新父元素下添加原来的子元素
                                 // 设置新div元素的样式
+                                parent.style.display = "flex";
+                                parent.style.alignItems = "center";
                                 parent.style.width = ele.width + "px";
                                 parent.style.height = ele.height + "px";
 
