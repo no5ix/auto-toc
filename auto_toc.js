@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.22
+// @version      1.23
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4467,15 +4467,16 @@
                                 ele.style.originalMinWidth = ele.style.minWidth;
                                 ele.style.cssSelectorStr = cssSelectorStr;
 
-                                // 加这个div的原因: 为了解决当img缩小之后导致标题间隔变化, toc 跳转会不准
-                                let parent = document.createElement('div');//  新建父元素
-                                ele.parentNode.replaceChild(parent,ele);//  获取子元素原来的父元素并将新父元素代替子元素
-                                parent.appendChild(ele);//  在新父元素下添加原来的子元素
-                                // 设置新div元素的样式
-                                parent.style.display = "flex";
-                                parent.style.alignItems = "center";
-                                parent.style.width = ele.width + "px";
-                                parent.style.height = ele.height + "px";
+                                
+                                // // 加这个div的原因: 为了解决当img缩小之后导致标题间隔变化, toc 跳转会不准(注释了是因为会导致单击了知乎的图片之后缩小的时候知乎网页崩溃)
+                                // let parent = document.createElement('div');//  新建父元素
+                                // ele.parentNode.replaceChild(parent,ele);//  获取子元素原来的父元素并将新父元素代替子元素
+                                // parent.appendChild(ele);//  在新父元素下添加原来的子元素
+                                // // 设置新div元素的样式
+                                // parent.style.display = "flex";
+                                // parent.style.alignItems = "center";
+                                // parent.style.width = ele.width + "px";
+                                // parent.style.height = ele.height + "px";
 
                                 cssTxt += cssSelectorStr +
                                 `{` +
@@ -4500,9 +4501,12 @@
 
         if (shouldNotShrink) {
             removeCSS("shrinkimg__css");
+            setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img恢复放大之后导致标题间隔变化, toc 跳转会不准
         } else {
-            // removeCSS("shrinkimg__css");
-            insertCSS(cssTxt, "shrinkimg__css");
+            if(cssTxt != "") {
+                insertCSS(cssTxt, "shrinkimg__css");
+                setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img缩小之后导致标题间隔变化, toc 跳转会不准
+            }
             setTimeout(shrink_img, 800);
         }
         // console.log(
@@ -4700,7 +4704,7 @@
 
 
         const urlObj = new URL(window.location.href);
-        if (urlObj.host === "www.zhihu.com") {
+        if (urlObj.host.indexOf("zhihu.com") >= 0) {
             //////////////////////////////////////// 知乎-向下翻时自动隐藏顶栏&自动重定向
             console.log(
                 "[hide-top-bar-when-scroll-down-and-auto-redirect]"
@@ -4709,8 +4713,8 @@
             function zhihu_auto_redirect() {
                 let nodes = document.querySelectorAll(".RichText a[href*='//link.zhihu.com/?target']");
                 for (let i = 0; i < nodes.length; i++) {
-                let url = decodeURIComponent(nodes[i].href.replace(/https?:\/\/link\.zhihu\.com\/\?target=/, ""));
-                nodes[i].href = url;
+                    let url = decodeURIComponent(nodes[i].href.replace(/https?:\/\/link\.zhihu\.com\/\?target=/, ""));
+                    nodes[i].href = url;
                 }
             }
             setTimeout(zhihu_auto_redirect, 10);
