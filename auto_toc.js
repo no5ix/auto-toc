@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.28
+// @version      1.29
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4340,13 +4340,6 @@
             NodeFilter.SHOW_ELEMENT,
             { acceptNode }
         );
-        // 提前计算出<b> 和<strong>这俩特殊标题的离页面左边边缘最近的标题的距离
-        let extra_tags_leftmost_offset = new Map();
-        extra_tags.forEach((tag) => {
-            var elems = (0, toArray)(article.getElementsByTagName(tag));
-            var leftmost_offset = getElemsCommonLeft(elems);
-            extra_tags_leftmost_offset[tag] = leftmost_offset;
-        });
 
         // console.log("extra_tags_leftmost_offset old begin")
         // console.log(extra_tags_leftmost_offset)
@@ -4365,6 +4358,15 @@
             }
         }
 
+        let extra_tags_leftmost_offset = new Map();
+        if (!isNormalHeadingExist) {  // 有几个其他正经标题了, 之后没必要提取<b>和<strong>了
+            // 提前计算出<b> 和<strong>这俩特殊标题的离页面左边边缘最近的标题的距离
+            extra_tags.forEach((tag) => {
+                const elems = (0, toArray)(article.getElementsByTagName(tag));
+                extra_tags_leftmost_offset[tag] = getElemsCommonLeft(elems);
+            });
+        }
+
         const headings = [];
         while (treeWalker.nextNode()) {
             // 按照页面上的显示顺序遍历
@@ -4377,12 +4379,6 @@
                     // console.log(node);
                     continue;
                 }
-                // 当前 elem 不能是正经标题的子元素, 否则会重复
-                if (header_tags.includes(node.parentElement.tagName)) {
-                    // console.log("b_strong continue 2");
-                    // console.log(node);
-                    continue;
-                }
                 // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
                 if (node.parentElement.childNodes.length !== 1) {
                     // console.log("b_strong continue 3");
@@ -4392,6 +4388,12 @@
                 // 加粗的文字长度超过 n 个字则不识别为标题
                 if (node.innerHTML.length > 26) {
                     // console.log("b_strong continue 4");
+                    // console.log(node);
+                    continue;
+                }
+                // 当前 elem 不能是正经标题的子元素, 否则会重复
+                if (header_tags.includes(node.parentElement.tagName)) {
+                    // console.log("b_strong continue 2");
                     // console.log(node);
                     continue;
                 }
