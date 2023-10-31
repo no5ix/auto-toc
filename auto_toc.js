@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.24
+// @version      1.25
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -377,10 +377,11 @@
     }
 
     let toc_dom = null;
+    let toc_text_wrap = false;
 
     function getTocCss() {
         const shouldCollapse = shouldCollapseToc();
-        console.log("[getTocCss]", shouldCollapse);
+        // console.log("[getTocCss]", shouldCollapse);
         return (
             `
             @media (prefers-color-scheme: dark) {
@@ -503,7 +504,9 @@
                 line-height: 1.3;
                 padding-top: 0.2em;
                 padding-bottom: 0.2em;
-                white-space: pre-wrap;
+            ` + 
+            (toc_text_wrap ? "text-overflow: ellipsis; overflow-x: hidden; white-space: nowrap;" : "white-space: pre-wrap;") +
+            `
                 margin-bottom: 0.8px;
                 margin-top: 0.8px;
             }
@@ -3146,22 +3149,28 @@
                 sOffsetX === $userOffset()[0] &&
                 sOffsetY === $userOffset()[1]
             ) {
-                console.log(
-                    "[auto-toc, 原地点击, multi_click_cnt:]",
-                    multi_click_cnt
-                );
+                // console.log(
+                //     "[auto-toc, 原地点击, multi_click_cnt:]",
+                //     multi_click_cnt
+                // );
                 if (Date.now() - last_click_ts < 233) {
-                    // 说明是双击, 走关闭 toc 逻辑
-                    console.log("[auto-toc, double click handle section]");
-                    menuSwitch("menu_GAEEScript_auto_open_toc");
+                    // // 说明是双击, 走关闭 toc 逻辑
+                    // console.log("[auto-toc, double click handle section]");
+                    // menuSwitch("menu_GAEEScript_auto_open_toc");
+                    // handleToc();
+                    
+                    // 说明是双击单击逻辑, 走折叠 toc 逻辑
+                    // console.log("[auto-toc, double click handle section]");
+                    menuSwitch("menu_GAEEScript_auto_collapse_toc");
                     handleToc();
                     return;
                 }
-                // 单击逻辑, 走折叠 toc 逻辑
-                console.log("[auto-toc, click handle section]");
-                menuSwitch("menu_GAEEScript_auto_collapse_toc");
-                handleToc();
                 last_click_ts = Date.now();
+                // 说明是单击逻辑, 走切换折行逻辑
+                // console.log("[auto-toc, click handle section]");
+                toc_text_wrap = !toc_text_wrap;
+                toast("Toggle Headings Auto Wrap.");
+                handleToc();
 
                 ////////////////////////////////////////// 以下这种实现方案导致单击有延迟, 故不采用
                 // if (multi_click_cnt > 0) {
@@ -3190,15 +3199,15 @@
                 "menu_GAEEScript_auto_toc_domain_2_offset",
                 domain2offset
             );
-            console.log(
-                "[auto-toc, update domain offset]",
-                domain2offset[window.location.host]
-            );
-            console.log("[auto-toc, $userOffset()]", $userOffset());
-            console.log(
-                "[auto-toc, update domain offset, domain2offset]",
-                domain2offset
-            );
+            // console.log(
+            //     "[auto-toc, update domain offset]",
+            //     domain2offset[window.location.host]
+            // );
+            // console.log("[auto-toc, $userOffset()]", $userOffset());
+            // console.log(
+            //     "[auto-toc, update domain offset, domain2offset]",
+            //     domain2offset
+            // );
         };
 
         const onDragStart = (e) => {
@@ -3215,7 +3224,7 @@
         };
 
         const onDoubleClick = (e) => {
-            console.log("[auto-toc, onDoubleClick]");
+            // console.log("[auto-toc, onDoubleClick]");
             menuSwitch("menu_GAEEScript_auto_open_toc");
             handleToc();
         };
@@ -3228,7 +3237,12 @@
                         onmousedown: onDragStart,
                         // ondblclick: onDoubleClick,
                     },
-                    "○ ○ ○"
+                    // "○ ○ ○"
+                    // "■ ■ ■"
+                    "● ● ●"
+                    // "⚫ ⚫ ⚫"
+                    // "■ ● ■"
+                    // "● ■ ●"
                 );
             },
         };
@@ -3727,14 +3741,14 @@
             "menu_GAEEScript_auto_toc_domain_2_offset"
         );
         var lastOffset = domain2offset[window.location.host];
-        console.log("[auto-toc, lastOffset]", lastOffset);
+        // console.log("[auto-toc, lastOffset]", lastOffset);
         if (lastOffset != null) {
             userOffset = lastOffset;
         }
-        console.log("[auto-toc, init userOffset]", userOffset);
+        // console.log("[auto-toc, init userOffset]", userOffset);
 
         const $headings = $headings_.map(addAnchors);
-                insertCSS(getTocCss(), "smarttoc__css");
+        insertCSS(getTocCss(), "smarttoc__css");
 
         const scrollable = getScrollParent(article);
         const theme = getTheme(article);
@@ -4213,14 +4227,15 @@
         //     isStrongAlsoHeading(article) ? 'STRONG' : []
         // )
         const header_tags = ["H1", "H2", "H3", "H4", "H5", "H6"];
-        const tags = header_tags.concat(["STRONG", "B"]);
+        const extra_tags = ["STRONG", "B"];
+        const tags = header_tags.concat(extra_tags);
         const tagWeight = (tag) =>
             ({ H1: 4, H2: 9, H3: 9, H4: 10, H5: 10, H6: 10, STRONG: 10, B: 10 }[
                 tag
             ]);
         const isVisible = (elem) => elem.offsetHeight !== 0;
-        const isGroupVisible = (headings) =>
-            headings.filter(isVisible).length >= headings.length * 0.5;
+        // const isGroupVisible = (headings) =>
+        //     headings.filter(isVisible).length >= headings.length * 0.5;
         // var headingGroup = tags
         //     .map(tag => [].slice.apply(article.getElementsByTagName(tag)))
         // const mm1 = headingGroup
@@ -4238,64 +4253,87 @@
         //     .slice(0, 3)
         // headingGroup = mm4
 
-        var headingGroup = tags.map(function (tag) {
-            var elems = (0, toArray)(article.getElementsByTagName(tag));
-            if (tag.toLowerCase() === "strong" || tag.toLowerCase() === "b") {
-                // for <strong> elements, only take them as heading when they align at left
-                var commonLeft_2 = getElemsCommonLeft(elems);
-                // console.log("commonLeft_2 old begin")
-                // console.log(commonLeft_2)
-                // console.log(window.innerWidth / 2)
-                // console.log(elems)
-                // if (commonLeft_2 === undefined || commonLeft_2 > window.innerWidth / 2) {
-                if (commonLeft_2 === undefined) {
-                    elems = [];
-                } else {
-                    elems = elems.filter(function (elem) {
-                        // 当前 elem 离左边距离得和 commonLeft_2 一样, 并且当前 elem 不能是正经标题的子元素, 否则会重复; 当加粗的文字后面还有普通不加粗的文字则不识别为标题
-                        return (
-                            elem.getBoundingClientRect().left ===
-                                commonLeft_2 &&
-                            !header_tags.includes(elem.parentElement.tagName) &&
-                            elem.parentElement.childNodes.length == 1
-                        );
-                    });
-                }
-                // console.log(elems)
-                // console.log("commonLeft_2 old end")
-            }
-            return {
-                tag: tag,
-                elems: elems,
-                score: elems.length * tagWeight(tag),
-            };
-        });
-        var mm1 = headingGroup
-            // 注释下面这三行代码(用于筛选score小于10的标题), 免得被认为是不显示某些标题的bug(比如这种情况: https://github.com/no5ix/auto-toc/issues/5)
-            // .filter(function (group) {
-            //     return group.score >= 10 && group.elems.length > 0;
-            // })
-            .filter(function (group) {
-                return isVisible(group);
-            })
-            .slice(0, 8);
-        headingGroup = mm1;
+        // var headingGroup = tags.map(function (tag) {
+        //     var elems = (0, toArray)(article.getElementsByTagName(tag));
+        //     if (tag.toLowerCase() === "strong" || tag.toLowerCase() === "b") {
+        //         // for <strong> elements, only take them as heading when they align at left
+        //         var commonLeft_2 = getElemsCommonLeft(elems);
+        //         // console.log("commonLeft_2 old begin")
+        //         // console.log(commonLeft_2)
+        //         // console.log(window.innerWidth / 2)
+        //         // console.log(elems)
+        //         // if (commonLeft_2 === undefined || commonLeft_2 > window.innerWidth / 2) {
+        //         if (commonLeft_2 === undefined) {
+        //             elems = [];
+        //         } else {
+        //             elems = elems.filter(function (elem) {
+        //                 return (
+        //                     elem.getBoundingClientRect().left === commonLeft_2 &&  // 当前 elem 离左边距离得和 commonLeft_2 一样
+        //                     !header_tags.includes(elem.parentElement.tagName) &&   // 当前 elem 不能是正经标题的子元素, 否则会重复
+        //                     // elem.parentElement.childNodes.length == 1    // 加粗的文字后面还有普通不加粗的文字则不识别为标题
+        //                     (elem.nextSibling && elem.nextSibling.nodeType === Node.TEXT_NODE)    // 加粗的文字后面还有普通不加粗的文字则不识别为标题
+        //                 );
+        //             });
+        //         }
+        //         // console.log(elems)
+        //         // console.log("commonLeft_2 old end")
+        //     }
+        //     return {
+        //         tag: tag,
+        //         elems: elems,
+        //         score: elems.length * tagWeight(tag),
+        //     };
+        // });
+        
+        // // console.log("headingGroup old begin")
+        // // console.log(headingGroup)
+        // // console.log("headingGroup old end")
 
-        // use document sequence
-        const validTags = headingGroup.map((headings) => headings.tag);
-        // 记录一下已经找到的要显示的标题名字最终放到 finalInnerHTML 里
-        const valid_innerHTML = headingGroup.map((headings) =>
-            headings.elems.map((node) => node.innerHTML)
-        );
-        var finalInnerHTML = [];
-        valid_innerHTML.forEach(function (arr) {
-            finalInnerHTML = finalInnerHTML.concat(arr);
-        });
+        // var mm1 = headingGroup
+        //     // 注释下面这三行代码(用于筛选score小于10的标题), 免得被认为是不显示某些标题的bug(比如这种情况: https://github.com/no5ix/auto-toc/issues/5)
+        //     // .filter(function (group) {
+        //     //     return group.score >= 10 && group.elems.length > 0;
+        //     // })
+        //     .filter(function (group) {
+        //         return isVisible(group);
+        //     })
+        //     .slice(0, 8);
+        // headingGroup = mm1;
+
+        // // use document sequence
+        // const validTags = headingGroup.map((headings) => headings.tag);
+
+        // // 记录一下已经找到的要显示的标题名字最终放到 finalInnerHTML 里
+        // const valid_innerHTML = headingGroup.map((headings) =>
+        //     headings.elems.map((node) => node.innerHTML)
+        // );
+        // var finalInnerHTML = [];
+        // valid_innerHTML.forEach(function (arr) {
+        //     finalInnerHTML = finalInnerHTML.concat(arr);
+        // });
+        
+        // // 记录一下已经找到的要显示的标题id最终放到 finalId 里
+        // const valid_id = headingGroup.map((headings) =>
+        //     headings.elems.map((node) => node.id)
+        // );
+        // var finalId = [];
+        // valid_id.forEach(function (arr) {
+        //     finalId = finalId.concat(arr);
+        // });
+        // console.log("finalInnerHTML old begin")
+        // console.log(headingGroup)
+        // console.log(valid_innerHTML)
+        // console.log(finalInnerHTML)
+        // console.log("finalInnerHTML old end")
+
+        
         // 筛选页面上想要遍历的 node
         const acceptNode = (node) =>
-            validTags.includes(node.tagName) &&
-            isVisible(node) &&
-            finalInnerHTML.includes(node.innerHTML)
+            // validTags.includes(node.tagName) &&
+            tags.includes(node.tagName) &&
+            isVisible(node)
+            // isVisible(node) &&
+            // (node.id ? finalId.includes(node.id) : finalInnerHTML.includes(node.innerHTML))
                 ? NodeFilter.FILTER_ACCEPT
                 : NodeFilter.FILTER_SKIP;
         const treeWalker = document.createTreeWalker(
@@ -4303,19 +4341,42 @@
             NodeFilter.SHOW_ELEMENT,
             { acceptNode }
         );
-        const headings = [];
+        // 提前计算出<b> 和<strong>这俩特殊标题的离页面左边边缘最近的标题的距离
+        let extra_tags_leftmost_offset = new Map();
+        extra_tags.forEach((tag) => {
+            var elems = (0, toArray)(article.getElementsByTagName(tag));
+            var leftmost_offset = getElemsCommonLeft(elems);
+            extra_tags_leftmost_offset[tag] = leftmost_offset;
+        });
 
+        // console.log("extra_tags_leftmost_offset old begin")
+        // console.log(extra_tags_leftmost_offset)
+        // console.log("extra_tags_leftmost_offset old end")
+
+        const headings = [];
         while (treeWalker.nextNode()) {
             // 按照页面上的显示顺序遍历
             let node = treeWalker.currentNode;
-                        headings.push({
+            let cur_level = tags.indexOf(node.tagName) + 1;
+            if (extra_tags.includes(node.tagName)) {
+                let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
+                if (!cur_leftmost_offset) {
+                    continue;
+                } else {
+                    if (!(
+                        node.getBoundingClientRect().left === cur_leftmost_offset &&  // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
+                            !header_tags.includes(node.parentElement.tagName) &&   // 当前 elem 不能是正经标题的子元素, 否则会重复
+                            // node.parentElement.childNodes.length == 1    // 加粗的文字后面还有普通不加粗的文字则不识别为标题
+                            (node.nextSibling && node.nextSibling.nodeType === Node.TEXT_NODE)    // 加粗的文字后面还有普通不加粗的文字则不识别为标题
+                    )) {
+                        continue;
+                    }
+                }
+                cur_level = 1;  // strong 粗体字类型的标题那 level 就直接是 1 就好了, 免得显示不出来
+            }
+            headings.push({
                 node,
-                // strong 粗体字类型的标题那 level 就直接是 1 就好了, 免得显示不出来
-                level:
-                    node.tagName.toLowerCase() === "strong" ||
-                    node.tagName.toLowerCase() === "b"
-                        ? 1
-                        : validTags.indexOf(node.tagName) + 1,
+                level: cur_level,
             });
         }
 
@@ -4357,9 +4418,9 @@
     const doGenerateToc = function (option = {}) {
         let [article, $headings] = extract();
         if (article && $headings && $headings().length) {
-            console.log("createTOC before old begin aaa");
-            console.log($headings());
-            console.log("createTOC before old end bbb");
+            // console.log("createTOC before old begin aaa");
+            // console.log($headings());
+            // console.log("createTOC before old end bbb");
 
             return createTOC(Object.assign({ article, $headings }, option));
         } else {
@@ -4369,12 +4430,12 @@
 
     function handleToc() {
         var domain2shouldShow = GM_getValue("menu_GAEEScript_auto_open_toc");
-        console.log("[handleToc domain2shouldShow]", domain2shouldShow);
-        console.log("[handleToc window.location.host]", window.location.host);
-        console.log(
-            "[domain2shouldShow[window.location.host]]",
-            domain2shouldShow[window.location.host]
-        );
+        // console.log("[handleToc domain2shouldShow]", domain2shouldShow);
+        // console.log("[handleToc window.location.host]", window.location.host);
+        // console.log(
+        //     "[domain2shouldShow[window.location.host]]",
+        //     domain2shouldShow[window.location.host]
+        // );
 
         var timerId = setInterval(() => {
             // console.log('[handleToc regen toc window.location.host]', window.location.host);
@@ -4393,7 +4454,7 @@
 
         if (domain2shouldShow[window.location.host]) {
             toc = doGenerateToc();
-            console.log("[handleToc toc]", toc);
+            // console.log("[handleToc toc]", toc);
             // 如果生成的toc有问题或者toc没生成出来, 那就 n 秒之后再生成一次(比如掘金的很多文章得过几秒钟再生成才行)
             // toast('Will generate TOC in 2.8 seconds ...', 1600);
             setTimeout(() => {
