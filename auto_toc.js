@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.25
+// @version      1.26
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4220,7 +4220,7 @@
     };
 
     const extractHeadings = function (article) {
-        log("extracting heading");
+        // log("extracting heading");
 
         // what to be considered as headings
         // const tags = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].concat(
@@ -4329,7 +4329,6 @@
         
         // 筛选页面上想要遍历的 node
         const acceptNode = (node) =>
-            // validTags.includes(node.tagName) &&
             tags.includes(node.tagName) &&
             isVisible(node)
             // isVisible(node) &&
@@ -4363,12 +4362,34 @@
                 if (!cur_leftmost_offset) {
                     continue;
                 } else {
-                    if (!(
-                        node.getBoundingClientRect().left === cur_leftmost_offset &&  // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
-                            !header_tags.includes(node.parentElement.tagName) &&   // 当前 elem 不能是正经标题的子元素, 否则会重复
-                            // node.parentElement.childNodes.length == 1    // 加粗的文字后面还有普通不加粗的文字则不识别为标题
-                            (node.nextSibling && node.nextSibling.nodeType === Node.TEXT_NODE)    // 加粗的文字后面还有普通不加粗的文字则不识别为标题
-                    )) {
+                     // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
+                    if (node.getBoundingClientRect().left != cur_leftmost_offset) {
+                        // console.log("b_strong continue 1");
+                        // console.log(node);
+                        continue;
+                    }
+                    // 当前 elem 不能是正经标题的子元素, 否则会重复
+                    if (header_tags.includes(node.parentElement.tagName)) {
+                        // console.log("b_strong continue 2");
+                        // console.log(node);
+                        continue;
+                    }
+                    // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
+                    if (node.parentElement.childNodes.length != 1) {
+                        // console.log("b_strong continue 3");
+                        // console.log(node);
+                        continue;
+                    }
+                    // 加粗的文字长度超过 n 个字则不识别为标题
+                    if (node.innerHTML.length > 26) {
+                        // console.log("b_strong continue 4");
+                        // console.log(node);
+                        continue;
+                    }
+                    // 加粗的文字的父元素带下划线不识别为标题
+                    if (node.parentElement.tagName == "U") {
+                        // console.log("b_strong continue 5");
+                        // console.log(node);
                         continue;
                     }
                 }
