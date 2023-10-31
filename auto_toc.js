@@ -536,7 +536,7 @@
             #smarttoc ul a:hover,
             #smarttoc ul a:active,
             #smarttoc ul li.active>a {
-                border-left-width: 6px;
+                border-left-width: 3px;
                 border-left-style: solid;
                 padding-left: calc(1.3em - 3px);
             }
@@ -566,7 +566,7 @@
             #smarttoc ul ul a:hover,
             #smarttoc ul ul a:active,
             #smarttoc ul ul li.active>a {
-                border-left-width: 4.6px;
+                border-left-width: 1.6px;
                 border-left-style: solid;
                 padding-left: calc(2.7em - 2px);
                 font-weight: normal;
@@ -590,7 +590,7 @@
             #smarttoc ul ul ul a:hover,
             #smarttoc ul ul ul a:active,
             #smarttoc ul ul ul li.active>a {
-                border-left-width: 3px;
+                border-left-width: 0.8px;
                 border-left-style: solid;
                 padding-left: calc(4em - 1px);
                 font-weight: normal;
@@ -614,7 +614,7 @@
             #smarttoc ul ul ul ul a:hover,
             #smarttoc ul ul ul ul a:active,
             #smarttoc ul ul ul ul li.active>a {
-                border-left-width: 2.2px;
+                border-left-width: 0.6px;
                 border-left-style: solid;
                 padding-left: calc(5em - 0.5px);
                 font-weight: normal;
@@ -638,7 +638,7 @@
             #smarttoc ul ul ul ul ul a:hover,
             #smarttoc ul ul ul ul ul a:active,
             #smarttoc ul ul ul ul ul li.active>a {
-                border-left-width: 1.6px;
+                border-left-width: 0.4px;
                 border-left-style: solid;
                 padding-left: calc(6em - 0.25px);
                 font-weight: normal;
@@ -662,7 +662,7 @@
             #smarttoc ul ul ul ul ul ul a:hover,
             #smarttoc ul ul ul ul ul ul a:active,
             #smarttoc ul ul ul ul ul ul li.active>a {
-                border-left-width: 0.8px;
+                border-left-width: 0.2px;
                 border-left-style: solid;
                 padding-left: calc(7em - 0.1px);
                 font-weight: normal;
