@@ -3066,7 +3066,7 @@
                                 href: `#${heading.anchor}`,
                                 title: heading.node.textContent,
                             },
-                            heading.node.textContent
+                            "● " + heading.node.textContent
                         ),
                     children && children.length && UL(children),
                 ].filter(Boolean)
@@ -3734,7 +3734,7 @@
         console.log("[auto-toc, init userOffset]", userOffset);
 
         const $headings = $headings_.map(addAnchors);
-        insertCSS(getTocCss(), "smarttoc__css");
+                insertCSS(getTocCss(), "smarttoc__css");
 
         const scrollable = getScrollParent(article);
         const theme = getTheme(article);
@@ -4308,7 +4308,7 @@
         while (treeWalker.nextNode()) {
             // 按照页面上的显示顺序遍历
             let node = treeWalker.currentNode;
-            headings.push({
+                        headings.push({
                 node,
                 // strong 粗体字类型的标题那 level 就直接是 1 就好了, 免得显示不出来
                 level:
