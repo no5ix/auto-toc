@@ -4353,10 +4353,13 @@
         // console.log("extra_tags_leftmost_offset old end")
 
         let isNormalHeadingExist = false;
+        let normalHeadingCnt = 0
         for (let i = 0; i < header_tags.length; i++) {
             // 检查 article 是否包含 tag 标签
             let tag = header_tags[i];
-            if(article.querySelector(tag)) {
+            const elems = (0, toArray)(article.getElementsByTagName(tag));
+            normalHeadingCnt += elems.length;
+            if (normalHeadingCnt >= 3) {  // 两个以上比较好, 免得有可能其中一个是文章最上面的大标题
                 isNormalHeadingExist = true
                 break;
             }
@@ -4368,7 +4371,7 @@
             let node = treeWalker.currentNode;
             let cur_level = tags.indexOf(node.tagName) + 1;
             if (extra_tags.includes(node.tagName)) {
-                // 有其他正经标题了, 不要提取<b>和<strong>了
+                // 有几个其他正经标题了, 不要提取<b>和<strong>了
                 if (isNormalHeadingExist) {
                     // console.log("b_strong continue 0");
                     // console.log(node);
