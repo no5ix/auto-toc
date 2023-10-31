@@ -4229,10 +4229,10 @@
         const header_tags = ["H1", "H2", "H3", "H4", "H5", "H6"];
         const extra_tags = ["STRONG", "B"];
         const tags = header_tags.concat(extra_tags);
-        const tagWeight = (tag) =>
-            ({ H1: 4, H2: 9, H3: 9, H4: 10, H5: 10, H6: 10, STRONG: 10, B: 10 }[
-                tag
-            ]);
+        // const tagWeight = (tag) =>
+        //     ({ H1: 4, H2: 9, H3: 9, H4: 10, H5: 10, H6: 10, STRONG: 10, B: 10 }[
+        //         tag
+        //     ]);
         const isVisible = (elem) => elem.offsetHeight !== 0;
         // const isGroupVisible = (headings) =>
         //     headings.filter(isVisible).length >= headings.length * 0.5;
@@ -4352,43 +4352,59 @@
         // console.log(extra_tags_leftmost_offset)
         // console.log("extra_tags_leftmost_offset old end")
 
+        let isNormalHeadingExist = false;
+        for (let i = 0; i < header_tags.length; i++) {
+            // 检查 article 是否包含 tag 标签
+            let tag = header_tags[i];
+            if(article.querySelector(tag)) {
+                isNormalHeadingExist = true
+                break;
+            }
+        }
+
         const headings = [];
         while (treeWalker.nextNode()) {
             // 按照页面上的显示顺序遍历
             let node = treeWalker.currentNode;
             let cur_level = tags.indexOf(node.tagName) + 1;
             if (extra_tags.includes(node.tagName)) {
+                // 有其他正经标题了, 不要提取<b>和<strong>了
+                if (isNormalHeadingExist) {
+                    // console.log("b_strong continue 0");
+                    // console.log(node);
+                    continue;
+                }
+                // 当前 elem 不能是正经标题的子元素, 否则会重复
+                if (header_tags.includes(node.parentElement.tagName)) {
+                    // console.log("b_strong continue 2");
+                    // console.log(node);
+                    continue;
+                }
+                // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
+                if (node.parentElement.childNodes.length !== 1) {
+                    // console.log("b_strong continue 3");
+                    // console.log(node);
+                    continue;
+                }
+                // 加粗的文字长度超过 n 个字则不识别为标题
+                if (node.innerHTML.length > 26) {
+                    // console.log("b_strong continue 4");
+                    // console.log(node);
+                    continue;
+                }
+                // 加粗的文字的父元素为<u>则不识别为标题(因为<u>会使得子元素带下划线)
+                if (node.parentElement.tagName === "U") {
+                    // console.log("b_strong continue 5");
+                    // console.log(node);
+                    continue;
+                }
                 let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
                 if (!cur_leftmost_offset) {
                     continue;
                 } else {
-                     // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
-                    if (node.getBoundingClientRect().left != cur_leftmost_offset) {
+                    // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
+                    if (node.getBoundingClientRect().left !== cur_leftmost_offset) {
                         // console.log("b_strong continue 1");
-                        // console.log(node);
-                        continue;
-                    }
-                    // 当前 elem 不能是正经标题的子元素, 否则会重复
-                    if (header_tags.includes(node.parentElement.tagName)) {
-                        // console.log("b_strong continue 2");
-                        // console.log(node);
-                        continue;
-                    }
-                    // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
-                    if (node.parentElement.childNodes.length != 1) {
-                        // console.log("b_strong continue 3");
-                        // console.log(node);
-                        continue;
-                    }
-                    // 加粗的文字长度超过 n 个字则不识别为标题
-                    if (node.innerHTML.length > 26) {
-                        // console.log("b_strong continue 4");
-                        // console.log(node);
-                        continue;
-                    }
-                    // 加粗的文字的父元素为<u>则不识别为标题(因为<u>会使得子元素带下划线)
-                    if (node.parentElement.tagName == "U") {
-                        // console.log("b_strong continue 5");
                         // console.log(node);
                         continue;
                     }
