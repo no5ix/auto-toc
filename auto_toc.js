@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.29
+// @version      1.30
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -538,7 +538,6 @@
             #smarttoc ul li.active>a {
                 border-left-width: 3px;
                 border-left-style: solid;
-                padding-left: calc(1.3em - 3px);
             }
             
             #smarttoc ul li.active>a {
@@ -568,7 +567,6 @@
             #smarttoc ul ul li.active>a {
                 border-left-width: 1.6px;
                 border-left-style: solid;
-                padding-left: calc(2.7em - 2px);
                 font-weight: normal;
             }
             
@@ -592,7 +590,6 @@
             #smarttoc ul ul ul li.active>a {
                 border-left-width: 0.8px;
                 border-left-style: solid;
-                padding-left: calc(4em - 1px);
                 font-weight: normal;
             }
             
@@ -616,7 +613,6 @@
             #smarttoc ul ul ul ul li.active>a {
                 border-left-width: 0.6px;
                 border-left-style: solid;
-                padding-left: calc(5em - 0.5px);
                 font-weight: normal;
             }
             
@@ -640,7 +636,6 @@
             #smarttoc ul ul ul ul ul li.active>a {
                 border-left-width: 0.4px;
                 border-left-style: solid;
-                padding-left: calc(6em - 0.25px);
                 font-weight: normal;
             }
             
@@ -664,7 +659,6 @@
             #smarttoc ul ul ul ul ul ul li.active>a {
                 border-left-width: 0.2px;
                 border-left-style: solid;
-                padding-left: calc(7em - 0.1px);
                 font-weight: normal;
             }
         `
@@ -3067,9 +3061,12 @@
                             "a",
                             {
                                 href: `#${heading.anchor}`,
-                                title: heading.node.textContent,
+                                // title: heading.node.textContent,
+                                title: (heading.node.textContent.trim() !== "" ? heading.node.textContent : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent : heading.node.textContent)),
                             },
-                            "● " + heading.node.textContent
+                            // "● " + heading.node.textContent
+                            // 如果当前标题内容为空, 则找相邻的下一个同级的元素用它的文本作为标题显示
+                            "● " + (heading.node.textContent.trim() !== "" ? heading.node.textContent : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent : heading.node.textContent))
                         ),
                     children && children.length && UL(children),
                 ].filter(Boolean)
@@ -3952,6 +3949,14 @@
     //     '.comment': [-500, -100, -50]
     // };
 
+    // 判断一个元素是否居中
+    var isElementHorizontalCentered = function (elem) {
+      const parent = elem.parentNode;
+      const parentWidth = parent.offsetWidth;
+      const elementWidth = elem.offsetWidth;
+      return Math.abs((elem.offsetLeft + elementWidth / 2) - (parent.offsetLeft + parentWidth / 2)) < 1;
+    }
+
     // 拿到离页面左边边缘最近的标题的距离
     var getElemsCommonLeft = function (elems) {
         if (!elems.length) {
@@ -4386,8 +4391,8 @@
                     continue;
                 }
                 // 加粗的文字长度超过 n 个字则不识别为标题
-                if (node.innerHTML.length > 26) {
-                    // console.log("b_strong continue 4");
+                if (node.textContent.length > 68) {
+                    // console.log("b_strong continue 4, node.textContent.length = ", node.textContent.length);
                     // console.log(node);
                     continue;
                 }
@@ -4404,17 +4409,19 @@
                     continue;
                 }
                 let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
+                let isCentered = isElementHorizontalCentered(node);
+                let isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
                 if (!cur_leftmost_offset) {
                     continue;
                 } else {
                     // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
-                    if (node.getBoundingClientRect().left !== cur_leftmost_offset) {
+                    if (!isCentered && (!isLeftAligned)) {
                         // console.log("b_strong continue 1");
                         // console.log(node);
                         continue;
                     }
                 }
-                cur_level = 1;  // strong 粗体字类型的标题那 level 就直接是 1 就好了, 免得显示不出来
+                cur_level = isCentered ? 1 : 2;  // strong 粗体字类型的标题居中则level为1, 不居中为2
             }
             headings.push({
                 node,
