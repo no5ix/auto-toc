@@ -4375,6 +4375,7 @@
             });
         }
 
+        let shouldLog = false;
         const headings = [];
         while (treeWalker.nextNode()) {
             // 按照页面上的显示顺序遍历
@@ -4383,47 +4384,51 @@
             if (extra_tags.includes(node.tagName)) {
                 // 有几个其他正经标题了, 不要提取<b>和<strong>了
                 if (isNormalHeadingExist) {
-                    // console.log("b_strong continue 0, ", node.textContent);
+                    if (shouldLog) console.log("b_strong continue 0, ", node.textContent);
                     continue;
                 }
                 // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
                 if (node.parentElement.childNodes.length !== 1) {
-                    if (node.nextElementSibling && node.nextElementSibling.nodeName.toLowerCase() !== 'br') {  // 但是同级的下一个元素是换行是可以的
-                        // console.log("b_strong continue 3, ", node.textContent, node.nextElementSibling.nodeName.toLowerCase());
-                        continue;
+                    let cn = node.parentElement.childNodes;
+                    let should_continue = false;
+                    for (let i = 0; i < cn.length; i++) {
+                        if (cn[i].nodeName.toLowerCase() !== 'br') {  // 但是同级元素是换行是可以的
+                            should_continue = true;
+                            break;
+                        }
                     }
-                    if (node.previousElementSibling && node.previousElementSibling.nodeName.toLowerCase() !== 'br') {  // 但是同级的上一个元素是换行是可以的
-                        // console.log("b_strong continue 7, ", node.textContent, node.previousElementSibling.nodeName.toLowerCase());
+                    if (should_continue) {
+                        if (shouldLog) console.log("b_strong continue 3, ", cn[i].textContent, cn[i].nodeName.toLowerCase());
                         continue;
                     }
                 }
                 // 加粗的文字长度超过 n 个字则不识别为标题
                 if (node.textContent.length > 68) {
-                    // console.log("b_strong continue 4, node.textContent.length = ", node.textContent);
+                    if (shouldLog) console.log("b_strong continue 4, node.textContent.length = ", node.textContent);
                     continue;
                 }
                 // 当前 elem 不能是正经标题的子元素, 否则会重复
                 if (header_tags.includes(node.parentElement.tagName)) {
-                    // console.log("b_strong continue 2, ", node.textContent);
+                    if (shouldLog) console.log("b_strong continue 2, ", node.textContent);
                     continue;
                 }
                 // 加粗的文字的父元素为<u>则不识别为标题(因为<u>会使得子元素带下划线)
                 if (node.parentElement.tagName === "U") {
-                    // console.log("b_strong continue 5, ", node.textContent);
+                    if (shouldLog) console.log("b_strong continue 5, ", node.textContent);
                     continue;
                 }
                 let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
                 let isCentered = isElementHorizontalCentered(node);
                 if (!cur_leftmost_offset) {
                     if (!isCentered) {
-                        // console.log("b_strong continue 6, ", node.textContent);
+                        if (shouldLog) console.log("b_strong continue 6, ", node.textContent);
                         continue;
                     }
                 } else {
                     // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
                     let isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
                     if (!isCentered && (!isLeftAligned)) {
-                        // console.log("b_strong continue 1, ", node.textContent);
+                        if (shouldLog) console.log("b_strong continue 1, ", node.textContent);
                         continue;
                     }
                 }
