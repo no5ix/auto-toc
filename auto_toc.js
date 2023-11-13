@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.31
+// @version      1.32
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -3960,6 +3960,7 @@
     // 拿到离页面左边边缘最近的标题的距离
     var getElemsCommonLeft = function (elems) {
         if (!elems.length) {
+            // console.log("calc_getElemsCommonLeft, !elems.length");
             return undefined;
         }
         var lefts = {};
@@ -3973,6 +3974,7 @@
         var count = elems.length;
         var isAligned = Object.keys(lefts).length <= Math.ceil(0.3 * count);
         if (!isAligned) {
+            // console.log("calc_getElemsCommonLeft, !isAligned, ", Object.keys(lefts).length, Math.ceil(0.3 * count), count);
             return undefined;
         }
         var sortedByCount = Object.keys(lefts).sort(function (a, b) {
@@ -4367,6 +4369,7 @@
         if (!isNormalHeadingExist) {  // 有几个其他正经标题了, 之后没必要提取<b>和<strong>了
             // 提前计算出<b> 和<strong>这俩特殊标题的离页面左边边缘最近的标题的距离
             extra_tags.forEach((tag) => {
+                // console.log("calc_getElemsCommonLeft, tagName=", tag);
                 const elems = (0, toArray)(article.getElementsByTagName(tag));
                 extra_tags_leftmost_offset[tag] = getElemsCommonLeft(elems);
             });
@@ -4380,44 +4383,47 @@
             if (extra_tags.includes(node.tagName)) {
                 // 有几个其他正经标题了, 不要提取<b>和<strong>了
                 if (isNormalHeadingExist) {
-                    // console.log("b_strong continue 0");
-                    // console.log(node);
+                    // console.log("b_strong continue 0, ", node.textContent);
                     continue;
                 }
                 // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
                 if (node.parentElement.childNodes.length !== 1) {
-                    // console.log("b_strong continue 3");
-                    // console.log(node);
-                    continue;
+                    if (node.nextElementSibling && node.nextElementSibling.nodeName.toLowerCase() !== 'br') {  // 但是同级的下一个元素是换行是可以的
+                        // console.log("b_strong continue 3, ", node.textContent, node.nextElementSibling.nodeName.toLowerCase());
+                        continue;
+                    }
+                    if (node.previousElementSibling && node.previousElementSibling.nodeName.toLowerCase() !== 'br') {  // 但是同级的上一个元素是换行是可以的
+                        // console.log("b_strong continue 7, ", node.textContent, node.previousElementSibling.nodeName.toLowerCase());
+                        continue;
+                    }
                 }
                 // 加粗的文字长度超过 n 个字则不识别为标题
                 if (node.textContent.length > 68) {
-                    // console.log("b_strong continue 4, node.textContent.length = ", node.textContent.length);
-                    // console.log(node);
+                    // console.log("b_strong continue 4, node.textContent.length = ", node.textContent);
                     continue;
                 }
                 // 当前 elem 不能是正经标题的子元素, 否则会重复
                 if (header_tags.includes(node.parentElement.tagName)) {
-                    // console.log("b_strong continue 2");
-                    // console.log(node);
+                    // console.log("b_strong continue 2, ", node.textContent);
                     continue;
                 }
                 // 加粗的文字的父元素为<u>则不识别为标题(因为<u>会使得子元素带下划线)
                 if (node.parentElement.tagName === "U") {
-                    // console.log("b_strong continue 5");
-                    // console.log(node);
+                    // console.log("b_strong continue 5, ", node.textContent);
                     continue;
                 }
                 let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
                 let isCentered = isElementHorizontalCentered(node);
-                let isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
                 if (!cur_leftmost_offset) {
-                    continue;
+                    if (!isCentered) {
+                        // console.log("b_strong continue 6, ", node.textContent);
+                        continue;
+                    }
                 } else {
                     // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
+                    let isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
                     if (!isCentered && (!isLeftAligned)) {
-                        // console.log("b_strong continue 1");
-                        // console.log(node);
+                        // console.log("b_strong continue 1, ", node.textContent);
                         continue;
                     }
                 }
