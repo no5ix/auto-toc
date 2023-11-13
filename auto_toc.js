@@ -62,7 +62,7 @@
         }
     }
 
-    let shouldLog = true;
+    let shouldLog = false;
 
     function isMasterFrame(w) {
         const root = getRootWindow();
