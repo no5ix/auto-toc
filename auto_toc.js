@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.33
+// @version      1.34
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -18,7 +18,13 @@
 // @grant        GM.getValue
 // @grant        GM_addStyle
 // @grant        GM.addStyle
+// @compatible        chrome
+// @compatible        edge
+// @compatible        safari
+// @supportURL        https://github.com/no5ix/auto-toc/issues
+// @homepage          https://github.com/no5ix/auto-toc
 // ==/UserScript==
+
 
 (function () {
     "use strict";
@@ -55,6 +61,8 @@
                 : root;
         }
     }
+
+    let shouldLog = true;
 
     function isMasterFrame(w) {
         const root = getRootWindow();
@@ -3062,11 +3070,11 @@
                             {
                                 href: `#${heading.anchor}`,
                                 // title: heading.node.textContent,
-                                title: (heading.node.textContent.trim() !== "" ? heading.node.textContent : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent : heading.node.textContent)),
+                                title: (heading.node.textContent.trim() !== "" ? heading.node.textContent.trim() : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent.trim().substring(0, 10) : heading.node.textContent.trim())),
                             },
                             // "● " + heading.node.textContent
                             // 如果当前标题内容为空, 则找相邻的下一个同级的元素用它的文本作为标题显示
-                            "● " + (heading.node.textContent.trim() !== "" ? heading.node.textContent : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent : heading.node.textContent))
+                            "● " + (heading.node.textContent.trim() !== "" ? heading.node.textContent.trim() : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent.trim().substring(0, 10) : heading.node.textContent.trim()))
                         ),
                     children && children.length && UL(children),
                 ].filter(Boolean)
@@ -3949,18 +3957,36 @@
     //     '.comment': [-500, -100, -50]
     // };
 
-    // 判断一个元素是否居中
-    var isElementHorizontalCentered = function (elem) {
-      const parent = elem.parentNode;
-      const parentWidth = parent.offsetWidth;
-      const elementWidth = elem.offsetWidth;
-      return Math.abs((elem.offsetLeft + elementWidth / 2) - (parent.offsetLeft + parentWidth / 2)) < 2;
+    // 判断一个元素是否对于整个页面水平居中
+    var isElementHorizontalCentered = function (element) {
+        var divElement = element.closest('div');
+        if (divElement) {
+            var elementWidth = element.offsetWidth;
+            var pWidth = divElement.offsetWidth;
+            var elementLeft = element.getBoundingClientRect().left;
+            var pLeft = divElement.getBoundingClientRect().left;
+
+            var elementCenter = elementLeft + elementWidth / 2;
+            var pCenter = pLeft + pWidth / 2;
+
+            if (Math.abs(elementCenter - pCenter) <= 2) {
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            var elementRect = element.getBoundingClientRect();
+            var viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            var elementCenterX = elementRect.left + elementRect.width / 2;
+            var isCenteredHorizontally = Math.abs(elementCenterX - viewportWidth / 2) < 8;
+            return isCenteredHorizontally;
+        }
     }
 
     // 拿到离页面左边边缘最近的标题的距离
     var getElemsCommonLeft = function (elems) {
         if (!elems.length) {
-            // console.log("calc_getElemsCommonLeft, !elems.length");
+            if (shouldLog) console.log("calc_getElemsCommonLeft, !elems.length");
             return undefined;
         }
         var lefts = {};
@@ -3972,15 +3998,16 @@
             lefts[left]++;
         });
         var count = elems.length;
-        var isAligned = Object.keys(lefts).length <= Math.ceil(0.3 * count);
+        var isAligned = Object.keys(lefts).length <= Math.ceil(0.6 * count);
         if (!isAligned) {
-            // console.log("calc_getElemsCommonLeft, !isAligned, ", Object.keys(lefts).length, Math.ceil(0.3 * count), count);
+            if (shouldLog) console.log("calc_getElemsCommonLeft, !isAligned, ", Object.keys(lefts).length, Math.ceil(0.3 * count), count);
             return undefined;
         }
         var sortedByCount = Object.keys(lefts).sort(function (a, b) {
             return lefts[b] - lefts[a];
         });
         var most = Number(sortedByCount[0]);
+        if (shouldLog) console.log("calc_getElemsCommonLeft, most, ", most);
         return most;
     };
 
@@ -4365,74 +4392,88 @@
             }
         }
 
+
+
         let extra_tags_leftmost_offset = new Map();
         if (!isNormalHeadingExist) {  // 有几个其他正经标题了, 之后没必要提取<b>和<strong>了
             // 提前计算出<b> 和<strong>这俩特殊标题的离页面左边边缘最近的标题的距离
             extra_tags.forEach((tag) => {
-                // console.log("calc_getElemsCommonLeft, tagName=", tag);
+                if (shouldLog) console.log("calc_getElemsCommonLeft, tagName=", tag);
                 const elems = (0, toArray)(article.getElementsByTagName(tag));
                 extra_tags_leftmost_offset[tag] = getElemsCommonLeft(elems);
             });
         }
+        // 返回level
+        const is_b_strong_valid_heading = function (node) {
+            // 有几个其他正经标题了, 不要提取<b>和<strong>了
+            if (isNormalHeadingExist) {
+                if (shouldLog) console.log("b_strong continue 0, ", node.textContent);
+                return 0;
+            }
+            // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
+            if (node.parentElement.childNodes.length !== 1) {
+                let cn = node.parentElement.childNodes;
+                let should_continue = false;
+                for (let i = 0; i < cn.length; i++) {
+                    if (cn[i] === node || extra_tags.includes(cn[i].tagName) || cn[i].nodeName.toLowerCase() === 'br' || (cn[i].nodeName.toLowerCase() === 'span' && cn[i].textContent === "")) {  // 但是同级元素是换行<br>或空的<span>或者是<b>或<strong>是可以的
+                        continue;
+                    }
+                    if (shouldLog) console.log("b_strong continue 3, ", cn[i].textContent, cn[i].nodeName.toLowerCase());
+                    should_continue = true;
+                    break;
+                }
+                if (should_continue) {
+                   return 0;
+                }
+            }
+            // 当前 elem 不能是正经标题的子元素, 否则会重复
+            if (header_tags.includes(node.parentElement.tagName)) {
+                if (shouldLog) console.log("b_strong continue 2, ", node.textContent);
+               return 0;
+            }
+            // 加粗的文字的父元素以及爷元素为<u>则不识别为标题(因为<u>会使得子元素带下划线)
+            if (node.parentElement && (node.parentElement.tagName === "U" || (node.parentElement.parentElement && node.parentElement.parentElement.tagName === "U"))) {
+                if (shouldLog) console.log("b_strong continue 5, ", node.textContent);
+               return 0;
+            }
+            let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
+            let isCentered = isElementHorizontalCentered(node);
+            if (!cur_leftmost_offset) {
+                if (!isCentered) {
+                    if (shouldLog) console.log("b_strong continue 6, ", node.textContent);
+                   return 0;
+                }
+            } else {
+                // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
+                let isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
+                if (!isCentered && (!isLeftAligned)) {
+                    if (shouldLog) console.log("b_strong continue 1, ", node.textContent);
+                   return 0;
+                }
+            }
+            return isCentered ? 1 : 2;  // strong/b 粗体字类型的标题居中则level为1, 不居中为2
+        }
 
-        let shouldLog = false;
         const headings = [];
         while (treeWalker.nextNode()) {
             // 按照页面上的显示顺序遍历
             let node = treeWalker.currentNode;
+            // 如果当前标题内容为空, 则找相邻的下一个同级的非header_tags以及非可用的b/strong的元素用它的文本作为标题显示, 但如果还是空白的, 那就不要了
+            let nodeText = node.textContent.trim();
+            if (nodeText === "" && (node.nextElementSibling && !header_tags.includes(node.nextElementSibling.tagName) && !is_b_strong_valid_heading(node))) {
+                nodeText = node.nextElementSibling.textContent.trim();
+            }
+            if (nodeText === "") {
+                if (shouldLog) console.log("b_strong continue 4", node.textContent);
+                continue;
+            }
             let cur_level = tags.indexOf(node.tagName) + 1;
             if (extra_tags.includes(node.tagName)) {
-                // 有几个其他正经标题了, 不要提取<b>和<strong>了
-                if (isNormalHeadingExist) {
-                    if (shouldLog) console.log("b_strong continue 0, ", node.textContent);
+                cur_level = is_b_strong_valid_heading(node);
+                if (cur_level == 0) {
                     continue;
                 }
-                // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
-                if (node.parentElement.childNodes.length !== 1) {
-                    let cn = node.parentElement.childNodes;
-                    let should_continue = false;
-                    for (let i = 0; i < cn.length; i++) {
-                        if (cn[i].nodeName.toLowerCase() !== 'br') {  // 但是同级元素是换行是可以的
-                            should_continue = true;
-                            break;
-                        }
-                    }
-                    if (should_continue) {
-                        if (shouldLog) console.log("b_strong continue 3, ", cn[i].textContent, cn[i].nodeName.toLowerCase());
-                        continue;
-                    }
-                }
-                // 加粗的文字长度超过 n 个字则不识别为标题
-                if (node.textContent.length > 68) {
-                    if (shouldLog) console.log("b_strong continue 4, node.textContent.length = ", node.textContent);
-                    continue;
-                }
-                // 当前 elem 不能是正经标题的子元素, 否则会重复
-                if (header_tags.includes(node.parentElement.tagName)) {
-                    if (shouldLog) console.log("b_strong continue 2, ", node.textContent);
-                    continue;
-                }
-                // 加粗的文字的父元素为<u>则不识别为标题(因为<u>会使得子元素带下划线)
-                if (node.parentElement.tagName === "U") {
-                    if (shouldLog) console.log("b_strong continue 5, ", node.textContent);
-                    continue;
-                }
-                let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
-                let isCentered = isElementHorizontalCentered(node);
-                if (!cur_leftmost_offset) {
-                    if (!isCentered) {
-                        if (shouldLog) console.log("b_strong continue 6, ", node.textContent);
-                        continue;
-                    }
-                } else {
-                    // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
-                    let isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
-                    if (!isCentered && (!isLeftAligned)) {
-                        if (shouldLog) console.log("b_strong continue 1, ", node.textContent);
-                        continue;
-                    }
-                }
-                cur_level = isCentered ? 1 : 2;  // strong 粗体字类型的标题居中则level为1, 不居中为2
+                if (shouldLog) console.log("b_strong cur_level", node.textContent, cur_level);
             }
             headings.push({
                 node,
@@ -4916,3 +4957,12 @@
 
     }
 })();
+
+
+// TEST:
+// pass: https://zhuanlan.zhihu.com/p/336727285
+// pass: https://zhuanlan.zhihu.com/p/643656433
+// pass: https://mp.weixin.qq.com/s/IovIZChwAIIT_kmI7Ry7Aw
+// pass: https://mp.weixin.qq.com/s/ik4ZS-9z9dnUwV8QpgphyA
+// pass: https://mp.weixin.qq.com/s/QI-Bymo9VBzJaM1lWIE_SA
+// pass: https://mp.weixin.qq.com/s/hMFUINwCpEdLBoZsnPmjzQ
