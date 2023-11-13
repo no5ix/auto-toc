@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.35
+// @version      1.36
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -3958,28 +3958,44 @@
     // };
 
     // 判断一个元素是否对于整个页面水平居中
-    var isElementHorizontalCentered = function (element) {
-        var divElement = element.closest('div');
+    const isElementHorizontalCentered = function (element) {
+        let divElement = element.closest('div');
         if (divElement) {
-            var elementWidth = element.offsetWidth;
-            var pWidth = divElement.offsetWidth;
-            var elementLeft = element.getBoundingClientRect().left;
-            var pLeft = divElement.getBoundingClientRect().left;
-
-            var elementCenter = elementLeft + elementWidth / 2;
-            var pCenter = pLeft + pWidth / 2;
-
-            if (Math.abs(elementCenter - pCenter) <= 2) {
-                return true;
-            } else {
-                return false;
+            let finalElem = element;
+            // 如果有个最近的section祖先
+            if (element.closest('section')) {
+                if (shouldLog) console.log("isElementHorizontalCentered begin", element.textContent);
+                // 拿到最高层的祖先<section>元素 S 并且它是离最近的<p>元素相邻的, 且途中不能有为P的祖先, 用 S 当做 finalElem 来判断是否居中
+                let currentElement = element;
+                let previousSibling = null;
+                let nextSibling = null;
+                while (currentElement.parentElement) {
+                    if (currentElement.parentElement.tagName === "SECTION") {
+                        previousSibling = currentElement.parentElement.previousElementSibling;
+                        nextSibling = currentElement.parentElement.nextElementSibling;
+                        if ((previousSibling && previousSibling.tagName === "P") || (nextSibling && nextSibling.tagName === "P")) {
+                            finalElem = currentElement.parentElement;
+                            if (shouldLog) console.log("isElementHorizontalCentered end", element.textContent, finalElem);
+                            break;
+                        }
+                    } else if (currentElement.parentElement.tagName === "P") {  // 如果中间有一个祖先是P那就不应该要了
+                        break;
+                    }
+                    currentElement = currentElement.parentElement;
+                }
             }
+            let elementWidth = finalElem.offsetWidth;
+            let pWidth = divElement.offsetWidth;
+            let elementLeft = finalElem.getBoundingClientRect().left;
+            let pLeft = divElement.getBoundingClientRect().left;
+            let elementCenter = elementLeft + elementWidth / 2;
+            let pCenter = pLeft + pWidth / 2;
+            return Math.abs(elementCenter - pCenter) <= 2;
         } else {
-            var elementRect = element.getBoundingClientRect();
-            var viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-            var elementCenterX = elementRect.left + elementRect.width / 2;
-            var isCenteredHorizontally = Math.abs(elementCenterX - viewportWidth / 2) < 8;
-            return isCenteredHorizontally;
+            let elementRect = element.getBoundingClientRect();
+            let viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            let elementCenterX = elementRect.left + elementRect.width / 2;
+            return Math.abs(elementCenterX - viewportWidth / 2) < 8;
         }
     }
 
@@ -4411,19 +4427,25 @@
                 return 0;
             }
             // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
-            if (node.parentElement.childNodes.length !== 1) {
-                let cn = node.parentElement.childNodes;
-                let should_continue = false;
-                for (let i = 0; i < cn.length; i++) {
-                    if (cn[i] === node || extra_tags.includes(cn[i].tagName) || cn[i].nodeName.toLowerCase() === 'br' || (cn[i].nodeName.toLowerCase() === 'span' && cn[i].textContent === "")) {  // 但是同级元素是换行<br>或空的<span>或者是<b>或<strong>是可以的
-                        continue;
-                    }
-                    if (shouldLog) console.log("b_strong continue 3, ", cn[i].textContent, cn[i].nodeName.toLowerCase());
-                    should_continue = true;
-                    break;
+            if (node.closest("P") || node.parentElement.childNodes.length !== 1) {
+                let cn_list = [];
+                // 拿到最近的p祖先的子元素们
+                if (node.closest("P")) {
+                    cn_list.push(node.closest("P").childNodes);
                 }
-                if (should_continue) {
-                   return 0;
+                // 拿到父元素的子元素们
+                if (node.parentElement.childNodes.length !== 1) {
+                    cn_list.push(node.parentElement.childNodes);
+                }
+                for (let j = 0; j < cn_list.length; j++) {
+                    let cn = cn_list[j];
+                    for (let i = 0; i < cn.length; i++) {
+                        if (cn[i] === node || cn[i].contains(node) || extra_tags.includes(cn[i].tagName) || cn[i].nodeName.toLowerCase() === 'br' || (cn[i].nodeName.toLowerCase() === 'span' && cn[i].textContent === "")) {  // 但是同级元素是换行<br>或空的<span>或者是<b>或<strong>是可以的
+                            continue;
+                        }
+                        if (shouldLog) console.log("b_strong continue 8, ", cn[i].textContent, cn[i].nodeName.toLowerCase());
+                        return 0;
+                    }
                 }
             }
             // 当前 elem 不能是正经标题的子元素, 否则会重复
@@ -4470,7 +4492,7 @@
             let cur_level = tags.indexOf(node.tagName) + 1;
             if (extra_tags.includes(node.tagName)) {
                 cur_level = is_b_strong_valid_heading(node);
-                if (cur_level == 0) {
+                if (cur_level === 0) {
                     continue;
                 }
                 if (shouldLog) console.log("b_strong cur_level", node.textContent, cur_level);
@@ -4966,4 +4988,5 @@
 // pass: https://mp.weixin.qq.com/s/ik4ZS-9z9dnUwV8QpgphyA
 // pass: https://mp.weixin.qq.com/s/QI-Bymo9VBzJaM1lWIE_SA
 // pass: https://mp.weixin.qq.com/s/hMFUINwCpEdLBoZsnPmjzQ
-// not pass: https://mp.weixin.qq.com/s/FXMFfWcycz55_iI23qFT-Q
+// pass: https://mp.weixin.qq.com/s?__biz=MzkxNTUwODgzNA==&mid=2247518770&idx=1&sn=0061e739096b2a412f2d19a380444fc5&chksm=c15cd13ff62b5829b33bdb056d0da847d4633ece54ec88516c1de7f4b8c5fea231b04fbe5d99&rd2werd=1#wechat_redirect
+// pass: https://mp.weixin.qq.com/s/FXMFfWcycz55_iI23qFT-Q
