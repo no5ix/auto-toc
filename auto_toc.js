@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.34
+// @version      1.35
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4000,7 +4000,7 @@
         var count = elems.length;
         var isAligned = Object.keys(lefts).length <= Math.ceil(0.6 * count);
         if (!isAligned) {
-            if (shouldLog) console.log("calc_getElemsCommonLeft, !isAligned, ", Object.keys(lefts).length, Math.ceil(0.3 * count), count);
+            if (shouldLog) console.log("calc_getElemsCommonLeft, !isAligned, ", Object.keys(lefts).length, Math.ceil(0.6 * count), count);
             return undefined;
         }
         var sortedByCount = Object.keys(lefts).sort(function (a, b) {
@@ -4010,7 +4010,7 @@
         if (shouldLog) console.log("calc_getElemsCommonLeft, most, ", most);
         return most;
     };
-
+    
     // const extractArticle = function (rootElement = document) {
     //     var elemScores = new Map();
     //     // weigh nodes by factor: "selector" "distance from this node"
@@ -4966,3 +4966,4 @@
 // pass: https://mp.weixin.qq.com/s/ik4ZS-9z9dnUwV8QpgphyA
 // pass: https://mp.weixin.qq.com/s/QI-Bymo9VBzJaM1lWIE_SA
 // pass: https://mp.weixin.qq.com/s/hMFUINwCpEdLBoZsnPmjzQ
+// not pass: https://mp.weixin.qq.com/s/FXMFfWcycz55_iI23qFT-Q
