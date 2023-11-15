@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.36
+// @version      1.37
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -62,7 +62,7 @@
         }
     }
 
-    let shouldLog = false;
+    let shouldLog = true;
 
     function isMasterFrame(w) {
         const root = getRootWindow();
@@ -3070,11 +3070,11 @@
                             {
                                 href: `#${heading.anchor}`,
                                 // title: heading.node.textContent,
-                                title: (heading.node.textContent.trim() !== "" ? heading.node.textContent.trim() : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent.trim().substring(0, 10) : heading.node.textContent.trim())),
+                                title: (heading.node.newTextContent ? heading.node.newTextContent : (heading.node.textContent.trim() !== "" ? heading.node.textContent.trim() : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent.trim().substring(0, 10) : heading.node.textContent.trim()))),
                             },
                             // "● " + heading.node.textContent
                             // 如果当前标题内容为空, 则找相邻的下一个同级的元素用它的文本作为标题显示
-                            "● " + (heading.node.textContent.trim() !== "" ? heading.node.textContent.trim() : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent.trim().substring(0, 10) : heading.node.textContent.trim()))
+                            "● " + (heading.node.newTextContent ? heading.node.newTextContent : (heading.node.textContent.trim() !== "" ? heading.node.textContent.trim() : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent.trim().substring(0, 10) : heading.node.textContent.trim())))
                         ),
                     children && children.length && UL(children),
                 ].filter(Boolean)
@@ -3902,11 +3902,6 @@
         return path;
     };
 
-    const isStrongAlsoHeading = function (rootElement = document) {
-        // return false
-        return true;
-        // return rootElement.querySelectorAll('p > strong:only-child').length >= 2
-    };
 
     //////////////////////////////// 以下是新版提取文章和标题的部分(目前测出某些网站会导致页面排版错乱比如谷歌和https://www.163.com/dy/article/GJKFUO4105119NPR.html) //////////////////////////////////////////////////////////////////////
     //////////////////////////////// 所以退回后面的旧版的代码了 //////////////////////////////////////////////////////////////////////
@@ -3915,74 +3910,67 @@
         return [].slice.apply(arr);
     };
 
-    // var getAncestors = function (elem, maxDepth) {
-    //     if (maxDepth === void 0) { maxDepth = -1; }
-    //     var ancestors = [];
-    //     var cur = elem;
-    //     while (cur && maxDepth--) {
-    //         ancestors.push(cur);
-    //         cur = cur.parentElement;
-    //     }
-    //     return ancestors;
-    // };
-
-    // var canScroll = function (el) {
-    //     return (['auto', 'scroll'].includes(window.getComputedStyle(el).overflowY) &&
-    //         el.clientHeight + 1 < el.scrollHeight);
-    // };
-
-    // var ARTICLE_TAG_WEIGHTS = {
-    //     h1: [0, 100, 60, 40, 30, 25, 22, 18].map(function (s) { return s * 0.4; }),
-    //     h2: [0, 100, 60, 40, 30, 25, 22, 18],
-    //     h3: [0, 100, 60, 40, 30, 25, 22, 18].map(function (s) { return s * 0.5; }),
-    //     h4: [0, 100, 60, 40, 30, 25, 22, 18].map(function (s) { return s * 0.5 * 0.5; }),
-    //     h5: [0, 100, 60, 40, 30, 25, 22, 18].map(function (s) { return s * 0.5 * 0.5 * 0.5; }),
-    //     h6: [0, 100, 60, 40, 30, 25, 22, 18].map(function (s) { return s * 0.5 * 0.5 * 0.5 * 0.5; }),
-    //     strong: [0, 100, 60, 40, 30, 25, 22, 18].map(function (s) { return s * 0.5 * 0.5 * 0.5; }),
-    //     article: [500],
-    //     '.article': [500],
-    //     '#article': [500],
-    //     '.content': [101],
-    //     sidebar: [-500, -100, -50],
-    //     '.sidebar': [-500, -100, -50],
-    //     '#sidebar': [-500, -100, -50],
-    //     aside: [-500, -100, -50],
-    //     '.aside': [-500, -100, -50],
-    //     '#aside': [-500, -100, -50],
-    //     nav: [-500, -100, -50],
-    //     '.nav': [-500, -100, -50],
-    //     '.navigation': [-500, -100, -50],
-    //     '.toc': [-500, -100, -50],
-    //     '.table-of-contents': [-500, -100, -50],
-    //     '.comment': [-500, -100, -50]
-    // };
-
     // 判断一个元素是否对于整个页面水平居中
     const isElementHorizontalCentered = function (element) {
         let divElement = element.closest('div');
         if (divElement) {
             let finalElem = element;
-            // 如果有个最近的section祖先
-            if (element.closest('section')) {
-                if (shouldLog) console.log("isElementHorizontalCentered begin", element.textContent);
-                // 拿到最高层的祖先<section>元素 S 并且它是离最近的<p>元素相邻的, 且途中不能有为P的祖先, 用 S 当做 finalElem 来判断是否居中
+            let closestSection = element.closest('section')
+            let hasOtherTextElemToCombine = false;
+            // 如果有个最近的section祖先, 则检查是否有兄弟section, 然后判断他们的共同祖先section是否居中
+            if (closestSection) {
+                if (shouldLog) console.log("isElementHorizontalCentered closestSection begin", element.textContent);
+                finalElem = closestSection;
+                // 拿到一个高层的祖先<section>元素 S 并且它是有个其他包含其他文本的section, 且途中不能有为P的祖先, 用 S 当做 finalElem 来判断是否居中
                 let currentElement = element;
                 let previousSibling = null;
                 let nextSibling = null;
                 while (currentElement.parentElement) {
-                    if (currentElement.parentElement.tagName === "SECTION") {
-                        previousSibling = currentElement.parentElement.previousElementSibling;
-                        nextSibling = currentElement.parentElement.nextElementSibling;
+                    let curParent = currentElement.parentElement;
+                    if (curParent.isCalcedCentered) {  // 已经被标记过了, 那应该直接返回 false 了
+                        return false;
+                    }
+                    if (curParent.tagName === "SECTION") {
+                        previousSibling = curParent.previousElementSibling;
+                        nextSibling = curParent.nextElementSibling;
+                        // 如果祖先的兄弟已经是<p>了, 那可以停止继续循环了
                         if ((previousSibling && previousSibling.tagName === "P") || (nextSibling && nextSibling.tagName === "P")) {
-                            finalElem = currentElement.parentElement;
-                            if (shouldLog) console.log("isElementHorizontalCentered end", element.textContent, finalElem);
+                            finalElem = curParent;
                             break;
                         }
-                    } else if (currentElement.parentElement.tagName === "P") {  // 如果中间有一个祖先是P那就不应该要了
+                        let hasTextCnt = 0;
+                        let shouldBreakWhile = false;
+                        for (let i = 0; i < curParent.childNodes.length; i++) {
+                            let fc = curParent.childNodes[i];
+                            // 如果当前祖先的子元素已经是有<p>子元素了, 那可以停止继续循环了, 并且把 `自己` 当做 finalElem
+                            if (fc.querySelector('p') !== null) {
+                                finalElem = currentElement;
+                                shouldBreakWhile = true;
+                                break;
+                            }
+                            // 如果当前祖先的子元素已经是2个以及以上的文本子元素了, 那可以停止继续循环了, 并且把 `当前祖先` 当做 finalElem
+                            if (fc.textContent != "") {
+                                hasTextCnt += 1;
+                                if (hasTextCnt > 1) {
+                                    finalElem = curParent;
+                                    hasOtherTextElemToCombine = true;
+                                    shouldBreakWhile = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (shouldBreakWhile) {
+                            break;
+                        }
+                    } else if (curParent.tagName === "P") {  // 如果中间有一个祖先是P那就不应该要了
+                        break;
+                    } else if (curParent.tagName === "div") {  // 如果中间有一个祖先是div那就不应该要了
                         break;
                     }
                     currentElement = currentElement.parentElement;
                 }
+                finalElem.isCalcedCentered = true;
+                if (shouldLog) console.log("isElementHorizontalCentered closestSection end", element.textContent, hasOtherTextElemToCombine, finalElem);
             }
             let elementWidth = finalElem.offsetWidth;
             let pWidth = divElement.offsetWidth;
@@ -3990,7 +3978,17 @@
             let pLeft = divElement.getBoundingClientRect().left;
             let elementCenter = elementLeft + elementWidth / 2;
             let pCenter = pLeft + pWidth / 2;
-            return Math.abs(elementCenter - pCenter) <= 2;
+            let isCentered =  Math.abs(elementCenter - pCenter) <= 20;
+
+            if (shouldLog) console.log("isElementHorizontalCentered isCentered: ", element.textContent, isCentered, elementCenter, pCenter);
+
+            // 如果有兄弟section, 然后判断他们是不是类似于 `01`+ `起源`这种一个是纯数字其他是文字的几个section合起来的大section, 那就把他们的文本合并来当做`01`这个section的标题 newTextContent
+            if (isCentered && closestSection && hasOtherTextElemToCombine) {
+                element.newTextContent = finalElem.textContent;
+                if (shouldLog) console.log("isElementHorizontalCentered shouldCombineSectionText: ", element.textContent, element.newTextContent);
+            }
+
+            return isCentered;
         } else {
             let elementRect = element.getBoundingClientRect();
             let viewportWidth = window.innerWidth || document.documentElement.clientWidth;
@@ -4026,156 +4024,6 @@
         if (shouldLog) console.log("calc_getElemsCommonLeft, most, ", most);
         return most;
     };
-    
-    // const extractArticle = function (rootElement = document) {
-    //     var elemScores = new Map();
-    //     // weigh nodes by factor: "selector" "distance from this node"
-    //     Object.keys(ARTICLE_TAG_WEIGHTS).forEach(function (selector) {
-    //         var elems = (0, toArray)(rootElement.querySelectorAll(selector));
-    //         if (selector.toLowerCase() === 'strong') {
-    //             // for <strong> elements, only take them as heading when they align at left
-    //             var commonLeft_1 = getElemsCommonLeft(elems);
-    //             if (commonLeft_1 === undefined || commonLeft_1 > window.innerWidth / 2) {
-    //                 elems = [];
-    //             }
-    //             else {
-    //                 elems = elems.filter(function (elem) { return elem.getBoundingClientRect().left === commonLeft_1; });
-    //             }
-    //         }
-    //         elems.forEach(function (elem) {
-    //             var weights = ARTICLE_TAG_WEIGHTS[selector];
-    //             var ancestors = getAncestors(elem, weights.length);
-    //             ancestors.forEach(function (elem, distance) {
-    //                 elemScores.set(elem, (elemScores.get(elem) || 0) + weights[distance] || 0);
-    //             });
-    //         });
-    //     });
-    //     var sortedByScore = [...elemScores].sort(function (a, b) { return b[1] - a[1]; });
-    //     // pick top 5 node to re-weigh
-    //     var candicates = sortedByScore
-    //         .slice(0, 5)
-    //         .filter(Boolean)
-    //         .map(function (_a) {
-    //             var elem = _a[0], score = _a[1];
-    //             return { elem: elem, score: score };
-    //         });
-    //     // re-weigh by factor:  "take-lots-vertical-space", "contain-less-links", "not-too-narrow", "cannot-scroll"
-    //     var isTooNarrow = function (e) { return e.scrollWidth < 400; }; // rule out sidebars
-    //     candicates.forEach(function (candicate) {
-    //         if (isTooNarrow(candicate.elem)) {
-    //             candicate.score = 0;
-    //             candicates.forEach(function (parent) {
-    //                 if (parent.elem.contains(candicate.elem)) {
-    //                     parent.score *= 0.7;
-    //                 }
-    //             });
-    //         }
-    //         if ((0, canScroll)(candicate.elem) && candicate.elem !== rootElement.body) {
-    //             candicate.score *= 0.5;
-    //         }
-    //     });
-    //     var reweighted = candicates
-    //         .map(function (_a) {
-    //             var elem = _a.elem, score = _a.score;
-    //             return {
-    //                 elem: elem,
-    //                 score: score *
-    //                     Math.log((elem.scrollHeight * elem.scrollHeight) /
-    //                         (elem.querySelectorAll('a').length || 1))
-    //             };
-    //         })
-    //         .sort(function (a, b) { return b.score - a.score; });
-    //     var article = reweighted.length ? reweighted[0].elem : undefined;
-
-    //     console.log('[extract]', {
-    //         elemScores: elemScores,
-    //         sortedByScore: sortedByScore,
-    //         candicates: candicates,
-    //         reweighted: reweighted
-    //     });
-
-    //     return article;
-    // }
-
-    // var HEADING_TAG_WEIGHTS = {
-    //     H1: 4,
-    //     H2: 9,
-    //     H3: 9,
-    //     H4: 10,
-    //     H5: 10,
-    //     H6: 10,
-    //     STRONG: 5
-    // };
-    // var extractHeadings = function (articleDom) {
-    //     var isVisible = function (elem) { return elem.offsetHeight !== 0; };
-    //     var isHeadingGroupVisible = function (group) {
-    //         return group.elems.filter(isVisible).length >= group.elems.length * 0.5;
-    //     };
-    //     var headingTagGroups = Object.keys(HEADING_TAG_WEIGHTS)
-    //         .map(function (tag) {
-    //             var elems = (0, toArray)(articleDom.getElementsByTagName(tag));
-    //             if (tag.toLowerCase() === 'strong') {
-    //                 // for <strong> elements, only take them as heading when they align at left
-    //                 var commonLeft_2 = getElemsCommonLeft(elems);
-    //                 if (commonLeft_2 === undefined || commonLeft_2 > window.innerWidth / 2) {
-    //                     elems = [];
-    //                 }
-    //                 else {
-    //                     elems = elems.filter(function (elem) { return elem.getBoundingClientRect().left === commonLeft_2; });
-    //                 }
-    //             }
-    //             return {
-    //                 tag: tag,
-    //                 elems: elems,
-    //                 score: elems.length * HEADING_TAG_WEIGHTS[tag]
-    //             };
-    //         })
-    //         .filter(function (group) { return group.score >= 10 && group.elems.length > 0; })
-    //         .filter(function (group) { return isHeadingGroupVisible(group); })
-    //         .slice(0, 3);
-    //     // use document sequence
-    //     var headingTags = headingTagGroups.map(function (headings) { return headings.tag; });
-    //     var acceptNode = function (node) {
-    //         var group = headingTagGroups.find(function (g) { return g.tag === node.tagName; });
-    //         if (!group) {
-    //             return NodeFilter.FILTER_SKIP;
-    //         }
-    //         return group.elems.includes(node) && isVisible(node)
-    //             ? NodeFilter.FILTER_ACCEPT
-    //             : NodeFilter.FILTER_SKIP;
-    //     };
-    //     var treeWalker = document.createTreeWalker(articleDom, NodeFilter.SHOW_ELEMENT, { acceptNode: acceptNode });
-    //     var headings = [];
-    //     var id = 0;
-    //     while (treeWalker.nextNode()) {
-    //         var node = treeWalker.currentNode;
-    //         // var anchor = node.id ||
-    //         // 	(0, toArray)(node.querySelectorAll('a'))
-    //         // 		.map(function (a) {
-    //         // 			var href = a.getAttribute('href') || '';
-    //         // 			return href.startsWith('#') ? href.substr(1) : a.id;
-    //         // 		})
-    //         // 		.filter(Boolean)[0];
-    //         // headings.push({
-    //         // 	node: node,
-    //         // 	text: node.textContent || '',
-    //         // 	level: headingTags.indexOf(node.tagName) + 1,
-    //         // 	id: id,
-    //         // 	anchor: anchor
-    //         // });
-    //         headings.push({
-    //             node,
-    //             level: headingTags.indexOf(node.tagName) + 1,
-    //         })
-    //         id++;
-    //     }
-    //     console.log("headingsssss new begin")
-    //     console.log(headings)
-    //     console.log("headingsssss new end")
-    //     return headings;
-    // };
-
-    ///////////////////////////////////////////////// 上面的是新版, 下面的是旧版 ////////////////////////
 
     const extractArticle = function (rootElement = document) {
         log("extracting article");
@@ -4270,12 +4118,8 @@
     };
 
     const extractHeadings = function (article) {
-        // log("extracting heading");
+        if (shouldLog) console.log("extractHeadings begin");
 
-        // what to be considered as headings
-        // const tags = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'].concat(
-        //     isStrongAlsoHeading(article) ? 'STRONG' : []
-        // )
         const header_tags = ["H1", "H2", "H3", "H4", "H5", "H6"];
         const extra_tags = ["STRONG", "B"];
         const tags = header_tags.concat(extra_tags);
@@ -4284,98 +4128,6 @@
         //         tag
         //     ]);
         const isVisible = (elem) => elem.offsetHeight !== 0;
-        // const isGroupVisible = (headings) =>
-        //     headings.filter(isVisible).length >= headings.length * 0.5;
-        // var headingGroup = tags
-        //     .map(tag => [].slice.apply(article.getElementsByTagName(tag)))
-        // const mm1 = headingGroup
-        //     .map((headings, i) => ({
-        //         elems: headings,
-        //         tag: tags[i],
-        //         score: headings.length * tagWeight(tags[i])
-        //     }))
-
-        // const mm2 = mm1
-        //     .filter(heading => heading.score >= 10)
-        // const mm3 = mm2
-        //     .filter(heading => isGroupVisible(heading.elems))
-        // const mm4 = mm3
-        //     .slice(0, 3)
-        // headingGroup = mm4
-
-        // var headingGroup = tags.map(function (tag) {
-        //     var elems = (0, toArray)(article.getElementsByTagName(tag));
-        //     if (tag.toLowerCase() === "strong" || tag.toLowerCase() === "b") {
-        //         // for <strong> elements, only take them as heading when they align at left
-        //         var commonLeft_2 = getElemsCommonLeft(elems);
-        //         // console.log("commonLeft_2 old begin")
-        //         // console.log(commonLeft_2)
-        //         // console.log(window.innerWidth / 2)
-        //         // console.log(elems)
-        //         // if (commonLeft_2 === undefined || commonLeft_2 > window.innerWidth / 2) {
-        //         if (commonLeft_2 === undefined) {
-        //             elems = [];
-        //         } else {
-        //             elems = elems.filter(function (elem) {
-        //                 return (
-        //                     elem.getBoundingClientRect().left === commonLeft_2 &&  // 当前 elem 离左边距离得和 commonLeft_2 一样
-        //                     !header_tags.includes(elem.parentElement.tagName) &&   // 当前 elem 不能是正经标题的子元素, 否则会重复
-        //                     // elem.parentElement.childNodes.length == 1    // 加粗的文字后面还有普通不加粗的文字则不识别为标题
-        //                     (elem.nextSibling && elem.nextSibling.nodeType === Node.TEXT_NODE)    // 加粗的文字后面还有普通不加粗的文字则不识别为标题
-        //                 );
-        //             });
-        //         }
-        //         // console.log(elems)
-        //         // console.log("commonLeft_2 old end")
-        //     }
-        //     return {
-        //         tag: tag,
-        //         elems: elems,
-        //         score: elems.length * tagWeight(tag),
-        //     };
-        // });
-        
-        // // console.log("headingGroup old begin")
-        // // console.log(headingGroup)
-        // // console.log("headingGroup old end")
-
-        // var mm1 = headingGroup
-        //     // 注释下面这三行代码(用于筛选score小于10的标题), 免得被认为是不显示某些标题的bug(比如这种情况: https://github.com/no5ix/auto-toc/issues/5)
-        //     // .filter(function (group) {
-        //     //     return group.score >= 10 && group.elems.length > 0;
-        //     // })
-        //     .filter(function (group) {
-        //         return isVisible(group);
-        //     })
-        //     .slice(0, 8);
-        // headingGroup = mm1;
-
-        // // use document sequence
-        // const validTags = headingGroup.map((headings) => headings.tag);
-
-        // // 记录一下已经找到的要显示的标题名字最终放到 finalInnerHTML 里
-        // const valid_innerHTML = headingGroup.map((headings) =>
-        //     headings.elems.map((node) => node.innerHTML)
-        // );
-        // var finalInnerHTML = [];
-        // valid_innerHTML.forEach(function (arr) {
-        //     finalInnerHTML = finalInnerHTML.concat(arr);
-        // });
-        
-        // // 记录一下已经找到的要显示的标题id最终放到 finalId 里
-        // const valid_id = headingGroup.map((headings) =>
-        //     headings.elems.map((node) => node.id)
-        // );
-        // var finalId = [];
-        // valid_id.forEach(function (arr) {
-        //     finalId = finalId.concat(arr);
-        // });
-        // console.log("finalInnerHTML old begin")
-        // console.log(headingGroup)
-        // console.log(valid_innerHTML)
-        // console.log(finalInnerHTML)
-        // console.log("finalInnerHTML old end")
-
         
         // 筛选页面上想要遍历的 node
         const acceptNode = (node) =>
@@ -4407,8 +4159,6 @@
                 break;
             }
         }
-
-
 
         let extra_tags_leftmost_offset = new Map();
         if (!isNormalHeadingExist) {  // 有几个其他正经标题了, 之后没必要提取<b>和<strong>了
@@ -4480,34 +4230,39 @@
         while (treeWalker.nextNode()) {
             // 按照页面上的显示顺序遍历
             let node = treeWalker.currentNode;
-            // 如果当前标题内容为空, 则找相邻的下一个同级的非header_tags以及非可用的b/strong的元素用它的文本作为标题显示, 但如果还是空白的, 那就不要了
-            let nodeText = node.textContent.trim();
-            if (nodeText === "" && (node.nextElementSibling && !header_tags.includes(node.nextElementSibling.tagName) && !is_b_strong_valid_heading(node))) {
-                nodeText = node.nextElementSibling.textContent.trim();
-            }
-            if (nodeText === "") {
-                if (shouldLog) console.log("b_strong continue 4", node.textContent);
-                continue;
-            }
-            let cur_level = tags.indexOf(node.tagName) + 1;
-            if (extra_tags.includes(node.tagName)) {
-                cur_level = is_b_strong_valid_heading(node);
-                if (cur_level === 0) {
+            if (node.autoTocHeadingLevel == null) {
+                // 如果当前标题内容为空, 则找相邻的下一个同级的非header_tags以及非可用的b/strong的元素用它的文本作为标题显示, 但如果还是空白的, 那就不要了
+                let nodeText = node.textContent.trim();
+                if (nodeText === "" && (node.nextElementSibling && !header_tags.includes(node.nextElementSibling.tagName) && !is_b_strong_valid_heading(node))) {
+                    nodeText = node.nextElementSibling.textContent.trim();
+                }
+                if (nodeText === "") {
+                    if (shouldLog) console.log("b_strong continue 4", node.textContent);
+                    node.autoTocHeadingLevel = 0;
                     continue;
                 }
-                if (shouldLog) console.log("b_strong cur_level", node.textContent, cur_level);
+                let cur_level = tags.indexOf(node.tagName) + 1;
+                if (extra_tags.includes(node.tagName)) {
+                    cur_level = is_b_strong_valid_heading(node);
+                    if (cur_level === 0) {
+                        node.autoTocHeadingLevel = 0;
+                        continue;
+                    }
+                    if (shouldLog) console.log("b_strong cur_level", node.textContent, cur_level);
+                }
+                node.autoTocHeadingLevel = cur_level;
+            }
+            
+            if (node.autoTocHeadingLevel < 1) {
+                continue;
             }
             headings.push({
                 node,
-                level: cur_level,
+                level: node.autoTocHeadingLevel,
             });
         }
 
-        // console.log("headingsssss old begin")
-        // console.log(validTags)
-        // console.log(headings)
-        // console.log("headingsssss old end")
-
+        if (shouldLog) console.log("extractHeadings end", headings);
         return headings;
     };
 
@@ -4927,7 +4682,6 @@
                     }
                 });
             }
-        // } else if (urlObj.host === "www.google.com") {
         } else if (urlObj.host.indexOf("www.google.com") >= 0) {
             //////////////////////////////////////// google-禁止重定向
             console.log(
@@ -4990,3 +4744,5 @@
 // pass: https://mp.weixin.qq.com/s/hMFUINwCpEdLBoZsnPmjzQ
 // pass: https://mp.weixin.qq.com/s?__biz=MzkxNTUwODgzNA==&mid=2247518770&idx=1&sn=0061e739096b2a412f2d19a380444fc5&chksm=c15cd13ff62b5829b33bdb056d0da847d4633ece54ec88516c1de7f4b8c5fea231b04fbe5d99&rd2werd=1#wechat_redirect
 // pass: https://mp.weixin.qq.com/s/FXMFfWcycz55_iI23qFT-Q
+// pass: https://mp.weixin.qq.com/s/ZFFOhKmshOkosgdksFo_Og
+
