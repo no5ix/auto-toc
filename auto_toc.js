@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.38
+// @version      1.39
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -3919,7 +3919,7 @@
             let hasOtherTextElemToCombine = false;
             // 如果有个最近的section祖先, 则检查是否有兄弟section, 然后判断他们的共同祖先section是否居中
             if (closestSection) {
-                if (shouldLog) console.log("isElementHorizontalCentered closestSection begin", element.textContent);
+                            if (shouldLog) console.log("isElementHorizontalCentered closestSection begin", element.textContent);
                 finalElem = closestSection;
                 // 拿到一个高层的祖先<section>元素 S 并且它是有个其他包含其他文本的section, 且途中不能有为P的祖先, 用 S 当做 finalElem 来判断是否居中
                 let currentElement = element;
@@ -4154,7 +4154,7 @@
             let tag = header_tags[i];
             const elems = (0, toArray)(article.getElementsByTagName(tag));
             normalHeadingCnt += elems.length;
-            if (normalHeadingCnt >= 3) {  // 两个以上比较好, 免得有可能其中一个是文章最上面的大标题
+            if (normalHeadingCnt >= 3) {  // 3个及以上比较好, 免得有可能其中一个是文章最上面的大标题
                 isNormalHeadingExist = true
                 break;
             }
@@ -4198,32 +4198,50 @@
                     }
                 }
             }
-            // 当前 elem 不能是正经标题的子元素, 否则会重复
-            if (header_tags.includes(node.parentElement.tagName)) {
-                if (shouldLog) console.log("b_strong continue 2, ", node.textContent);
-               return 0;
+
+            // 当前 elem 不能是标题的子元素, 否则会重复
+            for (let j = 0; j < tags.length; j++) {
+                let curNode = (node.tagName == tags[j]) ? node.parentElement : node; // 不这样的话, closest会找到node自己
+                const ancestor = curNode.closest(tags[j]);
+                if (ancestor) {
+                    if (shouldLog) console.log("b_strong continue 2, ", node.textContent, ancestor);
+                    return 0;
+                }
             }
+
             // 加粗的文字的父元素以及爷元素为<u>则不识别为标题(因为<u>会使得子元素带下划线)
             if (node.parentElement && (node.parentElement.tagName === "U" || (node.parentElement.parentElement && node.parentElement.parentElement.tagName === "U"))) {
                 if (shouldLog) console.log("b_strong continue 5, ", node.textContent);
                return 0;
             }
             let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
-            let isCentered = isElementHorizontalCentered(node);
+            let isCentered = false;
+            let isLeftAligned = false;
+            // strong/b 粗体字类型的标题靠左对齐则level为2, 不靠左对齐则看看是否居中, 居中则level为1; 总之: 优先查看是否靠左对齐
             if (!cur_leftmost_offset) {
+                isCentered = isElementHorizontalCentered(node);
+                if (isCentered) {
+                    return 1;
+                }
                 if (!isCentered) {
                     if (shouldLog) console.log("b_strong continue 6, ", node.textContent);
                    return 0;
                 }
             } else {
                 // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
-                let isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
+                isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
+                if (isLeftAligned) {
+                    return 2;
+                }
+                isCentered = isElementHorizontalCentered(node);
+                if (isCentered) {
+                    return 1;
+                }
                 if (!isCentered && (!isLeftAligned)) {
                     if (shouldLog) console.log("b_strong continue 1, ", node.textContent);
                    return 0;
                 }
             }
-            return isCentered ? 1 : 2;  // strong/b 粗体字类型的标题居中则level为1, 不居中为2
         }
 
         const headings = [];
@@ -4739,10 +4757,11 @@
 // pass: https://zhuanlan.zhihu.com/p/336727285
 // pass: https://zhuanlan.zhihu.com/p/643656433
 // pass: https://mp.weixin.qq.com/s/IovIZChwAIIT_kmI7Ry7Aw
-// pass: https://mp.weixin.qq.com/s/ik4ZS-9z9dnUwV8QpgphyA
 // pass: https://mp.weixin.qq.com/s/QI-Bymo9VBzJaM1lWIE_SA
 // pass: https://mp.weixin.qq.com/s/hMFUINwCpEdLBoZsnPmjzQ
 // pass: https://mp.weixin.qq.com/s?__biz=MzkxNTUwODgzNA==&mid=2247518770&idx=1&sn=0061e739096b2a412f2d19a380444fc5&chksm=c15cd13ff62b5829b33bdb056d0da847d4633ece54ec88516c1de7f4b8c5fea231b04fbe5d99&rd2werd=1#wechat_redirect
 // pass: https://mp.weixin.qq.com/s/FXMFfWcycz55_iI23qFT-Q
 // pass: https://mp.weixin.qq.com/s/ZFFOhKmshOkosgdksFo_Og
+// pass: https://mp.weixin.qq.com/s/f3TKUPy63-U61wjfvIC4zA
+// pass: https://mp.weixin.qq.com/s/CrmouLum_XHlRmjnKW8BrQ
 
