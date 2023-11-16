@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.39
+// @version      1.40
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -3910,16 +3910,20 @@
         return [].slice.apply(arr);
     };
 
+
+    const header_tags = ["H1", "H2", "H3", "H4", "H5", "H6"];
+    const extra_tags = ["STRONG", "B"];
+
     // 判断一个元素是否对于整个页面水平居中
     const isElementHorizontalCentered = function (element) {
         let divElement = element.closest('div');
         if (divElement) {
             let finalElem = element;
             let closestSection = element.closest('section')
-            let hasOtherTextElemToCombine = false;
+            let OtherExtraTagsElemCombinedText = "";
             // 如果有个最近的section祖先, 则检查是否有兄弟section, 然后判断他们的共同祖先section是否居中
             if (closestSection) {
-                            if (shouldLog) console.log("isElementHorizontalCentered closestSection begin", element.textContent);
+                if (shouldLog) console.log("isElementHorizontalCentered closestSection begin", element.textContent);
                 finalElem = closestSection;
                 // 拿到一个高层的祖先<section>元素 S 并且它是有个其他包含其他文本的section, 且途中不能有为P的祖先, 用 S 当做 finalElem 来判断是否居中
                 let currentElement = element;
@@ -3938,24 +3942,33 @@
                             finalElem = curParent;
                             break;
                         }
-                        let hasTextCnt = 0;
+                        let hasExtraTagsTextCnt = 0;
                         let shouldBreakWhile = false;
-                        for (let i = 0; i < curParent.childNodes.length; i++) {
-                            let fc = curParent.childNodes[i];
+                        OtherExtraTagsElemCombinedText = "";
+                        for (let k = 0; k < curParent.childNodes.length; k++) {
+                            let fc = curParent.childNodes[k];
                             // 如果当前祖先的子元素已经是有<p>子元素了, 那可以停止继续循环了, 并且把 `自己` 当做 finalElem
                             if (fc.querySelector('p') !== null) {
                                 finalElem = currentElement;
                                 shouldBreakWhile = true;
                                 break;
                             }
-                            // 如果当前祖先的子元素已经是2个以及以上的文本子元素了, 那可以停止继续循环了, 并且把 `当前祖先` 当做 finalElem
-                            if (fc.textContent != "") {
-                                hasTextCnt += 1;
-                                if (hasTextCnt > 1) {
-                                    finalElem = curParent;
-                                    hasOtherTextElemToCombine = true;
-                                    shouldBreakWhile = true;
-                                    break;
+                            // 如果当前祖先的子元素已经是2个以及以上的extra_tags文本子元素了, 那可以停止继续循环了, 并且把 `当前祖先` 当做 finalElem
+                            for (let i = 0; i < extra_tags.length; i++) {
+                                let curElems = fc.querySelectorAll(extra_tags[i])
+                                if (curElems) {
+                                    for (let j = 0; j < curElems.length; j++) {
+                                        let curElem = curElems[j];
+                                        if (curElem.textContent != "") {
+                                            hasExtraTagsTextCnt += 1;
+                                            OtherExtraTagsElemCombinedText += curElem.textContent;
+                                            if (shouldLog) console.log("isElementHorizontalCentered OtherExtraTagsElemCombinedText", element.textContent, OtherExtraTagsElemCombinedText, fc, curElem);
+                                            if (hasExtraTagsTextCnt == 2) {
+                                                finalElem = curParent;
+                                                shouldBreakWhile = true;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -3970,7 +3983,7 @@
                     currentElement = currentElement.parentElement;
                 }
                 finalElem.isCalcedCentered = true;
-                if (shouldLog) console.log("isElementHorizontalCentered closestSection end", element.textContent, hasOtherTextElemToCombine, finalElem);
+                if (shouldLog) console.log("isElementHorizontalCentered closestSection end", element.textContent, OtherExtraTagsElemCombinedText, finalElem);
             }
             let elementWidth = finalElem.offsetWidth;
             let pWidth = divElement.offsetWidth;
@@ -3983,8 +3996,8 @@
             if (shouldLog) console.log("isElementHorizontalCentered isCentered: ", element.textContent, isCentered, elementCenter, pCenter);
 
             // 如果有兄弟section, 然后判断他们是不是类似于 `01`+ `起源`这种一个是纯数字其他是文字的几个section合起来的大section, 那就把他们的文本合并来当做`01`这个section的标题 newTextContent
-            if (isCentered && closestSection && hasOtherTextElemToCombine) {
-                element.newTextContent = finalElem.textContent;
+            if (isCentered && OtherExtraTagsElemCombinedText != "") {
+                element.newTextContent = OtherExtraTagsElemCombinedText;
                 if (shouldLog) console.log("isElementHorizontalCentered shouldCombineSectionText: ", element.textContent, element.newTextContent);
             }
 
@@ -4119,9 +4132,6 @@
 
     const extractHeadings = function (article) {
         if (shouldLog) console.log("extractHeadings begin");
-
-        const header_tags = ["H1", "H2", "H3", "H4", "H5", "H6"];
-        const extra_tags = ["STRONG", "B"];
         const tags = header_tags.concat(extra_tags);
         // const tagWeight = (tag) =>
         //     ({ H1: 4, H2: 9, H3: 9, H4: 10, H5: 10, H6: 10, STRONG: 10, B: 10 }[
