@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.40
+// @version      1.41
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -539,15 +539,13 @@
                 font-size: 1em;
                 padding-left: 1.3em;
                 cursor: pointer
+                border-left-width: 3px;
+                border-left-style: solid;
+                border-left-color: transparent;
             }
             
             #smarttoc ul a:hover,
             #smarttoc ul a:active,
-            #smarttoc ul li.active>a {
-                border-left-width: 3px;
-                border-left-style: solid;
-            }
-            
             #smarttoc ul li.active>a {
                 font-weight: 700;
             }
@@ -568,13 +566,14 @@
             #smarttoc ul ul a {
                 font-size: 1em;
                 padding-left: 2.7em;
+                border-left-width: 1.6px;
+                border-left-style: solid;
+                border-left-color: transparent;
             }
             
             #smarttoc ul ul a:hover,
             #smarttoc ul ul a:active,
             #smarttoc ul ul li.active>a {
-                border-left-width: 1.6px;
-                border-left-style: solid;
                 font-weight: normal;
             }
             
@@ -591,13 +590,14 @@
             #smarttoc ul ul ul a {
                 font-size: 1em;
                 padding-left: 4em;
+                border-left-width: 0.8px;
+                border-left-style: solid;
+                border-left-color: transparent;
             }
             
             #smarttoc ul ul ul a:hover,
             #smarttoc ul ul ul a:active,
             #smarttoc ul ul ul li.active>a {
-                border-left-width: 0.8px;
-                border-left-style: solid;
                 font-weight: normal;
             }
             
@@ -614,13 +614,14 @@
             #smarttoc ul ul ul ul a {
                 font-size: 1em;
                 padding-left: 5em;
+                border-left-width: 0.6px;
+                border-left-style: solid;
+                border-left-color: transparent;
             }
             
             #smarttoc ul ul ul ul a:hover,
             #smarttoc ul ul ul ul a:active,
             #smarttoc ul ul ul ul li.active>a {
-                border-left-width: 0.6px;
-                border-left-style: solid;
                 font-weight: normal;
             }
             
@@ -637,13 +638,14 @@
             #smarttoc ul ul ul ul ul a {
                 font-size: 1em;
                 padding-left: 6em;
+                border-left-width: 0.4px;
+                border-left-style: solid;
+                border-left-color: transparent;
             }
             
             #smarttoc ul ul ul ul ul a:hover,
             #smarttoc ul ul ul ul ul a:active,
             #smarttoc ul ul ul ul ul li.active>a {
-                border-left-width: 0.4px;
-                border-left-style: solid;
                 font-weight: normal;
             }
             
@@ -660,13 +662,14 @@
             #smarttoc ul ul ul ul ul ul a {
                 font-size: 1em;
                 padding-left: 7em;
+                border-left-width: 0.2px;
+                border-left-style: solid;
+                border-left-color: transparent;
             }
             
             #smarttoc ul ul ul ul ul ul a:hover,
             #smarttoc ul ul ul ul ul ul a:active,
             #smarttoc ul ul ul ul ul ul li.active>a {
-                border-left-width: 0.2px;
-                border-left-style: solid;
                 font-weight: normal;
             }
         `
