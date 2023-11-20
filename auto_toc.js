@@ -4519,9 +4519,6 @@
     // 注册脚本菜单
     function registerMenuCommand() {
         for (let i = 0; i < menu_ID.length; i++) {
-            // console.log("debug ssss 22, aa")
-            // console.log(menu_ID)
-
             // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
             if (!isSafari()) {
                 // alert("非safari");
@@ -4547,10 +4544,6 @@
             //         menuSwitch(`${menu_ALL[i][0]}`)
             //     }
             // );
-
-            // console.log("debug ssss , aa")
-            // console.log(menu_ID)
-            // console.log("debug ssss , bb")
         }
         // menu_ID[menu_ID.length] = GM_registerMenuCommand(`🏁 当前版本 ${version}`);
         //menu_ID[menu_ID.length] = GM_registerMenuCommand('💬 反馈 & 建议', function () {window.GM_openInTab('', {active: true,insert: true,setParent: true});});
@@ -4558,7 +4551,6 @@
 
     //切换选项
     function menuSwitch(localStorageKeyName) {
-        // console.log("debug ssss 33")
         var domain2isCollapse = GM_getValue(
             "menu_GAEEScript_auto_collapse_toc"
         );
@@ -4667,9 +4659,6 @@
         //     }, 150);
         // }
 
-        // console.log("ex-smart-toc innerWidth", window.innerWidth)
-        // console.log("ex-smart-toc outerWidth", window.outerWidth)
-
         handleMenu();
 
 
@@ -4758,9 +4747,6 @@
             GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
         }
         handleToc();
-
-        // console.log("isSafari-");
-        // console.log(isSafari());
 
     }
 })();
