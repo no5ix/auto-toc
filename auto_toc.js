@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.42
+// @version      1.43
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -432,7 +432,7 @@
                 align-items: stretch;
                 position: fixed;
                 min-width: 12em;
-                resize: horizontal;
+                /* resize: horizontal; */
                 width: 18em;
             ` +
             (shouldCollapse
@@ -2546,10 +2546,10 @@
                     return false;
                 }
                 function render(dom, vnodes) {
-                    let lastWidth = "";
-                    if (toc_dom) {
-                        lastWidth = toc_dom.getBoundingClientRect().width;
-                    }
+                    // let lastWidth = "";
+                    // if (toc_dom) {
+                    //     lastWidth = toc_dom.getBoundingClientRect().width;
+                    // }
                     if (!dom)
                         throw new Error(
                             "Ensure the DOM element being passed to m.route/m.mount/m.render is not undefined."
@@ -2575,10 +2575,10 @@
                     for (var i = 0; i < hooks.length; i++) hooks[i]();
                     if ($doc.activeElement !== active) active.focus();
 
-                    // 保证toc拉宽了之后, 当点击标题或滚动页面的时候不会恢复原来的宽度
-                    if (toc_dom) {
-                        toc_dom.style.width = lastWidth + "px";
-                    }
+                    // // 保证toc拉宽了之后, 当点击标题或滚动页面的时候不会恢复原来的宽度
+                    // if (toc_dom) {
+                    //     toc_dom.style.width = lastWidth + "px";
+                    // }
                 }
                 return { render: render, setEventCallback: setEventCallback };
             };
@@ -3344,6 +3344,8 @@
                 // console.log('[auto-toc, makeSticky, 3*(scrollableTop + TOP_MARGIN), 888 - scrollY', 3*(scrollableTop + TOP_MARGIN), 888 - scrollY)
                 // console.log('[auto-toc, makeSticky, x + offsetX, y + offsetY]',x + offsetX, y + offsetY)
                 // console.log('[auto-toc, makeSticky, ref.top, gap]',ref.top, gap)
+
+                // if (shouldLog) console.log("[makeSticky,final_x, final_y]", final_x, final_y)
                 return {
                     position: "fixed",
                     left: 0,
@@ -3887,7 +3889,6 @@
             },
 
             dispose: () => {
-                log("dispose");
                 $isShow(false);
                 mithril.render(getRoot(), mithril(""));
                 return { userOffset: $userOffset() };
@@ -4042,7 +4043,7 @@
     };
 
     const extractArticle = function (rootElement = document) {
-        log("extracting article");
+        // if (shouldLog) console.log("extracting article");
 
         const scores = new Map();
 
@@ -4305,16 +4306,17 @@
         if (article) {
             $headings = Stream(extractHeadings(article));
 
-            const $articleChange = Stream(null);
-            const observer = new MutationObserver((_) => $articleChange(null));
-            observer.observe(article, { childList: true });
-
-            $articleChange.throttle(200).subscribe((_) => {
-                let headings = extractHeadings(article);
-                if (headings && headings.length) {
-                    $headings(headings);
-                }
-            });
+            // const $articleChange = Stream(null);
+            // const observer = new MutationObserver((_) => $articleChange(null));
+            // observer.observe(article, { childList: true });
+            //
+            // $articleChange.throttle(200).subscribe((_) => {
+            //     if (shouldLog) console.log("extract $articleChange");
+            //     let headings = extractHeadings(article);
+            //     if (headings && headings.length) {
+            //         $headings(headings);
+            //     }
+            // });
         }
 
         return [article, $headings];
@@ -4347,16 +4349,21 @@
         // );
 
         var timerId = setInterval(() => {
-            // console.log('[handleToc regen toc window.location.host]', window.location.host);
-            // clearInterval(timerId);
+            if (shouldLog) console.log('[handleToc regen toc window.location.host]', window.location.host);
+            if (toc && toc.isValid()) {
+                // clearInterval(timerId); 如果不注释的话, 就会终止这个 timer 从而导致在页面未刷新但是标题改变的时候无法自动生成最新的标题
+                // return;
+            }
             if (!domain2shouldShow[window.location.host]) {
                 // 防止正在循环尝试生成 toc 的时候用户关闭了 toc 开关
                 return;
             }
             if (toc && !toc.isValid()) {
+                if (shouldLog) console.log('[handleToc regen toc window.location.host, toc && !toc.isValid()]', window.location.host);
                 let lastState = toc.dispose();
                 toc = doGenerateToc(lastState);
             } else if (toc == null) {
+                if (shouldLog) console.log('[handleToc regen toc window.location.host, toc == null]', window.location.host);
                 toc = doGenerateToc();
             }
         }, 1600);
@@ -4471,11 +4478,11 @@
 
         if (shouldNotShrink) {
             removeCSS("shrinkimg__css");
-            setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img恢复放大之后导致标题间隔变化, toc 跳转会不准
+            setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img恢复 放大 之后导致标题间隔变化, toc 跳转会不准
         } else {
             if(cssTxt != "") {
                 insertCSS(cssTxt, "shrinkimg__css");
-                setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img缩小之后导致标题间隔变化, toc 跳转会不准
+                setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img 缩小 之后导致标题间隔变化, toc 跳转会不准
             }
             setTimeout(shrink_img, 800);
         }
