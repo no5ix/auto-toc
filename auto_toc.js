@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.43
+// @version      1.44
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -441,18 +441,18 @@
             `
                 z-index: 10000;
                 box-sizing: border-box;
-                background-color: #fff;
+                /* background-color: #fff; */
                 color: gray;
                 font-size: calc(12px + 0.1vw);
                 font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;
                 line-height: 1.5;
                 font-weight: normal;
-                border: 1px solid rgba(158, 158, 158, 0.22);
+                /* border: 1px solid rgba(158, 158, 158, 0.22); */
                 -webkit-font-smoothing: subpixel-antialiased;
                 font-smoothing: subpixel-antialiased;
                 overflow: hidden;
                 contain: content;
-                box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 20%), 0px 0px 8px 0 rgb(0 0 0 / 19%);
+                /* box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 20%), 0px 0px 8px 0 rgb(0 0 0 / 19%); */
                 border-radius: 6px;
                 transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
             ` +
@@ -475,7 +475,7 @@
             #smarttoc .handle {
                 -webkit-user-select: none;
                 user-select: none;
-                border-bottom: 1px solid rgba(158, 158, 158, 0.22);
+                /* border-bottom: 1px solid rgba(158, 158, 158, 0.22); */
                 padding: 0.1em 0.7em;
                 font-variant-caps: inherit;
                 font-variant: small-caps;
@@ -483,12 +483,14 @@
                 color: rgb(0, 0, 0);
                 cursor: pointer;
                 text-align: center;
-                opacity: 1;
+                opacity: 0.1;
+                transition: opacity 0.3s ease-in-out;
             }
             
             #smarttoc .handle:hover,
             #smarttoc .handle:active {
                 cursor: move;
+                opacity: 1;
             }
             
             #smarttoc>ul {
@@ -517,12 +519,15 @@
             `
                 margin-bottom: 0.8px;
                 margin-top: 0.8px;
+                opacity: 0.6;
+                transition: opacity 0.3s ease-in-out;
             }
             
             #smarttoc a:hover,
             #smarttoc a:active {
                 border-left-color: rgba(86, 61, 124, 0.5);
                 color: #563d7c;
+                opacity: 1;
             }
             
             #smarttoc li.active>a {
@@ -548,6 +553,7 @@
             #smarttoc ul a:active,
             #smarttoc ul li.active>a {
                 font-weight: 700;
+                opacity: 1;
             }
             
             /* heading level: 2 (hidden only when there are too many headings)  */
@@ -575,6 +581,7 @@
             #smarttoc ul ul a:active,
             #smarttoc ul ul li.active>a {
                 font-weight: normal;
+                opacity: 1;
             }
             
             /* heading level: 3 */
@@ -599,6 +606,7 @@
             #smarttoc ul ul ul a:active,
             #smarttoc ul ul ul li.active>a {
                 font-weight: normal;
+                opacity: 1;
             }
             
             /* heading level: 4 */
@@ -623,6 +631,7 @@
             #smarttoc ul ul ul ul a:active,
             #smarttoc ul ul ul ul li.active>a {
                 font-weight: normal;
+                opacity: 1;
             }
             
             /* heading level: 5 */
@@ -647,6 +656,7 @@
             #smarttoc ul ul ul ul ul a:active,
             #smarttoc ul ul ul ul ul li.active>a {
                 font-weight: normal;
+                opacity: 1;
             }
             
             /* heading level: 6 */
@@ -671,6 +681,7 @@
             #smarttoc ul ul ul ul ul ul a:active,
             #smarttoc ul ul ul ul ul ul li.active>a {
                 font-weight: normal;
+                opacity: 1;
             }
         `
         );
@@ -3167,7 +3178,7 @@
                     // menuSwitch("menu_GAEEScript_auto_open_toc");
                     // handleToc();
                     
-                    // 说明是双击单击逻辑, 走折叠 toc 逻辑
+                    // 说明是双击逻辑, 走折叠 toc 逻辑
                     // console.log("[auto-toc, double click handle section]");
                     menuSwitch("menu_GAEEScript_auto_collapse_toc");
                     handleToc();
