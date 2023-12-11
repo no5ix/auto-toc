@@ -5,7 +5,7 @@
 // @version      1.46
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
-// @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动折叠 TOC, 双击TOC拖动栏可以关闭 TOC .
+// @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
 // @include      http://*
 // @include      https://*
 // @grant        GM_registerMenuCommand
@@ -375,21 +375,21 @@
         }
     };
 
-    function shouldCollapseToc() {
-        const domain2isCollapse = GM_getValue(
-            "menu_GAEEScript_auto_collapse_toc"
+    function shouldDimToc() {
+        const domain2isDim = GM_getValue(
+            "menu_GAEEScript_auto_dim_toc"
         );
-        // console.log('[shouldCollapseToc cccccccccccccccccccccccccccccc]', domain2isCollapse);
-        // alert(domain2isCollapse[window.location.host])
-        return domain2isCollapse[window.location.host];
+        // console.log('[shouldDimToc cccccccccccccccccccccccccccccc]', domain2isDim);
+        // alert(domain2isDim[window.location.host])
+        return domain2isDim[window.location.host];
     }
 
     let toc_dom = null;
     let toc_text_wrap = false;
 
     function getTocCss() {
-        const shouldCollapse = shouldCollapseToc();
-        if (shouldLog) console.log("[getTocCss]", shouldCollapse);
+        const shouldDim = shouldDimToc();
+        if (shouldLog) console.log("[getTocCss]", shouldDim);
         return (
             `
             @media (prefers-color-scheme: dark) {
@@ -435,7 +435,7 @@
                 /* resize: horizontal; */
                 width: 18em;
             ` +
-            // (shouldCollapse
+            // (shouldDim
             //     ? "max-height: 22px;"
             //     : "max-height: calc(100vh - 100px);") +
             `
@@ -456,16 +456,16 @@
                 border-radius: 6px;
                 transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
             ` +
-            // (shouldCollapse ? "opacity: 0.6;" : "opacity: 1;") +
+            // (shouldDim ? "opacity: 0.6;" : "opacity: 1;") +
             `
             }
             
             #smarttoc:hover {
             ` +
-            // (shouldCollapse
+            // (shouldDim
             //     ? "max-height: calc(100vh - 100px); opacity: 1"
             //     : "") +
-            // (shouldCollapse
+            // (shouldDim
             //     ? "opacity: 1;"
             //     : "") +
             `
@@ -501,14 +501,14 @@
                 overflow-y: auto;
                 overflow-x: hidden;
             ` +
-            (shouldCollapse ? "opacity: 0.3;" : "opacity: 1;") +
+            (shouldDim ? "opacity: 0.3;" : "opacity: 1;") +
             `
                 transition: opacity 0.3s ease-in-out;
             }
             
             #smarttoc>ul:hover {
             ` +
-            (shouldCollapse ? "opacity: 1;" : "") +
+            (shouldDim ? "opacity: 1;" : "") +
             `
             }
             
@@ -3185,9 +3185,9 @@
                     // menuSwitch("menu_GAEEScript_auto_open_toc");
                     // handleToc();
                     
-                    // 说明是双击逻辑, 走折叠 toc 逻辑
+                    // 说明是双击逻辑, 走暗淡 toc 逻辑
                     // console.log("[auto-toc, double click handle section]");
-                    menuSwitch("menu_GAEEScript_auto_collapse_toc");
+                    menuSwitch("menu_GAEEScript_auto_dim_toc");
                     handleToc();
                     return;
                 }
@@ -3207,9 +3207,9 @@
                 // multi_click_cnt = 1;
                 // setTimeout(() => {
                 //     if (multi_click_cnt === 1) {
-                //         // 单击逻辑, 走折叠 toc 逻辑
+                //         // 单击逻辑, 走暗淡 toc 逻辑
                 //         console.log("[auto-toc, click handle section]");
-                //         menuSwitch("menu_GAEEScript_auto_collapse_toc");
+                //         menuSwitch("menu_GAEEScript_auto_dim_toc");
                 //     } else if (multi_click_cnt === 2) {
                 //         // 说明是双击, 走关闭 toc 逻辑
                 //         console.log("[auto-toc, double click handle section]");
@@ -4519,8 +4519,8 @@
                 {},
             ],
             [
-                "menu_GAEEScript_auto_collapse_toc",
-                "Collapse TOC on current site(当前网站TOC自动折叠开关)",
+                "menu_GAEEScript_auto_dim_toc",
+                "Dim TOC on current site(当前网站TOC自动暗淡开关)",
                 {},
             ],
             [
@@ -4579,8 +4579,8 @@
 
     //切换选项
     function menuSwitch(localStorageKeyName) {
-        var domain2isCollapse = GM_getValue(
-            "menu_GAEEScript_auto_collapse_toc"
+        var domain2isDim = GM_getValue(
+            "menu_GAEEScript_auto_dim_toc"
         );
         if (localStorageKeyName === "menu_GAEEScript_auto_open_toc") {
             var domain2isShow = GM_getValue(`${localStorageKeyName}`);
@@ -4598,7 +4598,7 @@
             } else {
                 delete domain2isShow[window.location.host];
                 delete domain2offset[window.location.host];
-                delete domain2isCollapse[window.location.host];
+                delete domain2isDim[window.location.host];
 
                 toast("Turn Off TOC.");
             }
@@ -4607,22 +4607,22 @@
                 "menu_GAEEScript_auto_toc_domain_2_offset",
                 domain2offset
             );
-            GM_setValue("menu_GAEEScript_auto_collapse_toc", domain2isCollapse);
+            GM_setValue("menu_GAEEScript_auto_dim_toc", domain2isDim);
             handleToc();
-        } else if (localStorageKeyName === "menu_GAEEScript_auto_collapse_toc") {
+        } else if (localStorageKeyName === "menu_GAEEScript_auto_dim_toc") {
             console.log(
-                "[menuSwitch menu_GAEEScript_auto_collapse_toc]",
-                domain2isCollapse
+                "[menuSwitch menu_GAEEScript_auto_dim_toc]",
+                domain2isDim
             );
-            var isCurrCollapse = domain2isCollapse[window.location.host];
-            if (isCurrCollapse == null || !isCurrCollapse) {
-                domain2isCollapse[window.location.host] = true;
-                toast("Turn On TOC Auto Collapse.");
+            var isCurrDim = domain2isDim[window.location.host];
+            if (isCurrDim == null || !isCurrDim) {
+                domain2isDim[window.location.host] = true;
+                toast("Turn On TOC Auto Dim.");
             } else {
-                delete domain2isCollapse[window.location.host];
-                toast("Turn Off TOC Auto Collapse.");
+                delete domain2isDim[window.location.host];
+                toast("Turn Off TOC Auto Dim.");
             }
-            GM_setValue(`${localStorageKeyName}`, domain2isCollapse);
+            GM_setValue(`${localStorageKeyName}`, domain2isDim);
             handleToc();
         } else if (localStorageKeyName === "menu_GAEEScript_shrink_img") {
             var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
@@ -4771,8 +4771,8 @@
         if (GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset") == null) {
             GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", {});
         }
-        if (GM_getValue("menu_GAEEScript_auto_collapse_toc") == null) {
-            GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
+        if (GM_getValue("menu_GAEEScript_auto_dim_toc") == null) {
+            GM_setValue("menu_GAEEScript_auto_dim_toc", {});
         }
         handleToc();
 
