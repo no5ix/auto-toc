@@ -389,7 +389,7 @@
 
     function getTocCss() {
         const shouldCollapse = shouldCollapseToc();
-        // console.log("[getTocCss]", shouldCollapse);
+        if (shouldLog) console.log("[getTocCss]", shouldCollapse);
         return (
             `
             @media (prefers-color-scheme: dark) {
@@ -412,8 +412,8 @@
                 }
             
                 #smarttoc.dark-scheme li.active>a {
-                    border-left-color: rgb(46, 82, 154);
-                    color: rgb(131, 174, 218)
+                    /* border-left-color: rgb(46, 82, 154);
+                    color: rgb(131, 174, 218) */
                 }
             }
             
@@ -435,9 +435,9 @@
                 /* resize: horizontal; */
                 width: 18em;
             ` +
-            (shouldCollapse
-                ? "max-height: 22px;"
-                : "max-height: calc(100vh - 100px);") +
+            // (shouldCollapse
+            //     ? "max-height: 22px;"
+            //     : "max-height: calc(100vh - 100px);") +
             `
                 z-index: 888;
                 box-sizing: border-box;
@@ -456,15 +456,18 @@
                 border-radius: 6px;
                 transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
             ` +
-            (shouldCollapse ? "opacity: 0.6;" : "opacity: 1;") +
+            // (shouldCollapse ? "opacity: 0.6;" : "opacity: 1;") +
             `
             }
             
             #smarttoc:hover {
             ` +
-            (shouldCollapse
-                ? "max-height: calc(100vh - 100px); opacity: 1"
-                : "") +
+            // (shouldCollapse
+            //     ? "max-height: calc(100vh - 100px); opacity: 1"
+            //     : "") +
+            // (shouldCollapse
+            //     ? "opacity: 1;"
+            //     : "") +
             `
             }
             
@@ -487,8 +490,7 @@
                 transition: opacity 0.3s ease-in-out;
             }
             
-            #smarttoc .handle:hover,
-            #smarttoc .handle:active {
+            #smarttoc .handle:hover {
                 cursor: move;
                 opacity: 1;
             }
@@ -498,6 +500,16 @@
                 padding: 1em 1.3em 1.3em 1em;
                 overflow-y: auto;
                 overflow-x: hidden;
+            ` +
+            (shouldCollapse ? "opacity: 0.3;" : "opacity: 1;") +
+            `
+                transition: opacity 0.3s ease-in-out;
+            }
+            
+            #smarttoc>ul:hover {
+            ` +
+            (shouldCollapse ? "opacity: 1;" : "") +
+            `
             }
             
             /* all headings  */
@@ -509,7 +521,7 @@
             
             #smarttoc a {
                 text-decoration: none;
-                color: gray;
+                color: rgb(128, 128, 128, 0.6);
                 display: block;
                 line-height: 1.3;
                 padding-top: 0.2em;
@@ -519,20 +531,21 @@
             `
                 margin-bottom: 0.8px;
                 margin-top: 0.8px;
-                opacity: 0.6;
-                transition: opacity 0.3s ease-in-out;
+                /* opacity: 0.6; */
+                transition: opacity 0.3s ease-in-out, color 0.3s ease-in-out;
             }
             
             #smarttoc a:hover,
             #smarttoc a:active {
-                border-left-color: rgba(86, 61, 124, 0.5);
-                color: #563d7c;
-                opacity: 1;
+                border-left-color: rgba(86, 61, 124, 1);
+                /* color: #563d7c; */
+                color: rgb(86, 61, 124, 1);
             }
             
             #smarttoc li.active>a {
-                border-left-color: #563d7c;
-                color: #563d7c;
+                border-left-color: rgba(86, 61, 124, 1);
+                /* color: #563d7c; */
+                color: rgb(86, 61, 124, 1);
             }
             
             /* heading level: 1 */
@@ -553,7 +566,6 @@
             #smarttoc ul a:active,
             #smarttoc ul li.active>a {
                 font-weight: 700;
-                opacity: 1;
             }
             
             /* heading level: 2 (hidden only when there are too many headings)  */
@@ -581,7 +593,6 @@
             #smarttoc ul ul a:active,
             #smarttoc ul ul li.active>a {
                 font-weight: normal;
-                opacity: 1;
             }
             
             /* heading level: 3 */
@@ -606,7 +617,6 @@
             #smarttoc ul ul ul a:active,
             #smarttoc ul ul ul li.active>a {
                 font-weight: normal;
-                opacity: 1;
             }
             
             /* heading level: 4 */
@@ -631,7 +641,6 @@
             #smarttoc ul ul ul ul a:active,
             #smarttoc ul ul ul ul li.active>a {
                 font-weight: normal;
-                opacity: 1;
             }
             
             /* heading level: 5 */
@@ -656,7 +665,6 @@
             #smarttoc ul ul ul ul ul a:active,
             #smarttoc ul ul ul ul ul li.active>a {
                 font-weight: normal;
-                opacity: 1;
             }
             
             /* heading level: 6 */
@@ -681,7 +689,6 @@
             #smarttoc ul ul ul ul ul ul a:active,
             #smarttoc ul ul ul ul ul ul li.active>a {
                 font-weight: normal;
-                opacity: 1;
             }
         `
         );
@@ -4336,6 +4343,7 @@
     ////////////////////////////////
 
     let toc;
+    let autoGenTocTimerId;
 
     const doGenerateToc = function (option = {}) {
         let [article, $headings] = extract();
@@ -4358,8 +4366,10 @@
         //     "[domain2shouldShow[window.location.host]]",
         //     domain2shouldShow[window.location.host]
         // );
-
-        var timerId = setInterval(() => {
+        if (autoGenTocTimerId) {
+            clearInterval(autoGenTocTimerId);
+        }
+        autoGenTocTimerId = setInterval(() => {
             if (shouldLog) console.log('[handleToc regen toc window.location.host]', window.location.host);
             if (toc && toc.isValid()) {
                 // clearInterval(timerId); 如果不注释的话, 就会终止这个 timer 从而导致在页面未刷新但是标题改变的时候无法自动生成最新的标题
