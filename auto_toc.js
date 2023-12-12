@@ -492,7 +492,8 @@
             (shouldDim ? "opacity: 1;" : "") +
             `
             }
-            
+            ` +
+            (isSafari() ? "" : `
             #smarttoc>ul::-webkit-scrollbar {  
                 width: 3px;
                 height: 1px;
@@ -513,7 +514,8 @@
             #smarttoc>ul:hover::-webkit-scrollbar-thumb {
               background: rgb(128, 128, 128, 0.6);  
             }  
-            
+            `) +
+            `
             /* all headings  */
             #smarttoc ul,
             #smarttoc li {
