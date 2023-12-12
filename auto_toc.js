@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.47
+// @version      1.48
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -385,7 +385,7 @@
     }
 
     let toc_dom = null;
-    let toc_text_wrap = false;
+    let toc_text_wrap = true;
 
     function getTocCss() {
         const shouldDim = shouldDimToc();
@@ -434,7 +434,7 @@
                 min-width: 12em;
                 /* resize: horizontal; */
                 width: 18em;
-                max-height: calc(100vh - 96px);
+                max-height: calc(100vh - 368px);
                 z-index: 888;
                 box-sizing: border-box;
                 /* background-color: #fff; */
@@ -493,6 +493,27 @@
             `
             }
             
+            #smarttoc>ul::-webkit-scrollbar {  
+                width: 3px;
+                height: 1px;
+            }  
+            
+            /* 滚动条轨道样式, 空的即为隐藏 */   
+            #smarttoc>ul::-webkit-scrollbar-track {  
+              
+            }  
+              
+            /* 滚动条滑块样式 */   
+            #smarttoc>ul::-webkit-scrollbar-thumb {  
+                border-radius: 10px;
+                background: rgb(128, 128, 128, 0);   
+                transition: background 0.3s ease-in-out;
+            }  
+            
+            #smarttoc>ul:hover::-webkit-scrollbar-thumb {
+              background: rgb(128, 128, 128, 0.6);  
+            }  
+            
             /* all headings  */
             #smarttoc ul,
             #smarttoc li {
@@ -507,8 +528,8 @@
                 line-height: 1.3;
                 padding-top: 0.2em;
                 padding-bottom: 0.2em;
-            ` + 
-            (toc_text_wrap ? "text-overflow: ellipsis; overflow-x: hidden; white-space: nowrap;" : "white-space: pre-wrap;") +
+            ` +
+            (toc_text_wrap ? "white-space: pre-wrap;" : "text-overflow: ellipsis; overflow-x: hidden; white-space: nowrap;" ) +
             `
                 margin-bottom: 0.8px;
                 margin-top: 0.8px;
@@ -3164,7 +3185,7 @@
                     // console.log("[auto-toc, double click handle section]");
                     // menuSwitch("menu_GAEEScript_auto_open_toc");
                     // handleToc();
-                    
+
                     // 说明是双击逻辑, 走暗淡 toc 逻辑
                     // console.log("[auto-toc, double click handle section]");
                     menuSwitch("menu_GAEEScript_auto_dim_toc");
@@ -4140,7 +4161,7 @@
         //         tag
         //     ]);
         const isVisible = (elem) => elem.offsetHeight !== 0;
-        
+
         // 筛选页面上想要遍历的 node
         const acceptNode = (node) =>
             tags.includes(node.tagName) &&
@@ -4282,7 +4303,7 @@
                 }
                 node.autoTocHeadingLevel = cur_level;
             }
-            
+
             if (node.autoTocHeadingLevel < 1) {
                 continue;
             }
@@ -4445,7 +4466,7 @@
                                 ele.style.originalMinWidth = ele.style.minWidth;
                                 ele.style.cssSelectorStr = cssSelectorStr;
 
-                                
+
                                 // // 加这个div的原因: 为了解决当img缩小之后导致标题间隔变化, toc 跳转会不准(注释了是因为会导致单击了知乎的图片之后缩小的时候知乎网页崩溃)
                                 // let parent = document.createElement('div');//  新建父元素
                                 // ele.parentNode.replaceChild(parent,ele);//  获取子元素原来的父元素并将新父元素代替子元素
