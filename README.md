@@ -4,20 +4,19 @@ Displays a table of contents for any website, making it easier to read and navig
 
 Generate TOC(table of contents) for any website. 可以为任何网站生成TOC网站目录大纲.
 
-Switch black/white themes automatically according to your computer's light/dark mode. 会根据你的电脑的黑夜白天模式自动切换黑白主题.
 
-**高级技巧 Advanced Skills**: 
+# 高级技巧Advanced Skills 
 
-- Clicking on the TOC drag bar to toggle headings text wrap.
-- 单击 TOC拖动栏 可以切换标题折行
-- Double-clicking on the TOC drag bar to automatically collapse the TOC..
-- 双击 TOC拖动栏 可以自动折叠 TOC
+- Drag the `TOC drag bar`(that three dots) to move `auto-toc`.
+- 拖动 TOC拖动栏 来移动 `auto-toc`
+- Clicking on the `TOC drag bar`(that three dots) to toggle headings text wrap.
+- 单击 TOC拖动栏(三个圆点) 可以切换标题折行
+- Double-clicking on the `TOC drag bar`(that three dots) to automatically dim the TOC..
+- 双击 TOC拖动栏(三个圆点) 可以自动折叠 TOC
 <!-- - now you can resize auto-toc by puting the pointer on the bottom right corner of auto-toc and draging it.
 - 现在你可以设置auto-toc的宽度了, 把你鼠标放到auto-toc的右下角然后拖动即可 -->
 
-![light](auto_toc_demo_light.png)
-
-![dark](auto_toc_demo_dark.png)
+![](auto_toc_demo_image.jpg)
 
 
 # Features
@@ -64,6 +63,4 @@ By default, it is not open. You need to go to the plug-in menu to open the switc
 
 # Inspired by
 
-- https://github.com/FallenMax/smart-toc 
 - https://chrome.google.com/webstore/detail/lifgeihcfpkmmlfjbailfpfhbahhibba
-- https://greasyfork.org/en/scripts/415856-bc-smarttoc
