@@ -48,7 +48,7 @@ Generate TOC(table of contents) for any website. 可以为任何网站生成TOC�
 - 微信
   - ![微信](https://github.com/no5ix/no5ix.github.io/blob/source/source/img/sux/donate_wechat.png)
 - 支付宝
-  - ![支付宝](https://github.com/no5ix/no5ix.github.io/blob/source/source/img/sux/donate_alipay.png)
+  - ![支付宝](https://github.com/no5ix/no5ix.github.io/blob/source/sourcce/img/sux/donate_alipay.png)
 
 
 # Installation & Usage
