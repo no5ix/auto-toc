@@ -9,9 +9,9 @@ Generate TOC(table of contents) for any website. 可以为任何网站生成TOC�
 
 - Drag the `TOC drag bar`(that three dots) to move `auto-toc`.
 - 拖动 TOC拖动栏 来移动 `auto-toc`
-- Clicking on the `TOC drag bar`(that three dots) to toggle headings text wrap.
+- Click on the `TOC drag bar`(that three dots) to toggle headings text wrap.
 - 单击 TOC拖动栏(三个圆点) 可以切换标题折行
-- Double-clicking on the `TOC drag bar`(that three dots) to automatically dim the TOC..
+- Double-click on the `TOC drag bar`(that three dots) to automatically dim the TOC..
 - 双击 TOC拖动栏(三个圆点) 可以自动折叠 TOC
 <!-- - now you can resize auto-toc by puting the pointer on the bottom right corner of auto-toc and draging it.
 - 现在你可以设置auto-toc的宽度了, 把你鼠标放到auto-toc的右下角然后拖动即可 -->
@@ -59,8 +59,3 @@ Generate TOC(table of contents) for any website. 可以为任何网站生成TOC�
 By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 
 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否.
-
-
-# Inspired by
-
-- https://chrome.google.com/webstore/detail/lifgeihcfpkmmlfjbailfpfhbahhibba

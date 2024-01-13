@@ -32,6 +32,7 @@
     function isSafari()  {
         return (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))
     }
+
     function getRootWindow() {
         let w = window;
         while (w !== w.parent) {
@@ -70,7 +71,7 @@
         return w === master;
     }
 
-    var toastCSS = `
+    let toastCSS = `
         #smarttoc-toast {
             all: initial;
         }
@@ -796,7 +797,7 @@
         return $event;
     };
 
-    var commonjsGlobal =
+    let commonjsGlobal =
         typeof window !== "undefined"
             ? window
             : typeof global !== "undefined"
@@ -813,7 +814,7 @@
         );
     }
 
-    var mithril = createCommonjsModule(function (module) {
+    let mithril = createCommonjsModule(function (module) {
         (function () {
             "use strict";
             function Vnode(tag, key, attrs0, children, text, dom) {
@@ -854,28 +855,28 @@
                 return node;
             };
             Vnode.normalizeChildren = function normalizeChildren(children) {
-                for (var i = 0; i < children.length; i++) {
+                for (let i = 0; i < children.length; i++) {
                     children[i] = Vnode.normalize(children[i]);
                 }
                 return children;
             };
-            var selectorParser =
+            let selectorParser =
                 /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*("|'|)((?:\\["'\]]|.)*?)\5)?\])/g;
-            var selectorCache = {};
-            var hasOwn = {}.hasOwnProperty;
+            let selectorCache = {};
+            let hasOwn = {}.hasOwnProperty;
             function compileSelector(selector) {
-                var match,
+                let match,
                     tag = "div",
                     classes = [],
                     attrs = {};
                 while ((match = selectorParser.exec(selector))) {
-                    var type = match[1],
+                    let type = match[1],
                         value = match[2];
                     if (type === "" && value !== "") tag = value;
                     else if (type === "#") attrs.id = value;
                     else if (type === ".") classes.push(value);
                     else if (match[3][0] === "[") {
-                        var attrValue = match[6];
+                        let attrValue = match[6];
                         if (attrValue)
                             attrValue = attrValue
                                 .replace(/\\(["'])/g, "$1")
@@ -892,11 +893,11 @@
                 return (selectorCache[selector] = { tag: tag, attrs: attrs });
             }
             function execSelector(state, attrs, children) {
-                var hasAttrs = false,
+                let hasAttrs = false,
                     childList,
                     text;
-                var className = attrs.className || attrs.class;
-                for (var key in state.attrs) {
+                let className = attrs.className || attrs.class;
+                for (let key in state.attrs) {
                     if (hasOwn.call(state.attrs, key)) {
                         attrs[key] = state.attrs[key];
                     }
@@ -937,7 +938,7 @@
             }
             function hyperscript(selector) {
                 // Because sloppy mode sucks
-                var attrs = arguments[1],
+                let attrs = arguments[1],
                     start = 2,
                     children;
                 if (
@@ -951,7 +952,7 @@
                     );
                 }
                 if (typeof selector === "string") {
-                    var cached =
+                    let cached =
                         selectorCache[selector] || compileSelector(selector);
                 }
                 if (attrs == null) {
@@ -972,7 +973,7 @@
                     while (start < arguments.length)
                         children.push(arguments[start++]);
                 }
-                var normalized = Vnode.normalizeChildren(children);
+                let normalized = Vnode.normalizeChildren(children);
                 if (typeof selector === "string") {
                     return execSelector(cached, attrs, normalized);
                 } else {
@@ -1000,29 +1001,29 @@
                     undefined
                 );
             };
-            var m = hyperscript;
+            let m = hyperscript;
             /** @constructor */
-            var PromisePolyfill = function (executor) {
+            let PromisePolyfill = function (executor) {
                 if (!(this instanceof PromisePolyfill))
                     throw new Error("Promise must be called with `new`");
                 if (typeof executor !== "function")
                     throw new TypeError("executor must be a function");
-                var self = this,
+                let self = this,
                     resolvers = [],
                     rejectors = [],
                     resolveCurrent = handler(resolvers, true),
                     rejectCurrent = handler(rejectors, false);
-                var instance = (self._instance = {
+                let instance = (self._instance = {
                     resolvers: resolvers,
                     rejectors: rejectors,
                 });
-                var callAsync =
+                let callAsync =
                     typeof setImmediate === "function"
                         ? setImmediate
                         : setTimeout;
                 function handler(list, shouldAbsorb) {
                     return function execute(value) {
-                        var then;
+                        let then;
                         try {
                             if (
                                 shouldAbsorb &&
@@ -1043,7 +1044,7 @@
                                             "Possible unhandled promise rejection:",
                                             value
                                         );
-                                    for (var i = 0; i < list.length; i++)
+                                    for (let i = 0; i < list.length; i++)
                                         list[i](value);
                                     (resolvers.length = 0),
                                         (rejectors.length = 0);
@@ -1059,14 +1060,14 @@
                     };
                 }
                 function executeOnce(then) {
-                    var runs = 0;
+                    let runs = 0;
                     function run(fn) {
                         return function (value) {
                             if (runs++ > 0) return;
                             fn(value);
                         };
                     }
-                    var onerror = run(rejectCurrent);
+                    let onerror = run(rejectCurrent);
                     try {
                         then(run(resolveCurrent), onerror);
                     } catch (e) {
@@ -1079,7 +1080,7 @@
                 onFulfilled,
                 onRejection
             ) {
-                var self = this,
+                let self = this,
                     instance = self._instance;
                 function handle(callback, list, next, state) {
                     list.push(function (value) {
@@ -1097,8 +1098,8 @@
                     )
                         instance.retry();
                 }
-                var resolveNext, rejectNext;
-                var promise = new PromisePolyfill(function (resolve, reject) {
+                let resolveNext, rejectNext;
+                let promise = new PromisePolyfill(function (resolve, reject) {
                     (resolveNext = resolve), (rejectNext = reject);
                 });
                 handle(onFulfilled, instance.resolvers, resolveNext, true),
@@ -1121,12 +1122,12 @@
             };
             PromisePolyfill.all = function (list) {
                 return new PromisePolyfill(function (resolve, reject) {
-                    var total = list.length,
+                    let total = list.length,
                         count = 0,
                         values = [];
                     if (list.length === 0) resolve([]);
                     else
-                        for (var i = 0; i < list.length; i++) {
+                        for (let i = 0; i < list.length; i++) {
                             (function (i) {
                                 function consume(value) {
                                     count++;
@@ -1147,7 +1148,7 @@
             };
             PromisePolyfill.race = function (list) {
                 return new PromisePolyfill(function (resolve, reject) {
-                    for (var i = 0; i < list.length; i++) {
+                    for (let i = 0; i < list.length; i++) {
                         list[i].then(resolve, reject);
                     }
                 });
@@ -1162,19 +1163,19 @@
                 let PromisePolyfill = commonjsGlobal.Promise;
             } else {
             }
-            var buildQueryString = function (object) {
+            let buildQueryString = function (object) {
                 if (
                     Object.prototype.toString.call(object) !== "[object Object]"
                 )
                     return "";
-                var args = [];
-                for (var key0 in object) {
+                let args = [];
+                for (let key0 in object) {
                     destructure(key0, object[key0]);
                 }
                 return args.join("&");
                 function destructure(key0, value) {
                     if (Array.isArray(value)) {
-                        for (var i = 0; i < value.length; i++) {
+                        for (let i = 0; i < value.length; i++) {
                             destructure(key0 + "[" + i + "]", value[i]);
                         }
                     } else if (
@@ -1193,24 +1194,24 @@
                         );
                 }
             };
-            var FILE_PROTOCOL_REGEX = new RegExp("^file://", "i");
-            var _8 = function ($window, Promise) {
-                var callbackCount = 0;
-                var oncompletion;
+            let FILE_PROTOCOL_REGEX = new RegExp("^file://", "i");
+            let _8 = function ($window, Promise) {
+                let callbackCount = 0;
+                let oncompletion;
                 function setCompletionCallback(callback) {
                     oncompletion = callback;
                 }
                 function finalizer() {
-                    var count = 0;
+                    let count = 0;
                     function complete() {
                         if (--count === 0 && typeof oncompletion === "function")
                             oncompletion();
                     }
                     return function finalize(promise0) {
-                        var then0 = promise0.then;
+                        let then0 = promise0.then;
                         promise0.then = function () {
                             count++;
-                            var next = then0.apply(promise0, arguments);
+                            let next = then0.apply(promise0, arguments);
                             next.then(complete, function (e) {
                                 complete();
                                 if (count === 0) throw e;
@@ -1222,19 +1223,19 @@
                 }
                 function normalize(args, extra) {
                     if (typeof args === "string") {
-                        var url = args;
+                        let url = args;
                         args = extra || {};
                         if (args.url == null) args.url = url;
                     }
                     return args;
                 }
                 function request(args, extra) {
-                    var finalize = finalizer();
+                    let finalize = finalizer();
                     args = normalize(args, extra);
-                    var promise0 = new Promise(function (resolve, reject) {
+                    let promise0 = new Promise(function (resolve, reject) {
                         if (args.method == null) args.method = "GET";
                         args.method = args.method.toUpperCase();
-                        var useBody =
+                        let useBody =
                             args.method === "GET" || args.method === "TRACE"
                                 ? false
                                 : typeof args.useBody === "boolean"
@@ -1255,7 +1256,7 @@
                         args.url = interpolate(args.url, args.data);
                         if (useBody) args.data = args.serialize(args.data);
                         else args.url = assemble(args.url, args.data);
-                        var xhr = new $window.XMLHttpRequest(),
+                        let xhr = new $window.XMLHttpRequest(),
                             aborted = false,
                             _abort = xhr.abort;
                         xhr.abort = function abort() {
@@ -1287,7 +1288,7 @@
                         }
                         if (args.withCredentials)
                             xhr.withCredentials = args.withCredentials;
-                        for (var key in args.headers)
+                        for (let key in args.headers)
                             if ({}.hasOwnProperty.call(args.headers, key)) {
                                 xhr.setRequestHeader(key, args.headers[key]);
                             }
@@ -1298,7 +1299,7 @@
                             if (aborted) return;
                             if (xhr.readyState === 4) {
                                 try {
-                                    var response =
+                                    let response =
                                         args.extract !== extract
                                             ? args.extract(xhr, args)
                                             : args.deserialize(
@@ -1312,8 +1313,8 @@
                                     ) {
                                         resolve(cast(args.type, response));
                                     } else {
-                                        var error = new Error(xhr.responseText);
-                                        for (var key in response)
+                                        let error = new Error(xhr.responseText);
+                                        for (let key in response)
                                             error[key] = response[key];
                                         reject(error);
                                     }
@@ -1330,16 +1331,16 @@
                         : finalize(promise0);
                 }
                 function jsonp(args, extra) {
-                    var finalize = finalizer();
+                    let finalize = finalizer();
                     args = normalize(args, extra);
-                    var promise0 = new Promise(function (resolve, reject) {
-                        var callbackName =
+                    let promise0 = new Promise(function (resolve, reject) {
+                        let callbackName =
                             args.callbackName ||
                             "_mithril_" +
                                 Math.round(Math.random() * 1e16) +
                                 "_" +
                                 callbackCount++;
-                        var script = $window.document.createElement("script");
+                        let script = $window.document.createElement("script");
                         $window[callbackName] = function (data) {
                             script.parentNode.removeChild(script);
                             resolve(cast(args.type, data));
@@ -1363,9 +1364,9 @@
                 }
                 function interpolate(url, data) {
                     if (data == null) return url;
-                    var tokens = url.match(/:[^\/]+/gi) || [];
-                    for (var i = 0; i < tokens.length; i++) {
-                        var key = tokens[i].slice(1);
+                    let tokens = url.match(/:[^\/]+/gi) || [];
+                    for (let i = 0; i < tokens.length; i++) {
+                        let key = tokens[i].slice(1);
                         if (data[key] != null) {
                             url = url.replace(tokens[i], data[key]);
                         }
@@ -1373,9 +1374,9 @@
                     return url;
                 }
                 function assemble(url, data) {
-                    var querystring = buildQueryString(data);
+                    let querystring = buildQueryString(data);
                     if (querystring !== "") {
-                        var prefix = url.indexOf("?") < 0 ? "?" : "&";
+                        let prefix = url.indexOf("?") < 0 ? "?" : "&";
                         url += prefix + querystring;
                     }
                     return url;
@@ -1393,7 +1394,7 @@
                 function cast(type0, data) {
                     if (typeof type0 === "function") {
                         if (Array.isArray(data)) {
-                            for (var i = 0; i < data.length; i++) {
+                            for (let i = 0; i < data.length; i++) {
                                 data[i] = new type0(data[i]);
                             }
                         } else return new type0(data);
@@ -1406,15 +1407,15 @@
                     setCompletionCallback: setCompletionCallback,
                 };
             };
-            var requestService = _8(window, PromisePolyfill);
-            var coreRenderer = function ($window) {
-                var $doc = $window.document;
-                var $emptyFragment = $doc.createDocumentFragment();
-                var nameSpace = {
+            let requestService = _8(window, PromisePolyfill);
+            let coreRenderer = function ($window) {
+                let $doc = $window.document;
+                let $emptyFragment = $doc.createDocumentFragment();
+                let nameSpace = {
                     svg: "http://www.w3.org/2000/svg",
                     math: "http://www.w3.org/1998/Math/MathML",
                 };
-                var onevent;
+                let onevent;
                 function setEventCallback(callback) {
                     return (onevent = callback);
                 }
@@ -1434,15 +1435,15 @@
                     nextSibling,
                     ns
                 ) {
-                    for (var i = start; i < end; i++) {
-                        var vnode = vnodes[i];
+                    for (let i = start; i < end; i++) {
+                        let vnode = vnodes[i];
                         if (vnode != null) {
                             createNode(parent, vnode, hooks, ns, nextSibling);
                         }
                     }
                 }
                 function createNode(parent, vnode, hooks, ns, nextSibling) {
-                    var tag = vnode.tag;
+                    let tag = vnode.tag;
                     if (typeof tag === "string") {
                         vnode.state = {};
                         if (vnode.attrs != null)
@@ -1484,8 +1485,8 @@
                     return vnode.dom;
                 }
                 function createHTML(parent, vnode, nextSibling) {
-                    var match1 = vnode.children.match(/^\s*?<(\w+)/im) || [];
-                    var parent1 =
+                    let match1 = vnode.children.match(/^\s*?<(\w+)/im) || [];
+                    let parent1 =
                         {
                             caption: "table",
                             thead: "table",
@@ -1497,12 +1498,12 @@
                             colgroup: "table",
                             col: "colgroup",
                         }[match1[1]] || "div";
-                    var temp = $doc.createElement(parent1);
+                    let temp = $doc.createElement(parent1);
                     temp.innerHTML = vnode.children;
                     vnode.dom = temp.firstChild;
                     vnode.domSize = temp.childNodes.length;
-                    var fragment = $doc.createDocumentFragment();
-                    var child;
+                    let fragment = $doc.createDocumentFragment();
+                    let child;
                     while ((child = temp.firstChild)) {
                         fragment.appendChild(child);
                     }
@@ -1510,9 +1511,9 @@
                     return fragment;
                 }
                 function createFragment(parent, vnode, hooks, ns, nextSibling) {
-                    var fragment = $doc.createDocumentFragment();
+                    let fragment = $doc.createDocumentFragment();
                     if (vnode.children != null) {
-                        var children = vnode.children;
+                        let children = vnode.children;
                         createNodes(
                             fragment,
                             children,
@@ -1529,11 +1530,11 @@
                     return fragment;
                 }
                 function createElement(parent, vnode, hooks, ns, nextSibling) {
-                    var tag = vnode.tag;
-                    var attrs2 = vnode.attrs;
-                    var is = attrs2 && attrs2.is;
+                    let tag = vnode.tag;
+                    let attrs2 = vnode.attrs;
+                    let is = attrs2 && attrs2.is;
                     ns = getNameSpace(vnode) || ns;
-                    var element = ns
+                    let element = ns
                         ? is
                             ? $doc.createElementNS(ns, tag, { is: is })
                             : $doc.createElementNS(ns, tag)
@@ -1567,7 +1568,7 @@
                                 ];
                         }
                         if (vnode.children != null) {
-                            var children = vnode.children;
+                            let children = vnode.children;
                             createNodes(
                                 element,
                                 children,
@@ -1583,7 +1584,7 @@
                     return element;
                 }
                 function initComponent(vnode, hooks) {
-                    var sentinel;
+                    let sentinel;
                     if (typeof vnode.tag.view === "function") {
                         vnode.state = Object.create(vnode.tag);
                         sentinel = vnode.state.view;
@@ -1624,7 +1625,7 @@
                 ) {
                     initComponent(vnode, hooks);
                     if (vnode.instance != null) {
-                        var element = createNode(
+                        let element = createNode(
                             parent,
                             vnode.instance,
                             hooks,
@@ -1667,8 +1668,8 @@
                         removeNodes(old, 0, old.length, vnodes);
                     else {
                         if (old.length === vnodes.length) {
-                            var isUnkeyed = false;
-                            for (var i = 0; i < vnodes.length; i++) {
+                            let isUnkeyed = false;
+                            for (let i = 0; i < vnodes.length; i++) {
                                 if (vnodes[i] != null && old[i] != null) {
                                     isUnkeyed =
                                         vnodes[i].key == null &&
@@ -1716,22 +1717,22 @@
                         }
                         recycling = recycling || isRecyclable(old, vnodes);
                         if (recycling) {
-                            var pool = old.pool;
+                            let pool = old.pool;
                             old = old.concat(old.pool);
                         }
-                        var oldStart = 0,
+                        let oldStart = 0,
                             start = 0,
                             oldEnd = old.length - 1,
                             end = vnodes.length - 1,
                             map;
                         while (oldEnd >= oldStart && end >= start) {
-                            var o = old[oldStart],
+                            let o = old[oldStart],
                                 v = vnodes[start];
                             if (o === v && !recycling) oldStart++, start++;
                             else if (o == null) oldStart++;
                             else if (v == null) start++;
                             else if (o.key === v.key) {
-                                var shouldRecycle =
+                                let shouldRecycle =
                                     (pool != null &&
                                         oldStart >= old.length - pool.length) ||
                                     (pool == null && recycling);
@@ -1824,7 +1825,7 @@
                             } else {
                                 if (!map) map = getKeyMap(old, oldEnd);
                                 if (v != null) {
-                                    var oldIndex = map[v.key];
+                                    let oldIndex = map[v.key];
                                     if (oldIndex != null) {
                                         let movable = old[oldIndex];
                                         let shouldRecycle =
@@ -1854,7 +1855,7 @@
                                         if (movable.dom != null)
                                             nextSibling = movable.dom;
                                     } else {
-                                        var dom = createNode(
+                                        let dom = createNode(
                                             parent,
                                             v,
                                             hooks,
@@ -1889,7 +1890,7 @@
                     recycling,
                     ns
                 ) {
-                    var oldTag = old.tag,
+                    let oldTag = old.tag,
                         tag = vnode.tag;
                     if (oldTag === tag) {
                         vnode.state = old.state;
@@ -1976,12 +1977,12 @@
                         nextSibling,
                         ns
                     );
-                    var domSize = 0,
+                    let domSize = 0,
                         children = vnode.children;
                     vnode.dom = null;
                     if (children != null) {
-                        for (var i = 0; i < children.length; i++) {
-                            var child = children[i];
+                        for (let i = 0; i < children.length; i++) {
+                            let child = children[i];
                             if (child != null && child.dom != null) {
                                 if (vnode.dom == null) vnode.dom = child.dom;
                                 domSize += child.domSize || 1;
@@ -1991,7 +1992,7 @@
                     }
                 }
                 function updateElement(old, vnode, recycling, hooks, ns) {
-                    var element = (vnode.dom = old.dom);
+                    let element = (vnode.dom = old.dom);
                     ns = getNameSpace(vnode) || ns;
                     if (vnode.tag === "textarea") {
                         if (vnode.attrs == null) vnode.attrs = {};
@@ -2106,17 +2107,17 @@
                         Math.abs(old.pool.length - vnodes.length) <=
                             Math.abs(old.length - vnodes.length)
                     ) {
-                        var oldChildrenLength =
+                        let oldChildrenLength =
                             (old[0] &&
                                 old[0].children &&
                                 old[0].children.length) ||
                             0;
-                        var poolChildrenLength =
+                        let poolChildrenLength =
                             (old.pool[0] &&
                                 old.pool[0].children &&
                                 old.pool[0].children.length) ||
                             0;
-                        var vnodesChildrenLength =
+                        let vnodesChildrenLength =
                             (vnodes[0] &&
                                 vnodes[0].children &&
                                 vnodes[0].children.length) ||
@@ -2133,7 +2134,7 @@
                     return false;
                 }
                 function getKeyMap(vnodes, end) {
-                    var map = {},
+                    let map = {},
                         i = 0;
                     for (let i = 0; i < end; i++) {
                         let vnode = vnodes[i];
@@ -2145,11 +2146,11 @@
                     return map;
                 }
                 function toFragment(vnode) {
-                    var count0 = vnode.domSize;
+                    let count0 = vnode.domSize;
                     if (count0 != null || vnode.dom == null) {
-                        var fragment = $doc.createDocumentFragment();
+                        let fragment = $doc.createDocumentFragment();
                         if (count0 > 0) {
-                            var dom = vnode.dom;
+                            let dom = vnode.dom;
                             while (--count0)
                                 fragment.appendChild(dom.nextSibling);
                             fragment.insertBefore(dom, fragment.firstChild);
@@ -2170,13 +2171,13 @@
                     else parent.appendChild(dom);
                 }
                 function setContentEditable(vnode) {
-                    var children = vnode.children;
+                    let children = vnode.children;
                     if (
                         children != null &&
                         children.length === 1 &&
                         children[0].tag === "<"
                     ) {
-                        var content = children[0].children;
+                        let content = children[0].children;
                         if (vnode.dom.innerHTML !== content)
                             vnode.dom.innerHTML = content;
                     } else if (
@@ -2189,8 +2190,8 @@
                 }
                 //remove
                 function removeNodes(vnodes, start, end, context) {
-                    for (var i = start; i < end; i++) {
-                        var vnode = vnodes[i];
+                    for (let i = start; i < end; i++) {
+                        let vnode = vnodes[i];
                         if (vnode != null) {
                             if (vnode.skip) vnode.skip = false;
                             else removeNode(vnode, context);
@@ -2198,13 +2199,13 @@
                     }
                 }
                 function removeNode(vnode, context) {
-                    var expected = 1,
+                    let expected = 1,
                         called = 0;
                     if (
                         vnode.attrs &&
                         typeof vnode.attrs.onbeforeremove === "function"
                     ) {
-                        var result = vnode.attrs.onbeforeremove.call(
+                        let result = vnode.attrs.onbeforeremove.call(
                             vnode.state,
                             vnode
                         );
@@ -2237,9 +2238,9 @@
                         if (++called === expected) {
                             onremove(vnode);
                             if (vnode.dom) {
-                                var count0 = vnode.domSize || 1;
+                                let count0 = vnode.domSize || 1;
                                 if (count0 > 1) {
-                                    var dom = vnode.dom;
+                                    let dom = vnode.dom;
                                     while (--count0) {
                                         removeNodeFromDOM(dom.nextSibling);
                                     }
@@ -2260,7 +2261,7 @@
                     }
                 }
                 function removeNodeFromDOM(node) {
-                    var parent = node.parentNode;
+                    let parent = node.parentNode;
                     if (parent != null) parent.removeChild(node);
                 }
                 function onremove(vnode) {
@@ -2276,10 +2277,10 @@
                         vnode._state.onremove.call(vnode.state, vnode);
                     if (vnode.instance != null) onremove(vnode.instance);
                     else {
-                        var children = vnode.children;
+                        let children = vnode.children;
                         if (Array.isArray(children)) {
-                            for (var i = 0; i < children.length; i++) {
-                                var child = children[i];
+                            for (let i = 0; i < children.length; i++) {
+                                let child = children[i];
                                 if (child != null) onremove(child);
                             }
                         }
@@ -2287,12 +2288,12 @@
                 }
                 //attrs2
                 function setAttrs(vnode, attrs2, ns) {
-                    for (var key2 in attrs2) {
+                    for (let key2 in attrs2) {
                         setAttr(vnode, key2, null, attrs2[key2], ns);
                     }
                 }
                 function setAttr(vnode, key2, old, value, ns) {
-                    var element = vnode.dom;
+                    let element = vnode.dom;
                     if (
                         key2 === "key" ||
                         key2 === "is" ||
@@ -2303,7 +2304,7 @@
                         isLifecycleMethod(key2)
                     )
                         return;
-                    var nsLastIndex = key2.indexOf(":");
+                    let nsLastIndex = key2.indexOf(":");
                     if (
                         nsLastIndex > -1 &&
                         key2.substr(0, nsLastIndex) === "xlink"
@@ -2327,7 +2328,7 @@
                         !isCustomElement(vnode)
                     ) {
                         if (key2 === "value") {
-                            var normalized0 = "" + value; // eslint-disable-line no-implicit-coercion
+                            let normalized0 = "" + value; // eslint-disable-line no-implicit-coercion
                             //setting input[value] to same value by typing on focused element moves cursor to end in Chrome
                             if (
                                 (vnode.tag === "input" ||
@@ -2379,7 +2380,7 @@
                     }
                 }
                 function setLateAttrs(vnode) {
-                    var attrs2 = vnode.attrs;
+                    let attrs2 = vnode.attrs;
                     if (vnode.tag === "select" && attrs2 != null) {
                         if ("value" in attrs2)
                             setAttr(
@@ -2412,7 +2413,7 @@
                         }
                     }
                     if (old != null) {
-                        for (var key2 in old) {
+                        for (let key2 in old) {
                             if (attrs2 == null || !(key2 in attrs2)) {
                                 if (key2 === "className") key2 = "class";
                                 if (
@@ -2476,11 +2477,11 @@
                         element.style.cssText = style;
                     else {
                         if (typeof old === "string") element.style.cssText = "";
-                        for (var key2 in style) {
+                        for (let key2 in style) {
                             element.style[key2] = style[key2];
                         }
                         if (old != null && typeof old !== "string") {
-                            for (var key3 in old) {
+                            for (let key3 in old) {
                                 if (!(key3 in style)) element.style[key3] = "";
                             }
                         }
@@ -2488,12 +2489,12 @@
                 }
                 //event
                 function updateEvent(vnode, key2, value) {
-                    var element = vnode.dom;
-                    var callback =
+                    let element = vnode.dom;
+                    let callback =
                         typeof onevent !== "function"
                             ? value
                             : function (e) {
-                                  var result = value.call(element, e);
+                                  let result = value.call(element, e);
                                   onevent.call(element, e);
                                   return result;
                               };
@@ -2501,7 +2502,7 @@
                         element[key2] =
                             typeof value === "function" ? callback : null;
                     else {
-                        var eventName = key2.slice(2);
+                        let eventName = key2.slice(2);
                         if (vnode.events === undefined) vnode.events = {};
                         if (vnode.events[key2] === callback) return;
                         if (vnode.events[key2] != null)
@@ -2532,7 +2533,7 @@
                         hooks.push(source.onupdate.bind(vnode.state, vnode));
                 }
                 function shouldNotUpdate(vnode, old) {
-                    var forceVnodeUpdate, forceComponentUpdate;
+                    let forceVnodeUpdate, forceComponentUpdate;
                     if (
                         vnode.attrs != null &&
                         typeof vnode.attrs.onbeforeupdate === "function"
@@ -2575,9 +2576,9 @@
                         throw new Error(
                             "Ensure the DOM element being passed to m.route/m.mount/m.render is not undefined."
                         );
-                    var hooks = [];
-                    var active = $doc.activeElement;
-                    var namespace = dom.namespaceURI;
+                    let hooks = [];
+                    let active = $doc.activeElement;
+                    let namespace = dom.namespaceURI;
                     // First time0 rendering into a node clears it out
                     if (dom.vnodes == null) dom.textContent = "";
                     if (!Array.isArray(vnodes)) vnodes = [vnodes];
@@ -2593,7 +2594,7 @@
                             : namespace
                     );
                     dom.vnodes = vnodes;
-                    for (var i = 0; i < hooks.length; i++) hooks[i]();
+                    for (let i = 0; i < hooks.length; i++) hooks[i]();
                     if ($doc.activeElement !== active) active.focus();
 
                     // // 保证toc拉宽了之后, 当点击标题或滚动页面的时候不会恢复原来的宽度
@@ -2605,15 +2606,15 @@
             };
             function throttle(callback) {
                 //60fps translates to 16.6ms, round it down since setTimeout requires int
-                var time = 16;
-                var last = 0,
+                let time = 16;
+                let last = 0,
                     pending = null;
-                var timeout =
+                let timeout =
                     typeof requestAnimationFrame === "function"
                         ? requestAnimationFrame
                         : setTimeout;
                 return function () {
-                    var now = Date.now();
+                    let now = Date.now();
                     if (last === 0 || now - last >= time) {
                         last = now;
                         callback();
@@ -2626,23 +2627,23 @@
                     }
                 };
             }
-            var _11 = function ($window) {
-                var renderService = coreRenderer($window);
+            let _11 = function ($window) {
+                let renderService = coreRenderer($window);
                 renderService.setEventCallback(function (e) {
                     if (e.redraw === false) e.redraw = undefined;
                     else redraw();
                 });
-                var callbacks = [];
+                let callbacks = [];
                 function subscribe(key1, callback) {
                     unsubscribe(key1);
                     callbacks.push(key1, throttle(callback));
                 }
                 function unsubscribe(key1) {
-                    var index = callbacks.indexOf(key1);
+                    let index = callbacks.indexOf(key1);
                     if (index > -1) callbacks.splice(index, 2);
                 }
                 function redraw() {
-                    for (var i = 1; i < callbacks.length; i += 2) {
+                    for (let i = 1; i < callbacks.length; i += 2) {
                         callbacks[i]();
                     }
                 }
@@ -2653,9 +2654,9 @@
                     render: renderService.render,
                 };
             };
-            var redrawService = _11(window);
+            let redrawService = _11(window);
             requestService.setCompletionCallback(redrawService.redraw);
-            var _16 = function (redrawService0) {
+            let _16 = function (redrawService0) {
                 return function (root, component) {
                     if (component === null) {
                         redrawService0.render(root, []);
@@ -2671,7 +2672,7 @@
                             "m.mount(element, component) expects a component, not a vnode"
                         );
 
-                    var run0 = function () {
+                    let run0 = function () {
                         redrawService0.render(root, Vnode(component));
                     };
                     redrawService0.subscribe(root, run0);
@@ -2679,31 +2680,31 @@
                 };
             };
             m.mount = _16(redrawService);
-            var Promise = PromisePolyfill;
-            var parseQueryString = function (string) {
+            let Promise = PromisePolyfill;
+            let parseQueryString = function (string) {
                 if (string === "" || string == null) return {};
                 if (string.charAt(0) === "?") string = string.slice(1);
-                var entries = string.split("&"),
+                let entries = string.split("&"),
                     data0 = {},
                     counters = {};
-                for (var i = 0; i < entries.length; i++) {
-                    var entry = entries[i].split("=");
-                    var key5 = decodeURIComponent(entry[0]);
-                    var value =
+                for (let i = 0; i < entries.length; i++) {
+                    let entry = entries[i].split("=");
+                    let key5 = decodeURIComponent(entry[0]);
+                    let value =
                         entry.length === 2 ? decodeURIComponent(entry[1]) : "";
                     if (value === "true") value = true;
                     else if (value === "false") value = false;
-                    var levels = key5.split(/\]\[?|\[/);
-                    var cursor = data0;
+                    let levels = key5.split(/\]\[?|\[/);
+                    let cursor = data0;
                     if (key5.indexOf("[") > -1) levels.pop();
-                    for (var j = 0; j < levels.length; j++) {
-                        var level = levels[j],
+                    for (let j = 0; j < levels.length; j++) {
+                        let level = levels[j],
                             nextLevel = levels[j + 1];
-                        var isNumber =
-                            nextLevel == "" || !isNaN(parseInt(nextLevel, 10));
-                        var isValue = j === levels.length - 1;
+                        let isNumber =
+                            nextLevel === "" || !isNaN(parseInt(nextLevel, 10));
+                        let isValue = j === levels.length - 1;
                         if (level === "") {
-                            var key6 = levels.slice(0, j).join();
+                            let key6 = levels.slice(0, j).join();
                             if (counters[key6] == null) counters[key6] = 0;
                             level = counters[key6]++;
                         }
@@ -2719,15 +2720,15 @@
                 }
                 return data0;
             };
-            var coreRouter = function ($window) {
-                var supportsPushState =
+            let coreRouter = function ($window) {
+                let supportsPushState =
                     typeof $window.history.pushState === "function";
-                var callAsync0 =
+                let callAsync0 =
                     typeof setImmediate === "function"
                         ? setImmediate
                         : setTimeout;
                 function normalize1(fragment0) {
-                    var data = $window.location[fragment0].replace(
+                    let data = $window.location[fragment0].replace(
                         /(?:%[a-f89][a-f0-9])+/gim,
                         decodeURIComponent
                     );
@@ -2735,7 +2736,7 @@
                         data = "/" + data;
                     return data;
                 }
-                var asyncId;
+                let asyncId;
                 function debounceAsync(callback0) {
                     return function () {
                         if (asyncId != null) return;
@@ -2746,34 +2747,34 @@
                     };
                 }
                 function parsePath(path, queryData, hashData) {
-                    var queryIndex = path.indexOf("?");
-                    var hashIndex = path.indexOf("#");
-                    var pathEnd =
+                    let queryIndex = path.indexOf("?");
+                    let hashIndex = path.indexOf("#");
+                    let pathEnd =
                         queryIndex > -1
                             ? queryIndex
                             : hashIndex > -1
                             ? hashIndex
                             : path.length;
                     if (queryIndex > -1) {
-                        var queryEnd = hashIndex > -1 ? hashIndex : path.length;
-                        var queryParams = parseQueryString(
+                        let queryEnd = hashIndex > -1 ? hashIndex : path.length;
+                        let queryParams = parseQueryString(
                             path.slice(queryIndex + 1, queryEnd)
                         );
-                        for (var key4 in queryParams)
+                        for (let key4 in queryParams)
                             queryData[key4] = queryParams[key4];
                     }
                     if (hashIndex > -1) {
-                        var hashParams = parseQueryString(
+                        let hashParams = parseQueryString(
                             path.slice(hashIndex + 1)
                         );
-                        for (var key5 in hashParams)
+                        for (let key5 in hashParams)
                             hashData[key5] = hashParams[key5];
                     }
                     return path.slice(0, pathEnd);
                 }
-                var router = { prefix: "#!" };
+                let router = { prefix: "#!" };
                 router.getPath = function () {
-                    var type2 = router.prefix.charAt(0);
+                    let type2 = router.prefix.charAt(0);
                     switch (type2) {
                         case "#":
                             return normalize1("hash").slice(
@@ -2796,11 +2797,11 @@
                     }
                 };
                 router.setPath = function (path, data, options) {
-                    var queryData = {},
+                    let queryData = {},
                         hashData = {};
                     path = parsePath(path, queryData, hashData);
                     if (data != null) {
-                        for (var key4 in data) queryData[key4] = data[key4];
+                        for (let key4 in data) queryData[key4] = data[key4];
                         path = path.replace(
                             /:([^\/]+)/g,
                             function (match2, token) {
@@ -2809,13 +2810,13 @@
                             }
                         );
                     }
-                    var query = buildQueryString(queryData);
+                    let query = buildQueryString(queryData);
                     if (query) path += "?" + query;
-                    var hash = buildQueryString(hashData);
+                    let hash = buildQueryString(hashData);
                     if (hash) path += "#" + hash;
                     if (supportsPushState) {
-                        var state = options ? options.state : null;
-                        var title = options ? options.title : null;
+                        let state = options ? options.state : null;
+                        let title = options ? options.title : null;
                         $window.onpopstate();
                         if (options && options.replace)
                             $window.history.replaceState(
@@ -2833,15 +2834,15 @@
                 };
                 router.defineRoutes = function (routes, resolve, reject) {
                     function resolveRoute() {
-                        var path = router.getPath();
-                        var params = {};
-                        var pathname = parsePath(path, params, params);
-                        var state = $window.history.state;
+                        let path = router.getPath();
+                        let params = {};
+                        let pathname = parsePath(path, params, params);
+                        let state = $window.history.state;
                         if (state != null) {
-                            for (var k in state) params[k] = state[k];
+                            for (let k in state) params[k] = state[k];
                         }
-                        for (var route0 in routes) {
-                            var matcher = new RegExp(
+                        for (let route0 in routes) {
+                            let matcher = new RegExp(
                                 "^" +
                                     route0
                                         .replace(/:[^\/]+?\.{3}/g, "(.*?)")
@@ -2850,13 +2851,13 @@
                             );
                             if (matcher.test(pathname)) {
                                 pathname.replace(matcher, function () {
-                                    var keys = route0.match(/:[^\/]+/g) || [];
-                                    var values = [].slice.call(
+                                    let keys = route0.match(/:[^\/]+/g) || [];
+                                    let values = [].slice.call(
                                         arguments,
                                         1,
                                         -2
                                     );
-                                    for (var i = 0; i < keys.length; i++) {
+                                    for (let i = 0; i < keys.length; i++) {
                                         params[keys[i].replace(/:|\./g, "")] =
                                             decodeURIComponent(values[i]);
                                     }
@@ -2880,25 +2881,25 @@
                 };
                 return router;
             };
-            var _20 = function ($window, redrawService0) {
-                var routeService = coreRouter($window);
-                var identity = function (v) {
+            let _20 = function ($window, redrawService0) {
+                let routeService = coreRouter($window);
+                let identity = function (v) {
                     return v;
                 };
-                var render1, component, attrs3, currentPath, lastUpdate;
-                var route = function (root, defaultRoute, routes) {
+                let render1, component, attrs3, currentPath, lastUpdate;
+                let route = function (root, defaultRoute, routes) {
                     if (root == null)
                         throw new Error(
                             "Ensure the DOM element that was passed to `m.route` is not undefined"
                         );
-                    var run1 = function () {
+                    let run1 = function () {
                         if (render1 != null)
                             redrawService0.render(
                                 root,
                                 render1(Vnode(component, attrs3.key, attrs3))
                             );
                     };
-                    var bail = function (path) {
+                    let bail = function (path) {
                         if (path !== defaultRoute)
                             routeService.setPath(defaultRoute, null, {
                                 replace: true,
@@ -2912,7 +2913,7 @@
                     routeService.defineRoutes(
                         routes,
                         function (payload, params, path) {
-                            var update = (lastUpdate = function (
+                            let update = (lastUpdate = function (
                                 routeResolver,
                                 comp
                             ) {
@@ -2976,7 +2977,7 @@
                             return;
                         e.preventDefault();
                         e.redraw = false;
-                        var href = this.getAttribute("href");
+                        let href = this.getAttribute("href");
                         if (href.indexOf(routeService.prefix) === 0)
                             href = href.slice(routeService.prefix.length);
                         route.set(href, undefined, undefined);
@@ -3003,7 +3004,7 @@
                     );
                 };
             };
-            var _28 = coreRenderer(window);
+            let _28 = coreRenderer(window);
             m.render = _28.render;
             m.redraw = redrawService.redraw;
             m.request = requestService.request;
@@ -3170,7 +3171,7 @@
             window.removeEventListener("mouseup", onDragEnd);
             e.redraw = false;
 
-            var domain2offset = GM_getValue(
+            let domain2offset = GM_getValue(
                 "menu_GAEEScript_auto_toc_domain_2_offset"
             );
             // 判断之前toc 的位置和现在的, 如果相等的话, 说明只是原地点击
@@ -3768,10 +3769,10 @@
         $headings: $headings_,
         userOffset = [0, 0],
     }) {
-        var domain2offset = GM_getValue(
+        let domain2offset = GM_getValue(
             "menu_GAEEScript_auto_toc_domain_2_offset"
         );
-        var lastOffset = domain2offset[window.location.host];
+        let lastOffset = domain2offset[window.location.host];
         // console.log("[auto-toc, lastOffset]", lastOffset);
         if (lastOffset != null) {
             userOffset = lastOffset;
@@ -3928,10 +3929,8 @@
     };
 
 
-    //////////////////////////////// 以下是新版提取文章和标题的部分(目前测出某些网站会导致页面排版错乱比如谷歌和https://www.163.com/dy/article/GJKFUO4105119NPR.html) //////////////////////////////////////////////////////////////////////
-    //////////////////////////////// 所以退回后面的旧版的代码了 //////////////////////////////////////////////////////////////////////
-
-    var toArray = function (arr) {
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    let toArray = function (arr) {
         return [].slice.apply(arr);
     };
 
@@ -3984,11 +3983,11 @@
                                 if (curElems) {
                                     for (let j = 0; j < curElems.length; j++) {
                                         let curElem = curElems[j];
-                                        if (curElem.textContent != "") {
+                                        if (curElem.textContent !== "") {
                                             hasExtraTagsTextCnt += 1;
                                             OtherExtraTagsElemCombinedText += curElem.textContent;
                                             if (shouldLog) console.log("isElementHorizontalCentered OtherExtraTagsElemCombinedText", element.textContent, OtherExtraTagsElemCombinedText, fc, curElem);
-                                            if (hasExtraTagsTextCnt == 2) {
+                                            if (hasExtraTagsTextCnt === 2) {
                                                 finalElem = curParent;
                                                 shouldBreakWhile = true;
                                             }
@@ -4021,7 +4020,7 @@
             if (shouldLog) console.log("isElementHorizontalCentered isCentered: ", element.textContent, isCentered, elementCenter, pCenter);
 
             // 如果有兄弟section, 然后判断他们是不是类似于 `01`+ `起源`这种一个是纯数字其他是文字的几个section合起来的大section, 那就把他们的文本合并来当做`01`这个section的标题 newTextContent
-            if (isCentered && OtherExtraTagsElemCombinedText != "") {
+            if (isCentered && OtherExtraTagsElemCombinedText !== "") {
                 element.newTextContent = OtherExtraTagsElemCombinedText;
                 if (shouldLog) console.log("isElementHorizontalCentered shouldCombineSectionText: ", element.textContent, element.newTextContent);
             }
@@ -4036,29 +4035,29 @@
     }
 
     // 拿到离页面左边边缘最近的标题的距离
-    var getElemsCommonLeft = function (elems) {
+    let getElemsCommonLeft = function (elems) {
         if (!elems.length) {
             if (shouldLog) console.log("calc_getElemsCommonLeft, !elems.length");
             return undefined;
         }
-        var lefts = {};
+        let lefts = {};
         elems.forEach(function (el) {
-            var left = el.getBoundingClientRect().left;
+            let left = el.getBoundingClientRect().left;
             if (!lefts[left]) {
                 lefts[left] = 0;
             }
             lefts[left]++;
         });
-        var count = elems.length;
-        var isAligned = Object.keys(lefts).length <= Math.ceil(0.6 * count);
+        let count = elems.length;
+        let isAligned = Object.keys(lefts).length <= Math.ceil(0.6 * count);
         if (!isAligned) {
             if (shouldLog) console.log("calc_getElemsCommonLeft, !isAligned, ", Object.keys(lefts).length, Math.ceil(0.6 * count), count);
             return undefined;
         }
-        var sortedByCount = Object.keys(lefts).sort(function (a, b) {
+        let sortedByCount = Object.keys(lefts).sort(function (a, b) {
             return lefts[b] - lefts[a];
         });
-        var most = Number(sortedByCount[0]);
+        let most = Number(sortedByCount[0]);
         if (shouldLog) console.log("calc_getElemsCommonLeft, most, ", most);
         return most;
     };
@@ -4362,7 +4361,7 @@
     };
 
     function handleToc() {
-        var domain2shouldShow = GM_getValue("menu_GAEEScript_auto_open_toc");
+        let domain2shouldShow = GM_getValue("menu_GAEEScript_auto_open_toc");
         // console.log("[handleToc domain2shouldShow]", domain2shouldShow);
         // console.log("[handleToc window.location.host]", window.location.host);
         // console.log(
@@ -4411,11 +4410,11 @@
     }
 
     //////////////////////////////////////// 所有网站-缩小图片
-    function shrink_img(from_menu_switch=false) {
-        var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
-        var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
+    function shrinkImg(from_menu_switch=false) {
+        let domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
+        let shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
         // console.log(
-        //     "[shrink_img] begin"
+        //     "[shrinkImg] begin"
         // );
         let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg
         if (!from_menu_switch && shouldNotShrink) {
@@ -4450,7 +4449,7 @@
                                         return `img[src="${url.pathname + url.search}"]:hover,img[src="${the_src}"]:hover`;
                                     } catch(e) {
                                         console.log(
-                                            "[shrink_img] ERROR: " + e.message
+                                            "[shrinkImg] ERROR: " + e.message
                                         );
                                         return ""
                                     }
@@ -4458,7 +4457,7 @@
                             }
                         }
                         let cssSelectorStr = genCSSSelector(ele)
-                        if (cssSelectorStr != "" ) {
+                        if (cssSelectorStr !== "" ) {
                             if (!ele.style.originalWidth || from_menu_switch) {  // 防止不是打开开关导致的多次缩小同一个图片
                                 ele.style.originalWidth = ele.width + "px";
                                 // ele.style.originalHeight = ele.height + "px";  // 不记录这个了, 时不时拿到的是0
@@ -4504,18 +4503,18 @@
             removeCSS("shrinkimg__css");
             setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img恢复 放大 之后导致标题间隔变化, toc 跳转会不准
         } else {
-            if(cssTxt != "") {
+            if(cssTxt !== "") {
                 insertCSS(cssTxt, "shrinkimg__css");
                 setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img 缩小 之后导致标题间隔变化, toc 跳转会不准
             }
-            setTimeout(shrink_img, 800);
+            setTimeout(shrinkImg, 800);
         }
         // console.log(
-        //     "[shrink_img] end"
+        //     "[shrinkImg] end"
         // );
     }
 
-    var menu_ALL = [
+    let menu_ALL = [
             [
                 "menu_GAEEScript_auto_open_toc",
                 "Enable TOC On Current Site(当前网站TOC开关)",
@@ -4559,7 +4558,7 @@
         }
         for (let i = 0; i < menu_ALL.length; i++) {
             // 循环注册脚本菜单
-            var currLocalStorage = GM_getValue(menu_ALL[i][0]);
+            let currLocalStorage = GM_getValue(menu_ALL[i][0]);
             menu_ID[menu_ID.length + 1] = GM_registerMenuCommand(
                 `${currLocalStorage[window.location.host] ? "✅" : "❎"} ${
                     menu_ALL[i][1]
@@ -4582,19 +4581,19 @@
 
     //切换选项
     function menuSwitch(localStorageKeyName) {
-        var domain2isDim = GM_getValue(
+        let domain2isDim = GM_getValue(
             "menu_GAEEScript_auto_dim_toc"
         );
         if (localStorageKeyName === "menu_GAEEScript_auto_open_toc") {
-            var domain2isShow = GM_getValue(`${localStorageKeyName}`);
-            var domain2offset = GM_getValue(
+            let domain2isShow = GM_getValue(`${localStorageKeyName}`);
+            let domain2offset = GM_getValue(
                 "menu_GAEEScript_auto_toc_domain_2_offset"
             );
             console.log(
                 "[menuSwitch menu_GAEEScript_auto_open_toc]",
                 domain2isShow
             );
-            var isCurrShow = domain2isShow[window.location.host];
+            let isCurrShow = domain2isShow[window.location.host];
             if (isCurrShow == null || !isCurrShow) {
                 domain2isShow[window.location.host] = true;
                 toast("Turn On TOC.");
@@ -4617,7 +4616,7 @@
                 "[menuSwitch menu_GAEEScript_auto_dim_toc]",
                 domain2isDim
             );
-            var isCurrDim = domain2isDim[window.location.host];
+            let isCurrDim = domain2isDim[window.location.host];
             if (isCurrDim == null || !isCurrDim) {
                 domain2isDim[window.location.host] = true;
                 toast("Turn On TOC Auto Dim.");
@@ -4628,12 +4627,12 @@
             GM_setValue(`${localStorageKeyName}`, domain2isDim);
             handleToc();
         } else if (localStorageKeyName === "menu_GAEEScript_shrink_img") {
-            var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
+            let domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
             console.log(
                 "[menuSwitch menu_GAEEScript_shrink_img]",
                 domain2shouldShrinkImg
             );
-            var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
+            let shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
             if (shouldShrinkImg == null || !shouldShrinkImg) {
                 domain2shouldShrinkImg[window.location.host] = true;
                 toast("Turn On Shrink IMG.");
@@ -4642,7 +4641,7 @@
                 toast("Turn Off Shrink IMG.");
             }
             GM_setValue(`${localStorageKeyName}`, domain2shouldShrinkImg);
-            shrink_img(true);
+            shrinkImg(true);
         }
         // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
         if (!isSafari()) {
@@ -4683,7 +4682,7 @@
         // 不支持则用定时器检测的办法
         //     setInterval(function() {
         //         // 检测hash值或其中某一段是否更改的函数， 在低版本的iE浏览器中通过window.location.hash取出的指和其它的浏览器不同，要注意
-        // 　　　　 var ischanged = isHashChanged();
+        // 　　　　 let ischanged = isHashChanged();
         //         if(ischanged) {
         //             handleToc();  // 对应新的hash执行的操作函数
         //         }
@@ -4700,17 +4699,17 @@
                 "[hide-top-bar-when-scroll-down-and-auto-redirect]"
             );
 
-            function zhihu_auto_redirect() {
+            function zhihuAutoRedirect() {
                 let nodes = document.querySelectorAll(".RichText a[href*='//link.zhihu.com/?target']");
                 for (let i = 0; i < nodes.length; i++) {
                     let url = decodeURIComponent(nodes[i].href.replace(/https?:\/\/link\.zhihu\.com\/\?target=/, ""));
                     nodes[i].href = url;
                 }
             }
-            setTimeout(zhihu_auto_redirect, 10);
-            setTimeout(zhihu_auto_redirect, 500);
+            setTimeout(zhihuAutoRedirect, 10);
+            setTimeout(zhihuAutoRedirect, 500);
             for (let i = 1; i <= 66; i++) {
-                setTimeout(zhihu_auto_redirect, 1000 * i);
+                setTimeout(zhihuAutoRedirect, 1000 * i);
             }
 
             let style = "";
@@ -4738,7 +4737,7 @@
             console.log(
                 "[anti-google-redirect]"
             );
-            function RedirectHandle() {
+            function redirectHandle() {
                 try {
                     let resultNodes = document.querySelectorAll(".g .rc a, #rs, #rso .g a");
                     for (let i = 0; i < resultNodes.length; i++) {
@@ -4748,26 +4747,26 @@
                         one.setAttribute("data-jsarwt", "0"); // Firefox谷歌去重定向干扰
                     }
                 } catch (e) {
-                console.log(e);
+                    console.log(e);
                 }
             }
 
-            setTimeout(RedirectHandle, 10);
-            setTimeout(RedirectHandle, 500);
+            setTimeout(redirectHandle, 10);
+            setTimeout(redirectHandle, 500);
             for (let i = 1; i <= 66; i++) {
-                setTimeout(RedirectHandle, 1000 * i);
+                setTimeout(redirectHandle, 1000 * i);
             }
         }
 
         //////////////////////////////////////// 所有网站-缩小图片
         console.log(
-            "[shrink_img]"
+            "[shrinkImg]"
         );
-        var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
-        var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
+        let domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
+        let shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
         let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg
         if (!shouldNotShrink) {
-            setTimeout(shrink_img, 10);
+            setTimeout(shrinkImg, 10);
         }
 
         //////////////////////////////////////// 所有网站-生成toc
