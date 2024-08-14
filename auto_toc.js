@@ -376,21 +376,21 @@
         }
     };
 
-    function shouldDimToc() {
-        const domain2isDim = GM_getValue(
-            "menu_GAEEScript_auto_dim_toc"
+    function shouldCollapseToc() {
+        const domain2isCollapse = GM_getValue(
+            "menu_GAEEScript_auto_collapse_toc"
         );
-        // console.log('[shouldDimToc cccccccccccccccccccccccccccccc]', domain2isDim);
-        // alert(domain2isDim[window.location.host])
-        return domain2isDim[window.location.host];
+        // console.log('[shouldCollapse cccccccccccccccccccccccccccccc]', domain2isCollapse);
+        // alert(domain2isCollapse[window.location.host])
+        return domain2isCollapse[window.location.host];
     }
 
     let toc_dom = null;
     let toc_text_wrap = true;
 
     function getTocCss() {
-        const shouldDim = shouldDimToc();
-        if (shouldLog) console.log("[getTocCss]", shouldDim);
+        const shouldCollapse = shouldCollapseToc();
+        if (shouldLog) console.log("[getTocCss]", shouldCollapse);
         return (
             `
             @media (prefers-color-scheme: dark) {
@@ -437,7 +437,7 @@
                 width: 18em;
                 /* max-height: calc(100vh - 368px); */
             `
-            + (shouldDim ? "max-height: 22px;" : "max-height: calc(100vh - 100px);")
+            + (shouldCollapse ? "max-height: 22px;" : "max-height: calc(100vh - 100px);")
             + `
                 z-index: 888;
                 box-sizing: border-box;
@@ -456,13 +456,13 @@
                 border-radius: 6px;
                 transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
             `
-            + (shouldDim ? "opacity: 0.6;" : "opacity: 1;")
+            + (shouldCollapse ? "opacity: 0.6;" : "opacity: 1;")
             + `
             }
             
             #smarttoc:hover {
             `
-            + (shouldDim ? "max-height: calc(100vh - 100px); opacity: 1" : "")
+            + (shouldCollapse ? "max-height: calc(100vh - 100px); opacity: 1" : "")
             + `
             }
             
@@ -496,14 +496,14 @@
                 overflow-y: auto;
                 overflow-x: hidden;
             ` +
-            (shouldDim ? "opacity: 0.3;" : "opacity: 1;") +
+            (shouldCollapse ? "opacity: 0.3;" : "opacity: 1;") +
             `
                 transition: opacity 0.3s ease-in-out;
             }
             
             #smarttoc>ul:hover {
             ` +
-            (shouldDim ? "opacity: 1;" : "") +
+            (shouldCollapse ? "opacity: 1;" : "") +
             `
             }
             ` +
@@ -3175,7 +3175,7 @@
                 //     "[auto-toc, 原地点击, multi_click_cnt:]",
                 //     multi_click_cnt
                 // );
-                if (Date.now() - last_click_ts < 233) {
+                // if (Date.now() - last_click_ts < 666) {
                     // // 说明是双击, 走关闭 toc 逻辑
                     // console.log("[auto-toc, double click handle section]");
                     // menuSwitch("menu_GAEEScript_auto_open_toc");
@@ -3183,16 +3183,16 @@
 
                     // 说明是双击逻辑, 走暗淡 toc 逻辑
                     // console.log("[auto-toc, double click handle section]");
-                    menuSwitch("menu_GAEEScript_auto_dim_toc");
+                    menuSwitch("menu_GAEEScript_auto_collapse_toc");
                     handleToc();
                     return;
-                }
-                last_click_ts = Date.now();
-                // 说明是单击逻辑, 走切换折行逻辑
-                // console.log("[auto-toc, click handle section]");
-                toc_text_wrap = !toc_text_wrap;
-                toast("Toggle Headings Auto Wrap.");
-                handleToc();
+                // }
+                // last_click_ts = Date.now();
+                // // 说明是单击逻辑, 走切换折行逻辑
+                // // console.log("[auto-toc, click handle section]");
+                // toc_text_wrap = !toc_text_wrap;
+                // toast("Toggle Headings Auto Wrap.");
+                // handleToc();
 
                 ////////////////////////////////////////// 以下这种实现方案导致单击有延迟, 故不采用
                 // if (multi_click_cnt > 0) {
@@ -3205,7 +3205,7 @@
                 //     if (multi_click_cnt === 1) {
                 //         // 单击逻辑, 走暗淡 toc 逻辑
                 //         console.log("[auto-toc, click handle section]");
-                //         menuSwitch("menu_GAEEScript_auto_dim_toc");
+                //         menuSwitch("menu_GAEEScript_auto_collapse_toc");
                 //     } else if (multi_click_cnt === 2) {
                 //         // 说明是双击, 走关闭 toc 逻辑
                 //         console.log("[auto-toc, double click handle section]");
@@ -4515,8 +4515,8 @@
                 {},
             ],
             [
-                "menu_GAEEScript_auto_dim_toc",
-                "Dim TOC On Current Site(当前网站TOC自动暗淡开关)",
+                "menu_GAEEScript_auto_collapse_toc",
+                "Collapse TOC on current site(当前网站TOC自动折叠开关)",
                 {},
             ],
             [
@@ -4575,8 +4575,8 @@
 
     //切换选项
     function menuSwitch(localStorageKeyName) {
-        var domain2isDim = GM_getValue(
-            "menu_GAEEScript_auto_dim_toc"
+        var domain2isCollapse = GM_getValue(
+            "menu_GAEEScript_auto_collapse_toc"
         );
         if (localStorageKeyName === "menu_GAEEScript_auto_open_toc") {
             var domain2isShow = GM_getValue(`${localStorageKeyName}`);
@@ -4594,7 +4594,7 @@
             } else {
                 delete domain2isShow[window.location.host];
                 delete domain2offset[window.location.host];
-                delete domain2isDim[window.location.host];
+                delete domain2isCollapse[window.location.host];
 
                 toast("Turn Off TOC.");
             }
@@ -4603,22 +4603,22 @@
                 "menu_GAEEScript_auto_toc_domain_2_offset",
                 domain2offset
             );
-            GM_setValue("menu_GAEEScript_auto_dim_toc", domain2isDim);
+            GM_setValue("menu_GAEEScript_auto_collapse_toc", domain2isCollapse);
             handleToc();
-        } else if (localStorageKeyName === "menu_GAEEScript_auto_dim_toc") {
+        } else if (localStorageKeyName === "menu_GAEEScript_auto_collapse_toc") {
             console.log(
-                "[menuSwitch menu_GAEEScript_auto_dim_toc]",
-                domain2isDim
+                "[menuSwitch menu_GAEEScript_auto_collapse_toc]",
+                domain2isCollapse
             );
-            var isCurrDim = domain2isDim[window.location.host];
+            var isCurrDim = domain2isCollapse[window.location.host];
             if (isCurrDim == null || !isCurrDim) {
-                domain2isDim[window.location.host] = true;
-                toast("Turn On TOC Auto Dim.");
+                domain2isCollapse[window.location.host] = true;
+                toast("Turn On TOC Auto Collapse.");
             } else {
-                delete domain2isDim[window.location.host];
-                toast("Turn Off TOC Auto Dim.");
+                delete domain2isCollapse[window.location.host];
+                toast("Turn Off TOC Auto Collapse.");
             }
-            GM_setValue(`${localStorageKeyName}`, domain2isDim);
+            GM_setValue(`${localStorageKeyName}`, domain2isCollapse);
             handleToc();
         } else if (localStorageKeyName === "menu_GAEEScript_shrink_img") {
             var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
@@ -4767,8 +4767,8 @@
         if (GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset") == null) {
             GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", {});
         }
-        if (GM_getValue("menu_GAEEScript_auto_dim_toc") == null) {
-            GM_setValue("menu_GAEEScript_auto_dim_toc", {});
+        if (GM_getValue("menu_GAEEScript_auto_collapse_toc") == null) {
+            GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
         }
         handleToc();
 
