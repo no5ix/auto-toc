@@ -9,12 +9,8 @@ Generate TOC(table of contents) for any website. 可以为任何网站生成TOC�
 
 - Drag the `TOC drag bar`(that three dots) to move `auto-toc`.
 - 拖动 TOC拖动栏 来移动 `auto-toc`
-<!-- - Click on the `TOC drag bar`(that three dots) to toggle headings text wrap. -->
-<!-- - 单击 TOC拖动栏(三个圆点) 可以切换标题折行 -->
 - click on the `TOC drag bar`(that three dots) to automatically collapse the TOC..
 - 单击 TOC拖动栏(三个圆点) 可以自动折叠 TOC
-<!-- - now you can resize auto-toc by puting the pointer on the bottom right corner of auto-toc and draging it.
-- 现在你可以设置auto-toc的宽度了, 把你鼠标放到auto-toc的右下角然后拖动即可 -->
 
 ![](auto_toc_demo_image.jpg)
 
