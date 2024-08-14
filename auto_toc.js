@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.50
+// @version      1.51
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -435,7 +435,10 @@
                 min-width: 12em;
                 /* resize: horizontal; */
                 width: 18em;
-                max-height: calc(100vh - 368px);
+                /* max-height: calc(100vh - 368px); */
+            `
+            + (shouldDim ? "max-height: 22px;" : "max-height: calc(100vh - 100px);")
+            + `
                 z-index: 888;
                 box-sizing: border-box;
                 /* background-color: #fff; */
@@ -451,6 +454,16 @@
                 contain: content;
                 /* box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 20%), 0px 0px 8px 0 rgb(0 0 0 / 19%); */
                 border-radius: 6px;
+                transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            `
+            + (shouldDim ? "opacity: 0.6;" : "opacity: 1;")
+            + `
+            }
+            
+            #smarttoc:hover {
+            `
+            + (shouldDim ? "max-height: calc(100vh - 100px); opacity: 1" : "")
+            + `
             }
             
             #smarttoc.hidden {
@@ -468,7 +481,7 @@
                 color: rgb(0, 0, 0);
                 cursor: pointer;
                 text-align: center;
-                opacity: 0.1;
+                opacity: 0.3;
                 transition: opacity 0.3s ease-in-out;
             }
             
@@ -498,11 +511,10 @@
             #smarttoc>ul::-webkit-scrollbar {  
                 width: 3px;
                 height: 1px;
-            }  
+            }
             
             /* 滚动条轨道样式, 空的即为隐藏 */   
-            #smarttoc>ul::-webkit-scrollbar-track {  
-              
+            #smarttoc>ul::-webkit-scrollbar-track {
             }  
               
             /* 滚动条滑块样式 */   
@@ -541,13 +553,11 @@
             
             #smarttoc a:hover,
             #smarttoc a:active {
-                border-left-color: rgba(86, 61, 124, 1);
                 /* color: #563d7c; */
                 color: rgb(86, 61, 124, 1);
             }
             
             #smarttoc li.active>a {
-                border-left-color: rgba(86, 61, 124, 1);
                 /* color: #563d7c; */
                 color: rgb(86, 61, 124, 1);
             }
@@ -561,9 +571,6 @@
                 font-size: 1em;
                 padding-left: 1.3em;
                 cursor: pointer;
-                border-left-width: 3px;
-                border-left-style: solid;
-                border-left-color: transparent;
             }
             
             #smarttoc ul a:hover,
@@ -588,9 +595,6 @@
             #smarttoc ul ul a {
                 font-size: 1em;
                 padding-left: 2.7em;
-                border-left-width: 1.6px;
-                border-left-style: solid;
-                border-left-color: transparent;
             }
             
             #smarttoc ul ul a:hover,
@@ -612,9 +616,6 @@
             #smarttoc ul ul ul a {
                 font-size: 1em;
                 padding-left: 4em;
-                border-left-width: 0.8px;
-                border-left-style: solid;
-                border-left-color: transparent;
             }
             
             #smarttoc ul ul ul a:hover,
@@ -636,9 +637,6 @@
             #smarttoc ul ul ul ul a {
                 font-size: 1em;
                 padding-left: 5em;
-                border-left-width: 0.6px;
-                border-left-style: solid;
-                border-left-color: transparent;
             }
             
             #smarttoc ul ul ul ul a:hover,
@@ -660,9 +658,6 @@
             #smarttoc ul ul ul ul ul a {
                 font-size: 1em;
                 padding-left: 6em;
-                border-left-width: 0.4px;
-                border-left-style: solid;
-                border-left-color: transparent;
             }
             
             #smarttoc ul ul ul ul ul a:hover,
@@ -684,9 +679,6 @@
             #smarttoc ul ul ul ul ul ul a {
                 font-size: 1em;
                 padding-left: 7em;
-                border-left-width: 0.2px;
-                border-left-style: solid;
-                border-left-color: transparent;
             }
             
             #smarttoc ul ul ul ul ul ul a:hover,
