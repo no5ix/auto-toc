@@ -55,4 +55,4 @@ By default, it is not open. You need to go to the plug-in menu to open the switc
   - ![微信](https://github.com/no5ix/no5ix.github.io/blob/source/source/img/sux/donate_wechat.png)
 - 支付宝
   - ![支付宝](https://github.com/no5ix/no5ix.github.io/blob/source/source/img/sux/donate_alipay.png)
-- 看不到图片的划, 下面两个二维码图片就是捐赠二维码
+- 看不到图片的话, 下面两个二维码图片就是捐赠二维码
