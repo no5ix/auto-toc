@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.51
+// @version      1.52
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4741,7 +4741,7 @@
                         one.setAttribute("data-jsarwt", "0"); // Firefox谷歌去重定向干扰
                     }
                 } catch (e) {
-                console.log(e);
+                    console.log(e);
                 }
             }
 
@@ -4749,6 +4749,36 @@
             setTimeout(redirectHandle, 500);
             for (let i = 1; i <= 66; i++) {
                 setTimeout(redirectHandle, 1000 * i);
+            }
+        } else if (urlObj.host.indexOf("programmercarl.com") >= 0) {
+            //////////////////////////////////////// 代码随想录 把leetcode.cn 替换为 leetcode.com
+            console.log(
+                "[replace-leetcode-cn-to-com]"
+            );
+            function replaceLeetCodeLinks() {
+                // 获取页面上所有的<a>元素  
+                const links = document.querySelectorAll('a');  
+                
+                // 遍历这些链接  
+                links.forEach(link => {  
+                    // 检查链接的href属性是否包含'leetcode.cn'  
+                    if (link.href.includes('leetcode.cn')) {  
+                        // 使用字符串的replace方法替换'leetcode.cn'为'leetcode.com'  
+                        // 注意：这里假设链接的协议部分（如http://或https://）之后直接跟着'leetcode.cn'  
+                        // 如果链接的格式更复杂，你可能需要调整正则表达式来更准确地匹配和替换  
+                        link.href = link.href.replace(/leetcode\.cn/g, 'leetcode.com');  
+                
+                        // 如果链接的href属性中可能包含子域名（如www.leetcode.cn），你可能需要更复杂的替换逻辑  
+                        // 例如，使用正则表达式来匹配整个域名部分  
+                        // link.href = link.href.replace(/https?:\/\/[^\/]*leetcode\.cn\//g, 'https://leetcode.com/');  
+                    }  
+                });
+            }
+              
+            setTimeout(replaceLeetCodeLinks, 10);
+            setTimeout(replaceLeetCodeLinks, 500);
+            for (let i = 1; i <= 6; i++) {
+                setTimeout(replaceLeetCodeLinks, 1000 * i);
             }
         }
 
