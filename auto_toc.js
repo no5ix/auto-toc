@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.52
+// @version      1.53
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -25,12 +25,14 @@
 // @homepage          https://github.com/no5ix/auto-toc
 // ==/UserScript==
 
-
 (function () {
     "use strict";
 
-    function isSafari()  {
-        return (/Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))
+    function isSafari() {
+        return (
+            /Safari/.test(navigator.userAgent) &&
+            !/Chrome/.test(navigator.userAgent)
+        );
     }
 
     function getRootWindow() {
@@ -436,9 +438,11 @@
                 /* resize: horizontal; */
                 width: 18em;
                 /* max-height: calc(100vh - 368px); */
+            ` +
+            (shouldCollapse
+                ? "max-height: 22px;"
+                : "max-height: calc(100vh - 100px);") +
             `
-            + (shouldCollapse ? "max-height: 22px;" : "max-height: calc(100vh - 100px);")
-            + `
                 z-index: 888;
                 box-sizing: border-box;
                 /* background-color: #fff; */
@@ -455,15 +459,17 @@
                 /* box-shadow: 0px 0px 0px 0px rgb(0 0 0 / 20%), 0px 0px 8px 0 rgb(0 0 0 / 19%); */
                 border-radius: 6px;
                 transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            ` +
+            (shouldCollapse ? "opacity: 0.6;" : "opacity: 1;") +
             `
-            + (shouldCollapse ? "opacity: 0.6;" : "opacity: 1;")
-            + `
             }
             
             #smarttoc:hover {
+            ` +
+            (shouldCollapse
+                ? "max-height: calc(100vh - 100px); opacity: 1"
+                : "") +
             `
-            + (shouldCollapse ? "max-height: calc(100vh - 100px); opacity: 1" : "")
-            + `
             }
             
             #smarttoc.hidden {
@@ -507,7 +513,9 @@
             `
             }
             ` +
-            (isSafari() ? "" : `
+            (isSafari()
+                ? ""
+                : `
             #smarttoc>ul::-webkit-scrollbar {  
                 width: 3px;
                 height: 1px;
@@ -544,7 +552,9 @@
                 padding-top: 0.2em;
                 padding-bottom: 0.2em;
             ` +
-            (toc_text_wrap ? "white-space: pre-wrap;" : "text-overflow: ellipsis; overflow-x: hidden; white-space: nowrap;" ) +
+            (toc_text_wrap
+                ? "white-space: pre-wrap;"
+                : "text-overflow: ellipsis; overflow-x: hidden; white-space: nowrap;") +
             `
                 margin-bottom: 0.8px;
                 margin-top: 0.8px;
@@ -3087,11 +3097,28 @@
                             {
                                 href: `#${heading.anchor}`,
                                 // title: heading.node.textContent,
-                                title: (heading.node.newTextContent ? heading.node.newTextContent : (heading.node.textContent.trim() !== "" ? heading.node.textContent.trim() : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent.trim().substring(0, 10) : heading.node.textContent.trim()))),
+                                title: heading.node.newTextContent
+                                    ? heading.node.newTextContent
+                                    : heading.node.textContent.trim() !== ""
+                                    ? heading.node.textContent.trim()
+                                    : heading.node.nextElementSibling
+                                    ? heading.node.nextElementSibling.textContent
+                                          .trim()
+                                          .substring(0, 10)
+                                    : heading.node.textContent.trim(),
                             },
                             // "● " + heading.node.textContent
                             // 如果当前标题内容为空, 则找相邻的下一个同级的元素用它的文本作为标题显示
-                            "● " + (heading.node.newTextContent ? heading.node.newTextContent : (heading.node.textContent.trim() !== "" ? heading.node.textContent.trim() : (heading.node.nextElementSibling ? heading.node.nextElementSibling.textContent.trim().substring(0, 10) : heading.node.textContent.trim())))
+                            "● " +
+                                (heading.node.newTextContent
+                                    ? heading.node.newTextContent
+                                    : heading.node.textContent.trim() !== ""
+                                    ? heading.node.textContent.trim()
+                                    : heading.node.nextElementSibling
+                                    ? heading.node.nextElementSibling.textContent
+                                          .trim()
+                                          .substring(0, 10)
+                                    : heading.node.textContent.trim())
                         ),
                     children && children.length && UL(children),
                 ].filter(Boolean)
@@ -3176,16 +3203,16 @@
                 //     multi_click_cnt
                 // );
                 // if (Date.now() - last_click_ts < 666) {
-                    // // 说明是双击, 走关闭 toc 逻辑
-                    // console.log("[auto-toc, double click handle section]");
-                    // menuSwitch("menu_GAEEScript_auto_open_toc");
-                    // handleToc();
+                // // 说明是双击, 走关闭 toc 逻辑
+                // console.log("[auto-toc, double click handle section]");
+                // menuSwitch("menu_GAEEScript_auto_open_toc");
+                // handleToc();
 
-                    // 说明是双击逻辑, 走暗淡 toc 逻辑
-                    // console.log("[auto-toc, double click handle section]");
-                    menuSwitch("menu_GAEEScript_auto_collapse_toc");
-                    handleToc();
-                    return;
+                // 说明是双击逻辑, 走暗淡 toc 逻辑
+                // console.log("[auto-toc, double click handle section]");
+                menuSwitch("menu_GAEEScript_auto_collapse_toc");
+                handleToc();
+                return;
                 // }
                 // last_click_ts = Date.now();
                 // // 说明是单击逻辑, 走切换折行逻辑
@@ -3920,7 +3947,6 @@
         return path;
     };
 
-
     //////////////////////////////// 以下是新版提取文章和标题的部分(目前测出某些网站会导致页面排版错乱比如谷歌和https://www.163.com/dy/article/GJKFUO4105119NPR.html) //////////////////////////////////////////////////////////////////////
     //////////////////////////////// 所以退回后面的旧版的代码了 //////////////////////////////////////////////////////////////////////
 
@@ -3928,20 +3954,23 @@
         return [].slice.apply(arr);
     };
 
-
     const header_tags = ["H1", "H2", "H3", "H4", "H5", "H6"];
     const extra_tags = ["STRONG", "B"];
 
     // 判断一个元素是否对于整个页面水平居中
     const isElementHorizontalCentered = function (element) {
-        let divElement = element.closest('div');
+        let divElement = element.closest("div");
         if (divElement) {
             let finalElem = element;
-            let closestSection = element.closest('section')
+            let closestSection = element.closest("section");
             let OtherExtraTagsElemCombinedText = "";
             // 如果有个最近的section祖先, 则检查是否有兄弟section, 然后判断他们的共同祖先section是否居中
             if (closestSection) {
-                if (shouldLog) console.log("isElementHorizontalCentered closestSection begin", element.textContent);
+                if (shouldLog)
+                    console.log(
+                        "isElementHorizontalCentered closestSection begin",
+                        element.textContent
+                    );
                 finalElem = closestSection;
                 // 拿到一个高层的祖先<section>元素 S 并且它是有个其他包含其他文本的section, 且途中不能有为P的祖先, 用 S 当做 finalElem 来判断是否居中
                 let currentElement = element;
@@ -3949,14 +3978,19 @@
                 let nextSibling = null;
                 while (currentElement.parentElement) {
                     let curParent = currentElement.parentElement;
-                    if (curParent.isCalcedCentered) {  // 已经被标记过了, 那应该直接返回 false 了
+                    if (curParent.isCalcedCentered) {
+                        // 已经被标记过了, 那应该直接返回 false 了
                         return false;
                     }
                     if (curParent.tagName === "SECTION") {
                         previousSibling = curParent.previousElementSibling;
                         nextSibling = curParent.nextElementSibling;
                         // 如果祖先的兄弟已经是<p>了, 那可以停止继续循环了
-                        if ((previousSibling && previousSibling.tagName === "P") || (nextSibling && nextSibling.tagName === "P")) {
+                        if (
+                            (previousSibling &&
+                                previousSibling.tagName === "P") ||
+                            (nextSibling && nextSibling.tagName === "P")
+                        ) {
                             finalElem = curParent;
                             break;
                         }
@@ -3966,21 +4000,31 @@
                         for (let k = 0; k < curParent.childNodes.length; k++) {
                             let fc = curParent.childNodes[k];
                             // 如果当前祖先的子元素已经是有<p>子元素了, 那可以停止继续循环了, 并且把 `自己` 当做 finalElem
-                            if (fc.querySelector('p') !== null) {
+                            if (fc.querySelector("p") !== null) {
                                 finalElem = currentElement;
                                 shouldBreakWhile = true;
                                 break;
                             }
                             // 如果当前祖先的子元素已经是2个以及以上的extra_tags文本子元素了, 那可以停止继续循环了, 并且把 `当前祖先` 当做 finalElem
                             for (let i = 0; i < extra_tags.length; i++) {
-                                let curElems = fc.querySelectorAll(extra_tags[i])
+                                let curElems = fc.querySelectorAll(
+                                    extra_tags[i]
+                                );
                                 if (curElems) {
                                     for (let j = 0; j < curElems.length; j++) {
                                         let curElem = curElems[j];
                                         if (curElem.textContent != "") {
                                             hasExtraTagsTextCnt += 1;
-                                            OtherExtraTagsElemCombinedText += curElem.textContent;
-                                            if (shouldLog) console.log("isElementHorizontalCentered OtherExtraTagsElemCombinedText", element.textContent, OtherExtraTagsElemCombinedText, fc, curElem);
+                                            OtherExtraTagsElemCombinedText +=
+                                                curElem.textContent;
+                                            if (shouldLog)
+                                                console.log(
+                                                    "isElementHorizontalCentered OtherExtraTagsElemCombinedText",
+                                                    element.textContent,
+                                                    OtherExtraTagsElemCombinedText,
+                                                    fc,
+                                                    curElem
+                                                );
                                             if (hasExtraTagsTextCnt == 2) {
                                                 finalElem = curParent;
                                                 shouldBreakWhile = true;
@@ -3993,15 +4037,23 @@
                         if (shouldBreakWhile) {
                             break;
                         }
-                    } else if (curParent.tagName === "P") {  // 如果中间有一个祖先是P那就不应该要了
+                    } else if (curParent.tagName === "P") {
+                        // 如果中间有一个祖先是P那就不应该要了
                         break;
-                    } else if (curParent.tagName === "div") {  // 如果中间有一个祖先是div那就不应该要了
+                    } else if (curParent.tagName === "div") {
+                        // 如果中间有一个祖先是div那就不应该要了
                         break;
                     }
                     currentElement = currentElement.parentElement;
                 }
                 finalElem.isCalcedCentered = true;
-                if (shouldLog) console.log("isElementHorizontalCentered closestSection end", element.textContent, OtherExtraTagsElemCombinedText, finalElem);
+                if (shouldLog)
+                    console.log(
+                        "isElementHorizontalCentered closestSection end",
+                        element.textContent,
+                        OtherExtraTagsElemCombinedText,
+                        finalElem
+                    );
             }
             let elementWidth = finalElem.offsetWidth;
             let pWidth = divElement.offsetWidth;
@@ -4009,29 +4061,43 @@
             let pLeft = divElement.getBoundingClientRect().left;
             let elementCenter = elementLeft + elementWidth / 2;
             let pCenter = pLeft + pWidth / 2;
-            let isCentered =  Math.abs(elementCenter - pCenter) <= 3;
+            let isCentered = Math.abs(elementCenter - pCenter) <= 3;
 
-            if (shouldLog) console.log("isElementHorizontalCentered isCentered: ", element.textContent, isCentered, elementCenter, pCenter);
+            if (shouldLog)
+                console.log(
+                    "isElementHorizontalCentered isCentered: ",
+                    element.textContent,
+                    isCentered,
+                    elementCenter,
+                    pCenter
+                );
 
             // 如果有兄弟section, 然后判断他们是不是类似于 `01`+ `起源`这种一个是纯数字其他是文字的几个section合起来的大section, 那就把他们的文本合并来当做`01`这个section的标题 newTextContent
             if (isCentered && OtherExtraTagsElemCombinedText != "") {
                 element.newTextContent = OtherExtraTagsElemCombinedText;
-                if (shouldLog) console.log("isElementHorizontalCentered shouldCombineSectionText: ", element.textContent, element.newTextContent);
+                if (shouldLog)
+                    console.log(
+                        "isElementHorizontalCentered shouldCombineSectionText: ",
+                        element.textContent,
+                        element.newTextContent
+                    );
             }
 
             return isCentered;
         } else {
             let elementRect = element.getBoundingClientRect();
-            let viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+            let viewportWidth =
+                window.innerWidth || document.documentElement.clientWidth;
             let elementCenterX = elementRect.left + elementRect.width / 2;
             return Math.abs(elementCenterX - viewportWidth / 2) < 8;
         }
-    }
+    };
 
     // 拿到离页面左边边缘最近的标题的距离
     var getElemsCommonLeft = function (elems) {
         if (!elems.length) {
-            if (shouldLog) console.log("calc_getElemsCommonLeft, !elems.length");
+            if (shouldLog)
+                console.log("calc_getElemsCommonLeft, !elems.length");
             return undefined;
         }
         var lefts = {};
@@ -4045,7 +4111,13 @@
         var count = elems.length;
         var isAligned = Object.keys(lefts).length <= Math.ceil(0.6 * count);
         if (!isAligned) {
-            if (shouldLog) console.log("calc_getElemsCommonLeft, !isAligned, ", Object.keys(lefts).length, Math.ceil(0.6 * count), count);
+            if (shouldLog)
+                console.log(
+                    "calc_getElemsCommonLeft, !isAligned, ",
+                    Object.keys(lefts).length,
+                    Math.ceil(0.6 * count),
+                    count
+                );
             return undefined;
         }
         var sortedByCount = Object.keys(lefts).sort(function (a, b) {
@@ -4159,11 +4231,10 @@
 
         // 筛选页面上想要遍历的 node
         const acceptNode = (node) =>
-            tags.includes(node.tagName) &&
-            isVisible(node)
-            // isVisible(node) &&
-            // (node.id ? finalId.includes(node.id) : finalInnerHTML.includes(node.innerHTML))
-                ? NodeFilter.FILTER_ACCEPT
+            tags.includes(node.tagName) && isVisible(node)
+                ? // isVisible(node) &&
+                  // (node.id ? finalId.includes(node.id) : finalInnerHTML.includes(node.innerHTML))
+                  NodeFilter.FILTER_ACCEPT
                 : NodeFilter.FILTER_SKIP;
         const treeWalker = document.createTreeWalker(
             article,
@@ -4176,23 +4247,26 @@
         // console.log("extra_tags_leftmost_offset old end")
 
         let isNormalHeadingExist = false;
-        let normalHeadingCnt = 0
+        let normalHeadingCnt = 0;
         for (let i = 0; i < header_tags.length; i++) {
             // 检查 article 是否包含 tag 标签
             let tag = header_tags[i];
             const elems = (0, toArray)(article.getElementsByTagName(tag));
             normalHeadingCnt += elems.length;
-            if (normalHeadingCnt >= 3) {  // 3个及以上比较好, 免得有可能其中一个是文章最上面的大标题
-                isNormalHeadingExist = true
+            if (normalHeadingCnt >= 3) {
+                // 3个及以上比较好, 免得有可能其中一个是文章最上面的大标题
+                isNormalHeadingExist = true;
                 break;
             }
         }
 
         let extra_tags_leftmost_offset = new Map();
-        if (!isNormalHeadingExist) {  // 有几个其他正经标题了, 之后没必要提取<b>和<strong>了
+        if (!isNormalHeadingExist) {
+            // 有几个其他正经标题了, 之后没必要提取<b>和<strong>了
             // 提前计算出<b> 和<strong>这俩特殊标题的离页面左边边缘最近的标题的距离
             extra_tags.forEach((tag) => {
-                if (shouldLog) console.log("calc_getElemsCommonLeft, tagName=", tag);
+                if (shouldLog)
+                    console.log("calc_getElemsCommonLeft, tagName=", tag);
                 const elems = (0, toArray)(article.getElementsByTagName(tag));
                 extra_tags_leftmost_offset[tag] = getElemsCommonLeft(elems);
             });
@@ -4201,11 +4275,15 @@
         const is_b_strong_valid_heading = function (node) {
             // 有几个其他正经标题了, 不要提取<b>和<strong>了
             if (isNormalHeadingExist) {
-                if (shouldLog) console.log("b_strong continue 0, ", node.textContent);
+                if (shouldLog)
+                    console.log("b_strong continue 0, ", node.textContent);
                 return 0;
             }
             // 加粗的文字的前后还有其他元素(有可能是普通不加粗的文字或者图片啊啥的)则不识别为标题
-            if (node.closest("P") || node.parentElement.childNodes.length !== 1) {
+            if (
+                node.closest("P") ||
+                node.parentElement.childNodes.length !== 1
+            ) {
                 let cn_list = [];
                 // 拿到最近的p祖先的子元素们
                 if (node.closest("P")) {
@@ -4218,10 +4296,23 @@
                 for (let j = 0; j < cn_list.length; j++) {
                     let cn = cn_list[j];
                     for (let i = 0; i < cn.length; i++) {
-                        if (cn[i] === node || cn[i].contains(node) || extra_tags.includes(cn[i].tagName) || cn[i].nodeName.toLowerCase() === 'br' || (cn[i].nodeName.toLowerCase() === 'span' && cn[i].textContent === "")) {  // 但是同级元素是换行<br>或空的<span>或者是<b>或<strong>是可以的
+                        if (
+                            cn[i] === node ||
+                            cn[i].contains(node) ||
+                            extra_tags.includes(cn[i].tagName) ||
+                            cn[i].nodeName.toLowerCase() === "br" ||
+                            (cn[i].nodeName.toLowerCase() === "span" &&
+                                cn[i].textContent === "")
+                        ) {
+                            // 但是同级元素是换行<br>或空的<span>或者是<b>或<strong>是可以的
                             continue;
                         }
-                        if (shouldLog) console.log("b_strong continue 8, ", cn[i].textContent, cn[i].nodeName.toLowerCase());
+                        if (shouldLog)
+                            console.log(
+                                "b_strong continue 8, ",
+                                cn[i].textContent,
+                                cn[i].nodeName.toLowerCase()
+                            );
                         return 0;
                     }
                 }
@@ -4229,18 +4320,30 @@
 
             // 当前 elem 不能是标题的子元素, 否则会重复
             for (let j = 0; j < tags.length; j++) {
-                let curNode = (node.tagName == tags[j]) ? node.parentElement : node; // 不这样的话, closest会找到node自己
+                let curNode =
+                    node.tagName == tags[j] ? node.parentElement : node; // 不这样的话, closest会找到node自己
                 const ancestor = curNode.closest(tags[j]);
                 if (ancestor) {
-                    if (shouldLog) console.log("b_strong continue 2, ", node.textContent, ancestor);
+                    if (shouldLog)
+                        console.log(
+                            "b_strong continue 2, ",
+                            node.textContent,
+                            ancestor
+                        );
                     return 0;
                 }
             }
 
             // 加粗的文字的父元素以及爷元素为<u>则不识别为标题(因为<u>会使得子元素带下划线)
-            if (node.parentElement && (node.parentElement.tagName === "U" || (node.parentElement.parentElement && node.parentElement.parentElement.tagName === "U"))) {
-                if (shouldLog) console.log("b_strong continue 5, ", node.textContent);
-               return 0;
+            if (
+                node.parentElement &&
+                (node.parentElement.tagName === "U" ||
+                    (node.parentElement.parentElement &&
+                        node.parentElement.parentElement.tagName === "U"))
+            ) {
+                if (shouldLog)
+                    console.log("b_strong continue 5, ", node.textContent);
+                return 0;
             }
             let cur_leftmost_offset = extra_tags_leftmost_offset[node.tagName];
             let isCentered = false;
@@ -4252,12 +4355,14 @@
                     return 1;
                 }
                 if (!isCentered) {
-                    if (shouldLog) console.log("b_strong continue 6, ", node.textContent);
-                   return 0;
+                    if (shouldLog)
+                        console.log("b_strong continue 6, ", node.textContent);
+                    return 0;
                 }
             } else {
                 // 当前 elem 离左边距离得和 cur_leftmost_offset 一样
-                isLeftAligned = node.getBoundingClientRect().left === cur_leftmost_offset;
+                isLeftAligned =
+                    node.getBoundingClientRect().left === cur_leftmost_offset;
                 if (isLeftAligned) {
                     return 2;
                 }
@@ -4265,12 +4370,13 @@
                 if (isCentered) {
                     return 1;
                 }
-                if (!isCentered && (!isLeftAligned)) {
-                    if (shouldLog) console.log("b_strong continue 1, ", node.textContent);
-                   return 0;
+                if (!isCentered && !isLeftAligned) {
+                    if (shouldLog)
+                        console.log("b_strong continue 1, ", node.textContent);
+                    return 0;
                 }
             }
-        }
+        };
 
         const headings = [];
         while (treeWalker.nextNode()) {
@@ -4279,11 +4385,17 @@
             if (node.autoTocHeadingLevel == null) {
                 // 如果当前标题内容为空, 则找相邻的下一个同级的非header_tags以及非可用的b/strong的元素用它的文本作为标题显示, 但如果还是空白的, 那就不要了
                 let nodeText = node.textContent.trim();
-                if (nodeText === "" && (node.nextElementSibling && !header_tags.includes(node.nextElementSibling.tagName) && !is_b_strong_valid_heading(node))) {
+                if (
+                    nodeText === "" &&
+                    node.nextElementSibling &&
+                    !header_tags.includes(node.nextElementSibling.tagName) &&
+                    !is_b_strong_valid_heading(node)
+                ) {
                     nodeText = node.nextElementSibling.textContent.trim();
                 }
                 if (nodeText === "") {
-                    if (shouldLog) console.log("b_strong continue 4", node.textContent);
+                    if (shouldLog)
+                        console.log("b_strong continue 4", node.textContent);
                     node.autoTocHeadingLevel = 0;
                     continue;
                 }
@@ -4294,7 +4406,12 @@
                         node.autoTocHeadingLevel = 0;
                         continue;
                     }
-                    if (shouldLog) console.log("b_strong cur_level", node.textContent, cur_level);
+                    if (shouldLog)
+                        console.log(
+                            "b_strong cur_level",
+                            node.textContent,
+                            cur_level
+                        );
                 }
                 node.autoTocHeadingLevel = cur_level;
             }
@@ -4366,7 +4483,11 @@
             clearInterval(autoGenTocTimerId);
         }
         autoGenTocTimerId = setInterval(() => {
-            if (shouldLog) console.log('[handleToc regen toc window.location.host]', window.location.host);
+            if (shouldLog)
+                console.log(
+                    "[handleToc regen toc window.location.host]",
+                    window.location.host
+                );
             if (toc && toc.isValid()) {
                 // clearInterval(timerId); 如果不注释的话, 就会终止这个 timer 从而导致在页面未刷新但是标题改变的时候无法自动生成最新的标题
                 // return;
@@ -4376,11 +4497,19 @@
                 return;
             }
             if (toc && !toc.isValid()) {
-                if (shouldLog) console.log('[handleToc regen toc window.location.host, toc && !toc.isValid()]', window.location.host);
+                if (shouldLog)
+                    console.log(
+                        "[handleToc regen toc window.location.host, toc && !toc.isValid()]",
+                        window.location.host
+                    );
                 let lastState = toc.dispose();
                 toc = doGenerateToc(lastState);
             } else if (toc == null) {
-                if (shouldLog) console.log('[handleToc regen toc window.location.host, toc == null]', window.location.host);
+                if (shouldLog)
+                    console.log(
+                        "[handleToc regen toc window.location.host, toc == null]",
+                        window.location.host
+                    );
                 toc = doGenerateToc();
             }
         }, 1600);
@@ -4404,21 +4533,21 @@
     }
 
     //////////////////////////////////////// 所有网站-缩小图片
-    function shrinkImg(from_menu_switch=false) {
+    function shrinkImg(from_menu_switch = false) {
         var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
         var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
         // console.log(
         //     "[shrinkImg] begin"
         // );
-        let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg
+        let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg;
         if (!from_menu_switch && shouldNotShrink) {
             return;
         }
-        let cssTxt = '';
+        let cssTxt = "";
         const shrinkWidth = "88";
         const shrinkWidthStr = shrinkWidth + "px";
-        Array.from(document.getElementsByTagName('*')).forEach(ele=>{
-            if (ele.tagName === 'IMG' && !ele.closest('header')) {
+        Array.from(document.getElementsByTagName("*")).forEach((ele) => {
+            if (ele.tagName === "IMG" && !ele.closest("header")) {
                 if (shouldNotShrink) {
                     ele.style.width = ele.style.originalWidth;
                     // ele.style.height = ele.style.originalHeight;
@@ -4428,39 +4557,47 @@
                     ele.style.minWidth = ele.style.originalMinWidth;
                     ele.style.transition = "";
                 } else {
-                    if (ele.width > shrinkWidth) {  // 防止多次缩小同一个图片, 也防止放大本身就很小的图片
-                        const genCSSSelector = (ele)=>{
-                            if (ele.id)
-                                return `img[id="${ele.id}"]:hover`
+                    if (ele.width > shrinkWidth) {
+                        // 防止多次缩小同一个图片, 也防止放大本身就很小的图片
+                        const genCSSSelector = (ele) => {
+                            if (ele.id) return `img[id="${ele.id}"]:hover`;
                             else {
                                 // if(ele.src.startsWith('data:')) return `img[src="${ele.src}"]:hover`;//base64的src
-                                if(ele.src.startsWith('data:')) return "";//base64的src
-                                else{
-                                    const the_src = ele.src || ele.getAttribute('_src') || '找不到可用选择器';
+                                if (ele.src.startsWith("data:"))
+                                    return ""; //base64的src
+                                else {
+                                    const the_src =
+                                        ele.src ||
+                                        ele.getAttribute("_src") ||
+                                        "找不到可用选择器";
                                     //http的src
                                     try {
-                                        const url = new URL(the_src)//_src是一些网站懒加载的
-                                        return `img[src="${url.pathname + url.search}"]:hover,img[src="${the_src}"]:hover`;
-                                    } catch(e) {
+                                        const url = new URL(the_src); //_src是一些网站懒加载的
+                                        return `img[src="${
+                                            url.pathname + url.search
+                                        }"]:hover,img[src="${the_src}"]:hover`;
+                                    } catch (e) {
                                         console.log(
                                             "[shrinkImg] ERROR: " + e.message
                                         );
-                                        return ""
+                                        return "";
                                     }
                                 }
                             }
-                        }
-                        let cssSelectorStr = genCSSSelector(ele)
-                        if (cssSelectorStr != "" ) {
-                            if (!ele.style.originalWidth || from_menu_switch) {  // 防止不是打开开关导致的多次缩小同一个图片
+                        };
+                        let cssSelectorStr = genCSSSelector(ele);
+                        if (cssSelectorStr != "") {
+                            if (!ele.style.originalWidth || from_menu_switch) {
+                                // 防止不是打开开关导致的多次缩小同一个图片
                                 ele.style.originalWidth = ele.width + "px";
                                 // ele.style.originalHeight = ele.height + "px";  // 不记录这个了, 时不时拿到的是0
-                                ele.style.originalMaxHeight = ele.style.maxHeight;
-                                ele.style.originalMinHeight = ele.style.minHeight;
+                                ele.style.originalMaxHeight =
+                                    ele.style.maxHeight;
+                                ele.style.originalMinHeight =
+                                    ele.style.minHeight;
                                 ele.style.originalMaxWidth = ele.style.maxWidth;
                                 ele.style.originalMinWidth = ele.style.minWidth;
                                 ele.style.cssSelectorStr = cssSelectorStr;
-
 
                                 // // 加这个div的原因: 为了解决当img缩小之后导致标题间隔变化, toc 跳转会不准(注释了是因为会导致单击了知乎的图片之后缩小的时候知乎网页崩溃)
                                 // let parent = document.createElement('div');//  新建父元素
@@ -4472,34 +4609,36 @@
                                 // parent.style.width = ele.width + "px";
                                 // parent.style.height = ele.height + "px";
 
-                                cssTxt += cssSelectorStr +
-                                `{` +
+                                cssTxt +=
+                                    cssSelectorStr +
+                                    `{` +
                                     // `width:${ele.width}px !important;height:${ele.height}px !important;` +
                                     `width:${ele.width}px !important;height:auto !important;` +
                                     // `width:${ele.width}px !important;` +
-                                `}`;
+                                    `}`;
                                 ele.style.width = shrinkWidthStr;
                                 ele.style.height = "auto";
                                 ele.style.maxHeight = "";
                                 ele.style.minHeight = "";
                                 ele.style.maxWidth = "";
                                 ele.style.minWidth = "";
-                                ele.style.transition = isSafari() ? "width 0.2s ease, height 0.2s ease": "width 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s, height 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s";
+                                ele.style.transition = isSafari()
+                                    ? "width 0.2s ease, height 0.2s ease"
+                                    : "width 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s, height 0.3s linear(0 0%, 0 1.8%, 0.01 3.6%, 0.03 6.35%, 0.07 9.1%, 0.13 11.4%, 0.19 13.4%, 0.27 15%, 0.34 16.1%, 0.54 18.35%, 0.66 20.6%, 0.72 22.4%, 0.77 24.6%, 0.81 27.3%, 0.85 30.4%, 0.88 35.1%, 0.92 40.6%, 0.94 47.2%, 0.96 55%, 0.98 64%, 0.99 74.4%, 1 86.4%, 1 100%) 0s";
                             }
                         }
                     }
                 }
             }
-        }
-        )
+        });
 
         if (shouldNotShrink) {
             removeCSS("shrinkimg__css");
-            setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img恢复 放大 之后导致标题间隔变化, toc 跳转会不准
+            setTimeout(handleToc, 600); // 重新生成toc的原因: 为了解决当img恢复 放大 之后导致标题间隔变化, toc 跳转会不准
         } else {
-            if(cssTxt != "") {
+            if (cssTxt != "") {
                 insertCSS(cssTxt, "shrinkimg__css");
-                setTimeout(handleToc, 600);  // 重新生成toc的原因: 为了解决当img 缩小 之后导致标题间隔变化, toc 跳转会不准
+                setTimeout(handleToc, 600); // 重新生成toc的原因: 为了解决当img 缩小 之后导致标题间隔变化, toc 跳转会不准
             }
             setTimeout(shrinkImg, 800);
         }
@@ -4584,7 +4723,7 @@
                 "menu_GAEEScript_auto_toc_domain_2_offset"
             );
             console.log(
-                "[menuSwitch menu_GAEEScript_auto_open_toc]",
+                "[auto_toc] - [menuSwitch menu_GAEEScript_auto_open_toc]",
                 domain2isShow
             );
             var isCurrShow = domain2isShow[window.location.host];
@@ -4605,7 +4744,9 @@
             );
             GM_setValue("menu_GAEEScript_auto_collapse_toc", domain2isCollapse);
             handleToc();
-        } else if (localStorageKeyName === "menu_GAEEScript_auto_collapse_toc") {
+        } else if (
+            localStorageKeyName === "menu_GAEEScript_auto_collapse_toc"
+        ) {
             console.log(
                 "[menuSwitch menu_GAEEScript_auto_collapse_toc]",
                 domain2isCollapse
@@ -4621,7 +4762,9 @@
             GM_setValue(`${localStorageKeyName}`, domain2isCollapse);
             handleToc();
         } else if (localStorageKeyName === "menu_GAEEScript_shrink_img") {
-            var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
+            var domain2shouldShrinkImg = GM_getValue(
+                "menu_GAEEScript_shrink_img"
+            );
             console.log(
                 "[menuSwitch menu_GAEEScript_shrink_img]",
                 domain2shouldShrinkImg
@@ -4647,12 +4790,11 @@
 
     let isMf = false;
     try {
-        isMf = isMasterFrame(window)
-    } catch(e) {
-    }
+        isMf = isMasterFrame(window);
+    } catch (e) {}
     if (isMf) {
         // if (true) {
-        console.log("auto_toc running !!!");
+        console.log("[auto_toc] - running !!!");
         // 貌似无用
         // 可以检查pageshow 事件的persisted属性，当页面初始化加载的时候，persisted被设置为false，当页面从缓存中加载的时候，persisted被设置为true。因此，上面代码的意思就是：
         // 如果页面是从缓存中加载的，那么页面重新加载。
@@ -4685,18 +4827,22 @@
 
         handleMenu();
 
-
         const urlObj = new URL(window.location.href);
         if (urlObj.host.indexOf("zhihu.com") >= 0) {
             //////////////////////////////////////// 知乎-向下翻时自动隐藏顶栏&自动重定向
-            console.log(
-                "[hide-top-bar-when-scroll-down-and-auto-redirect]"
-            );
+            console.log("[auto_toc] - [hide-top-bar-when-scroll-down-and-auto-redirect]");
 
             function zhihuAutoRedirect() {
-                let nodes = document.querySelectorAll(".RichText a[href*='//link.zhihu.com/?target']");
+                let nodes = document.querySelectorAll(
+                    ".RichText a[href*='//link.zhihu.com/?target']"
+                );
                 for (let i = 0; i < nodes.length; i++) {
-                    let url = decodeURIComponent(nodes[i].href.replace(/https?:\/\/link\.zhihu\.com\/\?target=/, ""));
+                    let url = decodeURIComponent(
+                        nodes[i].href.replace(
+                            /https?:\/\/link\.zhihu\.com\/\?target=/,
+                            ""
+                        )
+                    );
                     nodes[i].href = url;
                 }
             }
@@ -4709,9 +4855,9 @@
             let style = "";
             let style_3 = `/* 向下翻时自动隐藏顶栏*/
                 header.is-hidden {display: none;}
-            `
+            `;
             style += style_3;
-            let style_Add = document.createElement('style');
+            let style_Add = document.createElement("style");
 
             if (document.lastChild) {
                 document.lastChild.appendChild(style_Add).textContent = style;
@@ -4724,16 +4870,16 @@
                         document.lastChild.appendChild(style_Add).textContent =
                             style;
                     }
-                });
+                }, 10);
             }
         } else if (urlObj.host.indexOf("www.google.com") >= 0) {
             //////////////////////////////////////// google-禁止重定向
-            console.log(
-                "[anti-google-redirect]"
-            );
+            console.log("[auto_toc] - [anti-google-redirect]");
             function redirectHandle() {
                 try {
-                    let resultNodes = document.querySelectorAll(".g .rc a, #rs, #rso .g a");
+                    let resultNodes = document.querySelectorAll(
+                        ".g .rc a, #rs, #rso .g a"
+                    );
                     for (let i = 0; i < resultNodes.length; i++) {
                         let one = resultNodes[i];
                         one.setAttribute("onmousedown", ""); // 谷歌去重定向干扰
@@ -4752,43 +4898,76 @@
             }
         } else if (urlObj.host.indexOf("programmercarl.com") >= 0) {
             //////////////////////////////////////// 代码随想录 把leetcode.cn 替换为 leetcode.com
-            console.log(
-                "[replace-leetcode-cn-to-com]"
-            );
+            console.log("[auto_toc] - [replace-leetcode-cn-to-com]");
             function replaceLeetCodeLinks() {
-                // 获取页面上所有的<a>元素  
-                const links = document.querySelectorAll('a');  
-                
-                // 遍历这些链接  
-                links.forEach(link => {  
-                    // 检查链接的href属性是否包含'leetcode.cn'  
-                    if (link.href.includes('leetcode.cn')) {  
-                        // 使用字符串的replace方法替换'leetcode.cn'为'leetcode.com'  
-                        // 注意：这里假设链接的协议部分（如http://或https://）之后直接跟着'leetcode.cn'  
-                        // 如果链接的格式更复杂，你可能需要调整正则表达式来更准确地匹配和替换  
-                        link.href = link.href.replace(/leetcode\.cn/g, 'leetcode.com');  
-                
-                        // 如果链接的href属性中可能包含子域名（如www.leetcode.cn），你可能需要更复杂的替换逻辑  
-                        // 例如，使用正则表达式来匹配整个域名部分  
-                        // link.href = link.href.replace(/https?:\/\/[^\/]*leetcode\.cn\//g, 'https://leetcode.com/');  
-                    }  
+                // 获取页面上所有的<a>元素
+                const links = document.querySelectorAll("a");
+
+                // 遍历这些链接
+                links.forEach((link) => {
+                    // 检查链接的href属性是否包含'leetcode.cn'
+                    if (link.href.includes("leetcode.cn")) {
+                        // 使用字符串的replace方法替换'leetcode.cn'为'leetcode.com'
+                        // 注意：这里假设链接的协议部分（如http://或https://）之后直接跟着'leetcode.cn'
+                        // 如果链接的格式更复杂，你可能需要调整正则表达式来更准确地匹配和替换
+                        link.href = link.href.replace(
+                            /leetcode\.cn/g,
+                            "leetcode.com"
+                        );
+
+                        // 如果链接的href属性中可能包含子域名（如www.leetcode.cn），你可能需要更复杂的替换逻辑
+                        // 例如，使用正则表达式来匹配整个域名部分
+                        // link.href = link.href.replace(/https?:\/\/[^\/]*leetcode\.cn\//g, 'https://leetcode.com/');
+                    }
                 });
             }
-              
-            setTimeout(replaceLeetCodeLinks, 10);
-            setTimeout(replaceLeetCodeLinks, 500);
-            for (let i = 1; i <= 6; i++) {
-                setTimeout(replaceLeetCodeLinks, 1000 * i);
-            }
+
+            // setInterval(replaceLeetCodeLinks, 1000);
+
+            // because programmercarl.com is a single-page website, so we have to add some history observer to trigger the replacer.
+            (function () {
+                const observer = new MutationObserver(() => {
+                    console.log("[auto_toc] - DOM mutation detected. Current URL:", window.location.href);
+                    replaceLeetCodeLinks();
+                });
+
+                observer.observe(document, { childList: true, subtree: true });
+
+                const originalPushState = history.pushState;
+                history.pushState = function (...args) {
+                    console.log("[auto_toc] - pushState called. URL changed to:", args[2]);
+                    replaceLeetCodeLinks();
+                    observer.disconnect();
+                    observer.observe(document, {
+                        childList: true,
+                        subtree: true,
+                    });
+                    return originalPushState.apply(this, args);
+                };
+
+                const originalReplaceState = history.replaceState;
+                history.replaceState = function (...args) {
+                    console.log("[auto_toc] - replaceState called. URL changed to:", args[2]);
+                    replaceLeetCodeLinks();
+                    observer.disconnect();
+                    observer.observe(document, {
+                        childList: true,
+                        subtree: true,
+                    });
+                    return originalReplaceState.apply(this, args);
+                };
+
+                window.addEventListener("popstate", () => {
+                    console.log("[auto_toc] - URL changed via back/forward navigation:", window.location.href);
+                });
+            })();
         }
 
         //////////////////////////////////////// 所有网站-缩小图片
-        console.log(
-            "[shrinkImg]"
-        );
+        console.log("[auto_toc] - [shrinkImg]");
         var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
         var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
-        let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg
+        let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg;
         if (!shouldNotShrink) {
             setTimeout(shrinkImg, 10);
         }
@@ -4801,10 +4980,8 @@
             GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
         }
         handleToc();
-
     }
 })();
-
 
 // TEST:
 // pass: https://zhuanlan.zhihu.com/p/336727285
@@ -4817,4 +4994,3 @@
 // pass: https://mp.weixin.qq.com/s/ZFFOhKmshOkosgdksFo_Og
 // pass: https://mp.weixin.qq.com/s/f3TKUPy63-U61wjfvIC4zA
 // pass: https://mp.weixin.qq.com/s/CrmouLum_XHlRmjnKW8BrQ
-
