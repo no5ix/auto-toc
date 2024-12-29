@@ -4546,7 +4546,7 @@
         // console.log("[auto_toc] - " + lastWindowScreenWidth);
         if (window.screen.width != lastWindowScreenWidth) {
             toast("window.screen.width changed.");
-            // console.log("[auto_toc] - window.screen.width changed.");
+            if (shouldLog) console.log("[auto_toc] - window.screen.width changed.");
             lastWindowScreenWidth = window.screen.width;
             handleToc();
         }
