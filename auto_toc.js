@@ -4540,7 +4540,7 @@
 
     //////////////////////////////////////// A watcher to monitor pixel changes on the display.
     let lastWindowScreenWidth = window.screen.width;
-    function checkWindowWidthChange() {
+    function checkMonitorWidthChange() {
         // console.log("[auto_toc] - check checkkkkkkkkkkkkkkkkkkcheckkkkkkkkkkkkkkkkkk.");
         // console.log("[auto_toc] - " + window.screen.width);
         // console.log("[auto_toc] - " + lastWindowScreenWidth);
@@ -5001,7 +5001,7 @@
         }
 
         // A watcher to monitor pixel changes on the display
-        setInterval(checkWindowWidthChange, 3800);
+        setInterval(checkMonitorWidthChange, 6800);
 
         handleToc();
     }
