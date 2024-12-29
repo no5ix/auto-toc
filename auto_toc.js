@@ -3796,8 +3796,8 @@
         );
         if (domain2width2offset[window.location.host] != null) {
             var lastOffset = domain2width2offset[window.location.host][window.screen.width];
-            console.log("[auto-toc, lastOffset]", lastOffset);
-            console.log("[auto-toc, domain2width2offset[window.location.host]]", domain2width2offset[window.location.host]);
+            if (shouldLog) console.log("[auto-toc, lastOffset]", lastOffset);
+            if (shouldLog) console.log("[auto-toc, domain2width2offset[" + window.location.host + "]]", domain2width2offset[window.location.host]);
             if (lastOffset != null) {
                 userOffset = lastOffset;
             }
