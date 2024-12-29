@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.53
+// @version      1.54
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -3190,8 +3190,8 @@
             window.removeEventListener("mouseup", onDragEnd);
             e.redraw = false;
 
-            var domain2offset = GM_getValue(
-                "menu_GAEEScript_auto_toc_domain_2_offset"
+            var domain2width2offset = GM_getValue(
+                "menu_GAEEScript_auto_toc_domain_2_width_2_offset"
             );
             // 判断之前toc 的位置和现在的, 如果相等的话, 说明只是原地点击
             if (
@@ -3243,19 +3243,22 @@
                 // }, 222);
                 return;
             }
-            domain2offset[window.location.host] = $userOffset();
+            if (domain2width2offset[window.location.host] == null) {
+                domain2width2offset[window.location.host] = {};
+            }
+            domain2width2offset[window.location.host][window.screen.width] = $userOffset();
             GM_setValue(
-                "menu_GAEEScript_auto_toc_domain_2_offset",
-                domain2offset
+                "menu_GAEEScript_auto_toc_domain_2_width_2_offset",
+                domain2width2offset
             );
             // console.log(
             //     "[auto-toc, update domain offset]",
-            //     domain2offset[window.location.host]
+            //     domain2width2offset[window.location.host]
             // );
             // console.log("[auto-toc, $userOffset()]", $userOffset());
             // console.log(
-            //     "[auto-toc, update domain offset, domain2offset]",
-            //     domain2offset
+            //     "[auto-toc, update domain offset, domain2width2offset]",
+            //     domain2width2offset
             // );
         };
 
@@ -3788,15 +3791,18 @@
         $headings: $headings_,
         userOffset = [0, 0],
     }) {
-        var domain2offset = GM_getValue(
-            "menu_GAEEScript_auto_toc_domain_2_offset"
+        var domain2width2offset = GM_getValue(
+            "menu_GAEEScript_auto_toc_domain_2_width_2_offset"
         );
-        var lastOffset = domain2offset[window.location.host];
-        // console.log("[auto-toc, lastOffset]", lastOffset);
-        if (lastOffset != null) {
-            userOffset = lastOffset;
+        if (domain2width2offset[window.location.host] != null) {
+            var lastOffset = domain2width2offset[window.location.host][window.screen.width];
+            console.log("[auto-toc, lastOffset]", lastOffset);
+            console.log("[auto-toc, domain2width2offset[window.location.host]]", domain2width2offset[window.location.host]);
+            if (lastOffset != null) {
+                userOffset = lastOffset;
+            }
+            // console.log("[auto-toc, init userOffset]", userOffset);
         }
-        // console.log("[auto-toc, init userOffset]", userOffset);
 
         const $headings = $headings_.map(addAnchors);
         insertCSS(getTocCss(), "smarttoc__css");
@@ -4532,6 +4538,20 @@
         }
     }
 
+    //////////////////////////////////////// A watcher to monitor pixel changes on the display.
+    let lastWindowScreenWidth = window.screen.width;
+    function checkWindowWidthChange() {
+        // console.log("[auto_toc] - check checkkkkkkkkkkkkkkkkkkcheckkkkkkkkkkkkkkkkkk.");
+        // console.log("[auto_toc] - " + window.screen.width);
+        // console.log("[auto_toc] - " + lastWindowScreenWidth);
+        if (window.screen.width != lastWindowScreenWidth) {
+            toast("window.screen.width changed.");
+            // console.log("[auto_toc] - window.screen.width changed.");
+            lastWindowScreenWidth = window.screen.width;
+            handleToc();
+        }
+    }
+
     //////////////////////////////////////// 所有网站-缩小图片
     function shrinkImg(from_menu_switch = false) {
         var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
@@ -4719,8 +4739,8 @@
         );
         if (localStorageKeyName === "menu_GAEEScript_auto_open_toc") {
             var domain2isShow = GM_getValue(`${localStorageKeyName}`);
-            var domain2offset = GM_getValue(
-                "menu_GAEEScript_auto_toc_domain_2_offset"
+            var domain2width2offset = GM_getValue(
+                "menu_GAEEScript_auto_toc_domain_2_width_2_offset"
             );
             console.log(
                 "[auto_toc] - [menuSwitch menu_GAEEScript_auto_open_toc]",
@@ -4732,15 +4752,15 @@
                 toast("Turn On TOC.");
             } else {
                 delete domain2isShow[window.location.host];
-                delete domain2offset[window.location.host];
+                delete domain2width2offset[window.location.host];
                 delete domain2isCollapse[window.location.host];
 
                 toast("Turn Off TOC.");
             }
             GM_setValue(`${localStorageKeyName}`, domain2isShow);
             GM_setValue(
-                "menu_GAEEScript_auto_toc_domain_2_offset",
-                domain2offset
+                "menu_GAEEScript_auto_toc_domain_2_width_2_offset",
+                domain2width2offset
             );
             GM_setValue("menu_GAEEScript_auto_collapse_toc", domain2isCollapse);
             handleToc();
@@ -4964,21 +4984,25 @@
         }
 
         //////////////////////////////////////// 所有网站-缩小图片
-        console.log("[auto_toc] - [shrinkImg]");
         var domain2shouldShrinkImg = GM_getValue("menu_GAEEScript_shrink_img");
         var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
         let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg;
         if (!shouldNotShrink) {
+            console.log("[auto_toc] - [shrinkImg]");
             setTimeout(shrinkImg, 10);
         }
 
         //////////////////////////////////////// 所有网站-生成toc
-        if (GM_getValue("menu_GAEEScript_auto_toc_domain_2_offset") == null) {
-            GM_setValue("menu_GAEEScript_auto_toc_domain_2_offset", {});
+        if (GM_getValue("menu_GAEEScript_auto_toc_domain_2_width_2_offset") == null) {
+            GM_setValue("menu_GAEEScript_auto_toc_domain_2_width_2_offset", {});
         }
         if (GM_getValue("menu_GAEEScript_auto_collapse_toc") == null) {
             GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
         }
+
+        // A watcher to monitor pixel changes on the display
+        setInterval(checkWindowWidthChange, 3800);
+
         handleToc();
     }
 })();
