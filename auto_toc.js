@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.56
+// @version      1.57
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4820,7 +4820,7 @@
     } catch (e) {}
     if (isMf) {
         // if (true) {
-        console.log("[auto_toc] - running !!!");
+        if (shouldLog) console.log("[auto_toc] - running !!!");
         // 貌似无用
         // 可以检查pageshow 事件的persisted属性，当页面初始化加载的时候，persisted被设置为false，当页面从缓存中加载的时候，persisted被设置为true。因此，上面代码的意思就是：
         // 如果页面是从缓存中加载的，那么页面重新加载。
@@ -4856,7 +4856,7 @@
         const urlObj = new URL(window.location.href);
         if (urlObj.host.indexOf("zhihu.com") >= 0) {
             //////////////////////////////////////// 知乎-向下翻时自动隐藏顶栏&自动重定向
-            console.log("[auto_toc] - [hide-top-bar-when-scroll-down-and-auto-redirect]");
+            if (shouldLog) console.log("[auto_toc] - [hide-top-bar-when-scroll-down-and-auto-redirect]");
 
             function zhihuAutoRedirect() {
                 let nodes = document.querySelectorAll(
@@ -4900,7 +4900,7 @@
             }
         } else if (urlObj.host.indexOf("www.google.com") >= 0) {
             //////////////////////////////////////// google-禁止重定向
-            console.log("[auto_toc] - [anti-google-redirect]");
+            if (shouldLog) console.log("[auto_toc] - [anti-google-redirect]");
             function redirectHandle() {
                 try {
                     let resultNodes = document.querySelectorAll(
@@ -4913,7 +4913,7 @@
                         one.setAttribute("data-jsarwt", "0"); // Firefox谷歌去重定向干扰
                     }
                 } catch (e) {
-                    console.log(e);
+                    if (shouldLog) console.log(e);
                 }
             }
 
@@ -4922,9 +4922,21 @@
             for (let i = 1; i <= 66; i++) {
                 setTimeout(redirectHandle, 1000 * i);
             }
+        } else if (urlObj.host.indexOf("leetcode.com") >= 0) {
+            if (shouldLog) 
+                console.log("[auto_toc] - [replace-leetcode-premiumButton-to-cn]");
+            setTimeout(() => {
+                // 选择按钮
+                const premiumButton = document.querySelector('a[href="/subscribe/?ref=lp_pl&source=qd"]');
+                // 修改链接
+                if (premiumButton) {
+                    premiumButton.setAttribute('href', 'https://leetcode.cn' +  window.location.pathname); // window.location.pathname: 获取当前链接的路径部分（去掉域名部分
+                    premiumButton.setAttribute('target', '_blank'); // 可选：新窗口打开
+                }
+            }, 3600);
         } else if (urlObj.host.indexOf("programmercarl.com") >= 0) {
             //////////////////////////////////////// 代码随想录 把leetcode.cn 替换为 leetcode.com
-            console.log("[auto_toc] - [replace-leetcode-cn-to-com]");
+            if (shouldLog) console.log("[auto_toc] - [replace-leetcode-cn-to-com]");
             function replaceLeetCodeLinks() {
                 // 获取页面上所有的<a>元素
                 const links = document.querySelectorAll("a");
@@ -4953,7 +4965,7 @@
             // because programmercarl.com is a single-page website, so we have to add some history observer to trigger the replacer.
             (function () {
                 const observer = new MutationObserver(() => {
-                    console.log("[auto_toc] - DOM mutation detected. Current URL:", window.location.href);
+                    if (shouldLog) console.log("[auto_toc] - DOM mutation detected. Current URL:", window.location.href);
                     replaceLeetCodeLinks();
                 });
 
@@ -4961,7 +4973,7 @@
 
                 const originalPushState = history.pushState;
                 history.pushState = function (...args) {
-                    console.log("[auto_toc] - pushState called. URL changed to:", args[2]);
+                    if (shouldLog) console.log("[auto_toc] - pushState called. URL changed to:", args[2]);
                     replaceLeetCodeLinks();
                     observer.disconnect();
                     observer.observe(document, {
@@ -4973,7 +4985,7 @@
 
                 const originalReplaceState = history.replaceState;
                 history.replaceState = function (...args) {
-                    console.log("[auto_toc] - replaceState called. URL changed to:", args[2]);
+                    if (shouldLog) console.log("[auto_toc] - replaceState called. URL changed to:", args[2]);
                     replaceLeetCodeLinks();
                     observer.disconnect();
                     observer.observe(document, {
@@ -4984,7 +4996,7 @@
                 };
 
                 window.addEventListener("popstate", () => {
-                    console.log("[auto_toc] - URL changed via back/forward navigation:", window.location.href);
+                    if (shouldLog) console.log("[auto_toc] - URL changed via back/forward navigation:", window.location.href);
                 });
             })();
         }
@@ -4994,7 +5006,7 @@
         var shouldShrinkImg = domain2shouldShrinkImg[window.location.host];
         let shouldNotShrink = shouldShrinkImg == null || !shouldShrinkImg;
         if (!shouldNotShrink) {
-            console.log("[auto_toc] - [shrinkImg]");
+            if (shouldLog) console.log("[auto_toc] - [shrinkImg]");
             setTimeout(shrinkImg, 10);
         }
 
