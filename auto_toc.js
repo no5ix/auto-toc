@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.54
+// @version      1.55
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -3246,7 +3246,7 @@
             if (domain2width2offset[window.location.host] == null) {
                 domain2width2offset[window.location.host] = {};
             }
-            domain2width2offset[window.location.host][window.screen.width] = $userOffset();
+            domain2width2offset[window.location.host][window.innerWidth] = $userOffset();
             GM_setValue(
                 "menu_GAEEScript_auto_toc_domain_2_width_2_offset",
                 domain2width2offset
@@ -3795,7 +3795,7 @@
             "menu_GAEEScript_auto_toc_domain_2_width_2_offset"
         );
         if (domain2width2offset[window.location.host] != null) {
-            var lastOffset = domain2width2offset[window.location.host][window.screen.width];
+            var lastOffset = domain2width2offset[window.location.host][window.innerWidth];
             if (shouldLog) console.log("[auto-toc, lastOffset]", lastOffset);
             if (shouldLog) console.log("[auto-toc, domain2width2offset[" + window.location.host + "]]", domain2width2offset[window.location.host]);
             if (lastOffset != null) {
@@ -4538,16 +4538,15 @@
         }
     }
 
-    //////////////////////////////////////// A watcher to monitor pixel changes on the display.
-    let lastWindowScreenWidth = window.screen.width;
-    function checkMonitorWidthChange() {
-        // console.log("[auto_toc] - check checkkkkkkkkkkkkkkkkkkcheckkkkkkkkkkkkkkkkkk.");
-        // console.log("[auto_toc] - " + window.screen.width);
-        // console.log("[auto_toc] - " + lastWindowScreenWidth);
-        if (window.screen.width != lastWindowScreenWidth) {
-            toast("window.screen.width changed.");
-            if (shouldLog) console.log("[auto_toc] - window.screen.width changed.");
-            lastWindowScreenWidth = window.screen.width;
+    //////////////////////////////////////// A watcher to browser width changes on the display.
+    let lastBrowserWidth = window.innerWidth;
+    function checkBrowserWidthChange() {
+        // console.log("[auto_toc] - window.innerWidth = " + window.innerWidth);
+        // console.log("[auto_toc] - lastBrowserWidth = " + lastBrowserWidth);
+        if (window.innerWidth - lastBrowserWidth > 300 || lastBrowserWidth - window.innerWidth > 300) {
+            toast("window.innerWidth changed.");
+            if (shouldLog) console.log("[auto_toc] - window.innerWidth changed.");
+            lastBrowserWidth = window.innerWidth;
             handleToc();
         }
     }
@@ -5000,8 +4999,8 @@
             GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
         }
 
-        // A watcher to monitor pixel changes on the display
-        setInterval(checkMonitorWidthChange, 6800);
+        // A watcher to browser width changes on the display.
+        setInterval(checkBrowserWidthChange, 3800);
 
         handleToc();
     }
