@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.58
+// @version      1.59
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4922,7 +4922,7 @@
             for (let i = 1; i <= 66; i++) {
                 setTimeout(redirectHandle, 1000 * i);
             }
-        } else if (urlObj.host.indexOf("leetcode.com") >= 0) {
+        } else if (urlObj.host.indexOf("leetcode.com") >= 0 || urlObj.host.indexOf("leetcode.cn") >= 0) {
             setTimeout(() => {
                 // if (shouldLog) 
                 //     console.log("[auto_toc] - [replace-leetcode-premiumButton-to-cn]");
@@ -4934,16 +4934,20 @@
                 //     premiumButton.setAttribute('target', '_blank'); // 可选：新窗口打开
                 // }
                 if (shouldLog) 
-                    console.log("[auto_toc] - [add-leetcode-cn-button]");
-                // 选择目标元素
-                const targetDiv = document.querySelector('.ml-0');
-                // 插入新的 <div>
-                targetDiv.insertAdjacentHTML('afterend', '<div class="ml-0"><a href="https://leetcode.cn'+ window.location.pathname + '"  target="_blank"><span class="display-none h-8 w-[26px] cursor-pointer  rounded-[8px] bg-[#ffa1161f] text-center leading-8 transition-colors hover:bg-[#ffa11633] lg:inline-block font-typo"><span class="text-brand-orange">cn</span></span></a></div>');
-
+                    console.log("[auto_toc] - [add-leetcode-cn/com-button]");
                 // // 选择目标元素
-                // const targetDiv = document.querySelector('.relative.ml-4.flex.items-center.gap-2');
-                // // 在目标元素末尾插入新内容
-                // targetDiv.insertAdjacentHTML('beforeend','<div class="ml-0"><a href="https://leetcode.cn'+ window.location.pathname + '"  target="_blank"><span class="display-none h-8 w-[26px] cursor-pointer  rounded-[8px] bg-[#ffa1161f] text-center leading-8 transition-colors hover:bg-[#ffa11633] lg:inline-block font-typo"><span class="text-brand-orange">cn</span></span></a></div>');
+                // const targetDiv = document.querySelector('.ml-0');
+                // // 插入新的 <div>
+                // targetDiv.insertAdjacentHTML('afterend', '<div class="ml-0"><a href="https://leetcode.cn'+ window.location.pathname + '"  target="_blank"><span class="display-none h-8 w-[26px] cursor-pointer  rounded-[8px] bg-[#ffa1161f] text-center leading-8 transition-colors hover:bg-[#ffa11633] lg:inline-block font-typo"><span class="text-brand-orange">cn</span></span></a></div>');
+
+                // 选择目标元素
+                const targetDiv = document.querySelector('.relative.ml-4.flex.items-center.gap-2');
+                // 在目标元素末尾插入新内容
+                let domainSuffix = 'com';
+                if (urlObj.host.indexOf("leetcode.com") >= 0) {
+                    domainSuffix = 'cn';
+                }
+                targetDiv.insertAdjacentHTML('beforeend','<div class="ml-0"><a href="https://leetcode.' + domainSuffix + window.location.pathname + '"  target="_blank"><span class="display-none h-8 w-[32px] cursor-pointer  rounded-[8px] bg-[#ffa1161f] text-center leading-8 transition-colors hover:bg-[#ffa11633] lg:inline-block font-typo"><span class="text-brand-orange">' + domainSuffix + '</span></span></a></div>');
             }, 3600);
         } else if (urlObj.host.indexOf("programmercarl.com") >= 0) {
             //////////////////////////////////////// 代码随想录 把leetcode.cn 替换为 leetcode.com
