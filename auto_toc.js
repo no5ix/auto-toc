@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.55
+// @version      1.56
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -4463,6 +4463,7 @@
 
     let toc;
     let autoGenTocTimerId;
+    let checkBrowserWidthChangeTimerId;
 
     const doGenerateToc = function (option = {}) {
         let [article, $headings] = extract();
@@ -4487,6 +4488,9 @@
         // );
         if (autoGenTocTimerId) {
             clearInterval(autoGenTocTimerId);
+        }
+        if (checkBrowserWidthChangeTimerId) {
+            clearInterval(checkBrowserWidthChangeTimerId);
         }
         autoGenTocTimerId = setInterval(() => {
             if (shouldLog)
@@ -4524,14 +4528,17 @@
             toc = doGenerateToc();
             // console.log("[handleToc toc]", toc);
             // 如果生成的toc有问题或者toc没生成出来, 那就 n 秒之后再生成一次(比如掘金的很多文章得过几秒钟再生成才行)
-            // toast('Will generate TOC in 2.8 seconds ...', 1600);
+            // toast('Will generate TOC in 3.8 seconds ...', 1600);
             setTimeout(() => {
                 if ((toc && !toc.isValid()) || toc == null) {
                     toast("No article/headings are detected.");
                 }
             }, 3800);
+
+            // A watcher to browser width changes on the display.
+            checkBrowserWidthChangeTimerId = setInterval(checkBrowserWidthChange, 2800);
         } else {
-            console.log("[handleToc should not show]", toc);
+            if (shouldLog) console.log("[handleToc should not show]", toc);
             if (toc) {
                 toc.dispose();
             }
@@ -4998,9 +5005,6 @@
         if (GM_getValue("menu_GAEEScript_auto_collapse_toc") == null) {
             GM_setValue("menu_GAEEScript_auto_collapse_toc", {});
         }
-
-        // A watcher to browser width changes on the display.
-        setInterval(checkBrowserWidthChange, 3800);
 
         handleToc();
     }
