@@ -65,7 +65,7 @@
         }
     }
 
-    let shouldLog = false;
+    let shouldLog = true;
 
     function isMasterFrame(w) {
         const root = getRootWindow();
@@ -4480,7 +4480,7 @@
 
     function handleToc() {
         var domain2shouldShow = GM_getValue("menu_GAEEScript_auto_open_toc");
-        // console.log("[handleToc domain2shouldShow]", domain2shouldShow);
+        if (shouldLog) console.log("[auto_toc] - handleToc domain2shouldShow: ", domain2shouldShow);
         // console.log("[handleToc window.location.host]", window.location.host);
         // console.log(
         //     "[domain2shouldShow[window.location.host]]",
@@ -4495,7 +4495,7 @@
         autoGenTocTimerId = setInterval(() => {
             if (shouldLog)
                 console.log(
-                    "[handleToc regen toc window.location.host]",
+                    "[auto_toc] - handleToc autoGenTocTimerId window.location.host=",
                     window.location.host
                 );
             if (toc && toc.isValid()) {
@@ -4509,7 +4509,7 @@
             if (toc && !toc.isValid()) {
                 if (shouldLog)
                     console.log(
-                        "[handleToc regen toc window.location.host, toc && !toc.isValid()]",
+                        "[auto_toc] - handleToc regen toc window.location.host, toc && !toc.isValid()",
                         window.location.host
                     );
                 let lastState = toc.dispose();
@@ -4517,7 +4517,7 @@
             } else if (toc == null) {
                 if (shouldLog)
                     console.log(
-                        "[handleToc regen toc window.location.host, toc == null]",
+                        "[auto_toc] - handleToc regen toc window.location.host, toc == null",
                         window.location.host
                     );
                 toc = doGenerateToc();
@@ -4538,7 +4538,7 @@
             // A watcher to browser width changes on the display.
             checkBrowserWidthChangeTimerId = setInterval(checkBrowserWidthChange, 2800);
         } else {
-            if (shouldLog) console.log("[handleToc should not show]", toc);
+            if (shouldLog) console.log("[auto_toc] - handleToc should not show.");
             if (toc) {
                 toc.dispose();
             }
@@ -4707,13 +4707,13 @@
 
     // 注册脚本菜单
     function registerMenuCommand() {
+        console.log("[auto_toc] - registerMenuCommand, menu_ALL : ", menu_ALL);
         for (let i = 0; i < menu_ID.length; i++) {
             // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
             if (!isSafari()) {
                 // alert("非safari");
                 GM_unregisterMenuCommand(menu_ID[i]);
             }
-            // console.log("debug ssss 22, bb")
         }
         for (let i = 0; i < menu_ALL.length; i++) {
             // 循环注册脚本菜单
