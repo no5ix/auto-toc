@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.59
+// @version      1.60
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -443,7 +443,7 @@
                 ? "max-height: 22px;"
                 : "max-height: calc(100vh - 100px);") +
             `
-                z-index: 888;
+                z-index: 18888;
                 box-sizing: border-box;
                 /* background-color: #fff; */
                 color: gray;
@@ -583,12 +583,6 @@
                 cursor: pointer;
             }
             
-            #smarttoc ul a:hover,
-            #smarttoc ul a:active,
-            #smarttoc ul li.active>a {
-                font-weight: 700;
-            }
-            
             /* heading level: 2 (hidden only when there are too many headings)  */
             #smarttoc ul ul {
                 line-height: 1.8;
@@ -607,12 +601,6 @@
                 padding-left: 2.7em;
             }
             
-            #smarttoc ul ul a:hover,
-            #smarttoc ul ul a:active,
-            #smarttoc ul ul li.active>a {
-                font-weight: normal;
-            }
-            
             /* heading level: 3 */
             #smarttoc ul ul ul {
                 line-height: 1.7;
@@ -626,12 +614,6 @@
             #smarttoc ul ul ul a {
                 font-size: 1em;
                 padding-left: 4em;
-            }
-            
-            #smarttoc ul ul ul a:hover,
-            #smarttoc ul ul ul a:active,
-            #smarttoc ul ul ul li.active>a {
-                font-weight: normal;
             }
             
             /* heading level: 4 */
@@ -649,12 +631,6 @@
                 padding-left: 5em;
             }
             
-            #smarttoc ul ul ul ul a:hover,
-            #smarttoc ul ul ul ul a:active,
-            #smarttoc ul ul ul ul li.active>a {
-                font-weight: normal;
-            }
-            
             /* heading level: 5 */
             #smarttoc ul ul ul ul ul {
                 line-height: 1.7;
@@ -670,12 +646,6 @@
                 padding-left: 6em;
             }
             
-            #smarttoc ul ul ul ul ul a:hover,
-            #smarttoc ul ul ul ul ul a:active,
-            #smarttoc ul ul ul ul ul li.active>a {
-                font-weight: normal;
-            }
-            
             /* heading level: 6 */
             #smarttoc ul ul ul ul ul ul {
                 line-height: 1.7;
@@ -689,12 +659,6 @@
             #smarttoc ul ul ul ul ul ul a {
                 font-size: 1em;
                 padding-left: 7em;
-            }
-            
-            #smarttoc ul ul ul ul ul ul a:hover,
-            #smarttoc ul ul ul ul ul ul a:active,
-            #smarttoc ul ul ul ul ul ul li.active>a {
-                font-weight: normal;
             }
         `
         );
@@ -3173,6 +3137,7 @@
 
     let multi_click_cnt = 0;
     let last_click_ts = 0;
+    let last_move_ts = 0;
 
     const Handle = function ({ $userOffset }) {
         let [sClientX, sClientY] = [0, 0];
@@ -3243,6 +3208,7 @@
                 // }, 222);
                 return;
             }
+            last_move_ts = Date.now();
             if (domain2width2offset[window.location.host] == null) {
                 domain2width2offset[window.location.host] = {};
             }
@@ -4548,6 +4514,9 @@
     //////////////////////////////////////// A watcher to browser width changes on the display.
     let lastBrowserWidth = window.innerWidth;
     function checkBrowserWidthChange() {
+        if (Date.now() - last_move_ts < 6666) {  // if we just moved auto-toc, it usually means we wanna do some actions, so we skip this check
+            return;
+        }
         // console.log("[auto_toc] - window.innerWidth = " + window.innerWidth);
         // console.log("[auto_toc] - lastBrowserWidth = " + lastBrowserWidth);
         if (window.innerWidth - lastBrowserWidth > 300 || lastBrowserWidth - window.innerWidth > 300) {
