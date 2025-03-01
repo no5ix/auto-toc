@@ -12,7 +12,7 @@ Generate TOC(table of contents) for any website. 可以为任何网站生成TOC�
 - click on the `TOC drag bar`(that three dots) to automatically collapse the TOC..
 - 单击 TOC拖动栏(三个圆点) 可以自动折叠 TOC
 
-![](auto_toc_demo_image.jpg)
+![](auto_toc_demo_image.png)
 
 
 # Features
