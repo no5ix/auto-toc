@@ -46,13 +46,7 @@ By default, it is not open. You need to go to the plug-in menu to open the switc
 
 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否.
 
-
+<!-- 
 # 捐赠
 
 捐赠! 让作者更有动力给 auto-toc 加新功能! ^_^
-
-- 微信
-  - ![微信](https://github.com/no5ix/no5ix.github.io/blob/source/source/img/sux/donate_wechat.png)
-- 支付宝
-  - ![支付宝](https://github.com/no5ix/no5ix.github.io/blob/source/source/img/sux/donate_alipay.png)
-- 看不到图片的话, 下面两个二维码图片就是捐赠二维码
