@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.62
+// @version      1.63
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -400,10 +400,6 @@
                     /* background-color: rgb(48, 52, 54); */
                 }
             
-                #smarttoc.dark-scheme .handle {
-                    color: #ffffff;
-                }
-            
                 #smarttoc.dark-scheme a {
                     /* color: #ccc; */
                 }
@@ -484,7 +480,7 @@
                 font-variant-caps: inherit;
                 font-variant: small-caps;
                 font-size: 0.9em;
-                color: rgb(0, 0, 0);
+                color: gray;
                 cursor: pointer;
                 text-align: center;
                 opacity: 0.6;
@@ -4847,26 +4843,38 @@
                 setTimeout(zhihuAutoRedirect, 1000 * i);
             }
 
-            let style = "";
-            let style_3 = `/* 向下翻时自动隐藏顶栏*/
-                header.is-hidden {display: none;}
-            `;
-            style += style_3;
-            let style_Add = document.createElement("style");
+            setTimeout(() => {
+                let pendingRemove = document.querySelectorAll(".ColumnPageHeader");
+                if (pendingRemove.length > 0) {
+                    let cp = pendingRemove[0];
+                    cp.style.display = "none";
+                }
+                pendingRemove = document.querySelectorAll(".AuthorCard");
+                if (pendingRemove.length > 0) {
+                    let cp = pendingRemove[0];
+                    cp.style.display = "none";
+                }
+            }, 3600);
+            // let style = "";
+            // let style_3 = `/* 向下翻时自动隐藏顶栏*/
+            //     header.is-hidden {display: none;}
+            // `;
+            // style += style_3;
+            // let style_Add = document.createElement("style");
 
-            if (document.lastChild) {
-                document.lastChild.appendChild(style_Add).textContent = style;
-            } else {
-                // 避免网站加载速度太慢的备用措施
-                let timer1 = setInterval(function () {
-                    // 每 10 毫秒检查一下 html 是否已存在
-                    if (document.lastChild) {
-                        clearInterval(timer1); // 取消定时器
-                        document.lastChild.appendChild(style_Add).textContent =
-                            style;
-                    }
-                }, 10);
-            }
+            // if (document.lastChild) {
+            //     document.lastChild.appendChild(style_Add).textContent = style;
+            // } else {
+            //     // 避免网站加载速度太慢的备用措施
+            //     let timer1 = setInterval(function () {
+            //         // 每 10 毫秒检查一下 html 是否已存在
+            //         if (document.lastChild) {
+            //             clearInterval(timer1); // 取消定时器
+            //             document.lastChild.appendChild(style_Add).textContent =
+            //                 style;
+            //         }
+            //     }, 10);
+            // }
         } else if (urlObj.host.indexOf("www.google.com") >= 0) {
             //////////////////////////////////////// google-禁止重定向
             if (shouldLog) console.log("[auto_toc] - [anti-google-redirect]");
