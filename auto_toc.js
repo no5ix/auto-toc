@@ -4927,17 +4927,33 @@
                 targetDiv.insertAdjacentHTML('beforeend','<div class="ml-0"><a href="https://leetcode.' + domainSuffix + window.location.pathname + '"  target="_blank"><span class="display-none h-8 w-[32px] cursor-pointer  rounded-[8px] bg-[#ffa1161f] text-center leading-8 transition-colors hover:bg-[#ffa11633] lg:inline-block font-typo"><span class="text-brand-orange">' + domainSuffix + '</span></span></a></div>');
             }, 3600);
         } else if (urlObj.host.indexOf("replit.com") >= 0) {
-            setTimeout(() => {
-                if (shouldLog)
-                    console.log("[auto_toc] - [replace-AI-icon-for-replit.com]");
+            // setTimeout(() => {
+            //     if (shouldLog)
+            //         console.log("[auto_toc] - [replace-AI-icon-for-replit.com]");
+            //     const buttons = document.querySelectorAll(".css-89a5ul");
+            //     if (buttons.length > 0) {
+            //         let btn = buttons[0];
+            //         btn.style.display = "none";
+            //         btn = buttons[1];
+            //         btn.style.display = "none";
+            //     }
+            // }, 6600);
+            let checkInterval = setTimeout(function internal() {
                 const buttons = document.querySelectorAll(".css-89a5ul");
+            
                 if (buttons.length > 0) {
-                    let btn = buttons[0];
-                    btn.style.display = "none";
-                    btn = buttons[1];
-                    btn.style.display = "none";
+                    if (typeof shouldLog === "undefined" || shouldLog) {
+                        console.log("[auto_toc] - [replace-AI-icon-for-replit.com]");
+                    }
+                    if (buttons[0])
+                         buttons[0].style.display = "none";
+                    if (buttons[1])
+                         buttons[1].style.display = "none";
+                    return; // 停止
                 }
-            }, 6600);
+            
+                checkInterval = setTimeout(internal, 500); // 继续轮询
+            }, 500);
         } else if (urlObj.host.indexOf("programmercarl.com") >= 0) {
             //////////////////////////////////////// 代码随想录 把leetcode.cn 替换为 leetcode.com
             if (shouldLog) console.log("[auto_toc] - [replace-leetcode-cn-to-com]");
