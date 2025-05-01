@@ -4938,17 +4938,26 @@
             //         btn.style.display = "none";
             //     }
             // }, 6600);
+            let cnt = 0;
             let checkInterval = setTimeout(function internal() {
                 const buttons = document.querySelectorAll(".css-89a5ul");
             
                 if (buttons.length > 0) {
-                    if (typeof shouldLog === "undefined" || shouldLog) {
+                    if ((typeof shouldLog === "undefined" || shouldLog) && cnt == 0) {
                         console.log("[auto_toc] - [replace-AI-icon-for-replit.com]");
                     }
-                    if (buttons[0])
-                         buttons[0].style.display = "none";
-                    if (buttons[1])
-                         buttons[1].style.display = "none";
+                    if (buttons[0] && buttons[0].style.display != "none") {
+                        buttons[0].style.display = "none";
+                        console.log("[auto_toc] - [replace-AI-icon-for-replit.com] 0 none");
+                    }
+                    if (buttons[1] && buttons[1].style.display != "none") {
+                        buttons[1].style.display = "none";
+                        console.log("[auto_toc] - [replace-AI-icon-for-replit.com] 1 none");
+                    }
+                }
+                cnt++;
+                if (cnt > 20) {
+                    console.log("[auto_toc] - [replace-AI-icon-for-replit.com] stop looping");
                     return; // 停止
                 }
             
