@@ -4443,48 +4443,40 @@
     function handleToc() {
         var domain2shouldShow = GM_getValue("menu_GAEEScript_auto_open_toc");
         if (shouldLog) console.log("[auto_toc] - handleToc domain2shouldShow: ", domain2shouldShow);
-        // console.log("[handleToc window.location.host]", window.location.host);
-        // console.log(
-        //     "[domain2shouldShow[window.location.host]]",
-        //     domain2shouldShow[window.location.host]
-        // );
         if (autoGenTocTimerId) {
             clearInterval(autoGenTocTimerId);
         }
         if (checkBrowserWidthChangeTimerId) {
             clearInterval(checkBrowserWidthChangeTimerId);
         }
-        autoGenTocTimerId = setInterval(() => {
-            // if (shouldLog)
-            //     console.log(
-            //         "[auto_toc] - handleToc autoGenTocTimerId window.location.host=",
-            //         window.location.host
-            //     );
-            if (toc && toc.isValid()) {
-                // clearInterval(timerId); 如果不注释的话, 就会终止这个 timer 从而导致在页面未刷新但是标题改变的时候无法自动生成最新的标题
-                // return;
-            }
-            if (!domain2shouldShow[window.location.host]) {
-                // 防止正在循环尝试生成 toc 的时候用户关闭了 toc 开关
-                return;
-            }
-            if (toc && !toc.isValid()) {
-                if (shouldLog)
-                    console.log(
-                        "[auto_toc] - handleToc regen toc window.location.host, toc && !toc.isValid()",
-                        window.location.host
-                    );
-                let lastState = toc.dispose();
-                toc = doGenerateToc(lastState);
-            } else if (toc == null) {
-                if (shouldLog)
-                    console.log(
-                        "[auto_toc] - handleToc regen toc window.location.host, toc == null",
-                        window.location.host
-                    );
-                toc = doGenerateToc();
-            }
-        }, 1600);
+        if (domain2shouldShow[window.location.host]) {
+            autoGenTocTimerId = setInterval(() => {
+                if (toc && toc.isValid()) {
+                    // clearInterval(timerId); 如果不注释的话, 就会终止这个 timer 从而导致在页面未刷新但是标题改变的时候无法自动生成最新的标题
+                    // return;
+                }
+                if (!domain2shouldShow[window.location.host]) {
+                    // 防止正在循环尝试生成 toc 的时候用户关闭了 toc 开关
+                    return;
+                }
+                if (toc && !toc.isValid()) {
+                    if (shouldLog)
+                        console.log(
+                            "[auto_toc] - handleToc regen toc window.location.host, toc && !toc.isValid()",
+                            window.location.host
+                        );
+                    let lastState = toc.dispose();
+                    toc = doGenerateToc(lastState);
+                } else if (toc == null) {
+                    if (shouldLog)
+                        console.log(
+                            "[auto_toc] - handleToc regen toc window.location.host, toc == null",
+                            window.location.host
+                        );
+                    toc = doGenerateToc();
+                }
+            }, 1600);
+        }
 
         if (domain2shouldShow[window.location.host]) {
             toc = doGenerateToc();
@@ -4735,9 +4727,7 @@
             );
             GM_setValue("menu_GAEEScript_auto_collapse_toc", domain2isCollapse);
             handleToc();
-        } else if (
-            localStorageKeyName === "menu_GAEEScript_auto_collapse_toc"
-        ) {
+        } else if (localStorageKeyName === "menu_GAEEScript_auto_collapse_toc") {
             console.log(
                 "[menuSwitch menu_GAEEScript_auto_collapse_toc]",
                 domain2isCollapse
