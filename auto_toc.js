@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.64
+// @version      1.66
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -5041,6 +5041,213 @@
     }
 })();
 
+
+
+// ============================================================
+// Youdao Dictionary web-page shortcut
+// ============================================================
+(function initYoudaoDictionaryShortcut() {
+    "use strict";
+
+    const BUTTON_CLASS = "auto-toc-youdao-web-button";
+    const STYLE_ID = "auto-toc-youdao-web-button-style";
+    const HOST_SELECTOR = "#yd-mg-huaci-host";
+    const HOST_FALLBACK_SELECTOR = "[id^='yd-mg-huaci']";
+
+    const BUTTON_ICONS = {
+        word: "📖",
+        result: "🔎",
+    };
+
+    const processedRoots = new WeakSet();
+
+    function addStyles(root) {
+        if (!root || !root.appendChild) return;
+        if (root.querySelector?.(`#${STYLE_ID}`)) return;
+
+        const style = document.createElement("style");
+        style.id = STYLE_ID;
+        style.textContent = `
+            .${BUTTON_CLASS} {
+                width: 28px !important;
+                height: 28px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                flex: 0 0 28px !important;
+                margin: 0 6px 0 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+                border-radius: 6px !important;
+                background: transparent !important;
+                color: #666 !important;
+                cursor: pointer !important;
+                box-sizing: border-box !important;
+                font-size: 17px !important;
+                line-height: 1 !important;
+            }
+            .${BUTTON_CLASS}:hover {
+                background: #f0f0f0 !important;
+                color: #1677ff !important;
+            }
+            .${BUTTON_CLASS} {
+                text-decoration: none !important;
+            }
+        `;
+        root.appendChild(style);
+    }
+
+    function getYoudaoWord(card) {
+        const wordElement = card.querySelector(".hc-word");
+        return wordElement?.textContent?.trim() || "";
+    }
+
+    function createYoudaoLink(className, title, urlBuilder, label) {
+        const link = document.createElement("a");
+        link.className = `hc-footer-action ${BUTTON_CLASS} ${className}`;
+        link.title = title;
+        link.setAttribute("aria-label", title);
+        link.href = "#";
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = BUTTON_ICONS[label] || "↗";
+
+        link.addEventListener("click", (event) => {
+            const card = link.closest(".hc-card");
+            const word = card ? getYoudaoWord(card) : "";
+            if (!word) {
+                event.preventDefault();
+                return;
+            }
+
+            // Build the URL at click time so the button always uses the
+            // current word, even if Youdao reuses the same popup.
+            link.href = urlBuilder(word);
+            // Let the browser perform normal anchor navigation in a new tab.
+        });
+
+        return link;
+    }
+
+    function addButtonToCard(card) {
+        if (!card || !(card instanceof Element)) return false;
+        if (!card.matches(".hc-card")) return false;
+
+        const footer = card.querySelector(".hc-footer-actions");
+        if (!footer) return false;
+
+        if (footer.querySelector(`.${BUTTON_CLASS}`)) return true;
+
+        const wordLink = createYoudaoLink(
+            "auto-toc-youdao-word-button",
+            "在有道词典中打开单词页面",
+            (word) => `https://dict.youdao.com/w/${encodeURIComponent(word)}`,
+            "word"
+        );
+
+        const resultLink = createYoudaoLink(
+            "auto-toc-youdao-result-button",
+            "在有道词典中打开结果页面",
+            (word) =>
+                `https://dict.youdao.com/result?word=${encodeURIComponent(word)}&lang=en`,
+            "result"
+        );
+
+        // Put both new buttons immediately before Youdao's Copy button.
+        const copyButton = footer.querySelector(".hc-copy-action");
+        if (copyButton) {
+            footer.insertBefore(resultLink, copyButton);
+            footer.insertBefore(wordLink, resultLink);
+        } else {
+            footer.appendChild(wordLink);
+            footer.appendChild(resultLink);
+        }
+
+        addStyles(card.getRootNode());
+        return true;
+    }
+
+    function scanYoudaoRoot(root) {
+        if (!root || !root.querySelectorAll) return false;
+
+        addStyles(root);
+
+        const cards = root.querySelectorAll(".hc-card");
+        let found = false;
+        cards.forEach((card) => {
+            if (addButtonToCard(card)) found = true;
+        });
+        return found;
+    }
+
+    function getYoudaoShadowRoot() {
+        const host =
+            document.querySelector(HOST_SELECTOR) ||
+            document.querySelector(HOST_FALLBACK_SELECTOR);
+
+        return host?.shadowRoot || null;
+    }
+
+    function observeYoudaoShadowRoot(root) {
+        if (!root || processedRoots.has(root)) return;
+        processedRoots.add(root);
+
+        scanYoudaoRoot(root);
+
+        const observer = new MutationObserver(() => {
+            // Youdao frequently replaces the contents of hc-card while reusing
+            // the same ShadowRoot. A direct rescan is therefore intentional.
+            scanYoudaoRoot(root);
+        });
+
+        observer.observe(root, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+        });
+    }
+
+    function tryInstall() {
+        const root = getYoudaoShadowRoot();
+        if (!root) return false;
+
+        observeYoudaoShadowRoot(root);
+        return scanYoudaoRoot(root);
+    }
+
+    function start() {
+        // The screenshot shows the Youdao UI inside:
+        // <y... id="yd-mg-huaci-host"><#shadow-root (open)>...</#shadow-root></y...>
+        // Therefore we deliberately target that host instead of trying to
+        // discover arbitrary ShadowRoots across the entire page.
+        tryInstall();
+
+        // The Youdao extension may create the host only after the userscript
+        // has already started. Watch the normal document for the host.
+        const documentObserver = new MutationObserver(() => {
+            tryInstall();
+        });
+
+        documentObserver.observe(document.documentElement, {
+            childList: true,
+            subtree: true,
+        });
+
+        // Safety net: the extension can sometimes populate its open ShadowRoot
+        // without producing a useful mutation visible to the page observer.
+        // This is intentionally low frequency to avoid page performance impact.
+        setInterval(tryInstall, 1000);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", start, { once: true });
+    } else {
+        start();
+    }
+})();
+
+
+
 // TEST:
 // pass: https://zhuanlan.zhihu.com/p/336727285
 // pass: https://zhuanlan.zhihu.com/p/643656433
@@ -5052,3 +5259,4 @@
 // pass: https://mp.weixin.qq.com/s/ZFFOhKmshOkosgdksFo_Og
 // pass: https://mp.weixin.qq.com/s/f3TKUPy63-U61wjfvIC4zA
 // pass: https://mp.weixin.qq.com/s/CrmouLum_XHlRmjnKW8BrQ
+
