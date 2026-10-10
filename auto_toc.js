@@ -2,10 +2,10 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.70
+// @version      1.79
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
-// @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
+// @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
 // @include      http://*
 // @include      https://*
 // @grant        GM_registerMenuCommand
@@ -656,6 +656,378 @@
                 font-size: 1em;
                 padding-left: 7em;
             }
+
+            /* Apple-inspired floating right-edge TOC drawer */
+            #smarttoc.octotree-edge {
+                position: fixed !important;
+                top: 0 !important;
+                right: 0 !important;
+                left: auto !important;
+                width: 324px !important;
+                min-width: 0 !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                pointer-events: none !important;
+                box-sizing: border-box !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+                color: #e5e7eb !important;
+                box-shadow: none !important;
+                transform: none !important;
+                opacity: 1 !important;
+                contain: layout style !important;
+                transition: none !important;
+                z-index: 2147483000 !important;
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif !important;
+                -webkit-font-smoothing: antialiased !important;
+            }
+
+            /* The root is a full-size, transparent interaction layer. Only the tab and
+               the open panel receive pointer events, so no invisible edge strip opens it. */
+            #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
+            #smarttoc.octotree-edge .toc-panel { pointer-events: none !important; }
+            #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)),
+            #smarttoc.octotree-edge:has(.toc-panel:hover),
+            #smarttoc.octotree-edge:focus-within,
+            #smarttoc.octotree-edge.pinned { width: 324px !important; }
+
+            /* In pinned mode reserve exactly the drawer width. Keep html full-width so
+               the body/page shell does not get shrunk twice and leave a gap. */
+            html.autotoc-pinned-layout {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                overflow-x: clip !important;
+            }
+            html.autotoc-pinned-layout body {
+                width: calc(100vw - 324px) !important;
+                max-width: calc(100vw - 324px) !important;
+                margin-right: 0 !important;
+                box-sizing: border-box !important;
+            }
+            /* Keep full-width page shells and fixed/sticky headers inside the reduced viewport. */
+            html.autotoc-pinned-layout body > *,
+            html.autotoc-pinned-layout body > * > * {
+                max-width: calc(100vw - 324px) !important;
+                box-sizing: border-box !important;
+            }
+            html.autotoc-pinned-layout body [style*="position: fixed"],
+            html.autotoc-pinned-layout body [style*="position:fixed"] {
+                max-width: calc(100vw - 324px) !important;
+            }
+
+            #smarttoc.octotree-edge .handle {
+                position: absolute !important;
+                top: var(--smarttoc-handle-top, 38%) !important;
+                right: 0 !important;
+                left: auto !important;
+                width: 30px !important;
+                height: 90px !important;
+                min-height: 0 !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 4px !important;
+                padding: 7px 5px 16px !important;
+                border: 1px solid rgba(255,255,255,.14) !important;
+                border-right: 0 !important;
+                border-radius: 14px 0 0 14px !important;
+                background: rgba(35, 37, 42, .88) !important;
+                -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+                backdrop-filter: blur(24px) saturate(180%) !important;
+                color: #f5f5f7 !important;
+                font-size: 12px !important;
+                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
+                font-variant: normal !important;
+                font-weight: 600 !important;
+                letter-spacing: 0 !important;
+                writing-mode: vertical-rl !important;
+                transform: none !important;
+                opacity: 1 !important;
+                cursor: grab !important;
+                user-select: none !important;
+                touch-action: none !important;
+                z-index: 5 !important;
+                box-shadow: 0 4px 18px rgba(0,0,0,.16) !important;
+                transition: background 180ms ease, border-color 180ms ease !important;
+            }
+            #smarttoc.octotree-edge .handle:active { cursor: grabbing !important; }
+            #smarttoc.octotree-edge .handle:hover {
+                background: rgba(54, 57, 64, .96) !important;
+                border-color: rgba(255,255,255,.24) !important;
+            }
+            #smarttoc.octotree-edge .handle .handle-chevron {
+                display: block !important;
+                font-size: 20px !important;
+                line-height: 1 !important;
+                font-weight: 400 !important;
+                color: #f5f5f7 !important;
+            }
+            #smarttoc.octotree-edge .handle .handle-label {
+                display: block !important;
+                color: #0a84ff !important;
+                font-size: 11px !important;
+                line-height: 1 !important;
+                font-weight: 650 !important;
+            }
+            #smarttoc.octotree-edge .handle .handle-drag-grip {
+                position: absolute !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                width: 100% !important;
+                height: 15px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                writing-mode: horizontal-tb !important;
+                color: rgba(245,245,247,.58) !important;
+                font-size: 13px !important;
+                line-height: 1 !important;
+                letter-spacing: -2px !important;
+                cursor: ns-resize !important;
+                touch-action: none !important;
+                border-radius: 0 0 13px 13px !important;
+                z-index: 2 !important;
+            }
+            #smarttoc.octotree-edge .handle .handle-label {
+                max-height: 58px !important;
+                overflow: hidden !important;
+                flex: 0 1 auto !important;
+                pointer-events: none !important;
+            }
+            #smarttoc.octotree-edge .handle .handle-chevron {
+                flex: 0 0 auto !important;
+                pointer-events: none !important;
+            }
+            #smarttoc.octotree-edge .handle .handle-drag-grip:hover {
+                color: #f5f5f7 !important;
+                background: rgba(255,255,255,.08) !important;
+            }
+
+            #smarttoc.octotree-edge .toc-panel {
+                position: absolute !important;
+                top: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 324px !important;
+                height: auto !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                background: rgba(28, 29, 33, .94) !important;
+                -webkit-backdrop-filter: blur(30px) saturate(165%) !important;
+                backdrop-filter: blur(30px) saturate(165%) !important;
+                color: #e5e5ea !important;
+                border: 1px solid rgba(255,255,255,.10) !important;
+                border-radius: 0 !important;
+                box-shadow: 0 18px 55px rgba(0,0,0,.32), 0 2px 8px rgba(0,0,0,.14) !important;
+                transform: translateX(calc(100% + 2px)) !important;
+                transition: transform 260ms cubic-bezier(.2,.75,.25,1) !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)) .toc-panel,
+            #smarttoc.octotree-edge:has(.toc-panel:hover) .toc-panel,
+            #smarttoc.octotree-edge:focus-within .toc-panel,
+            #smarttoc.octotree-edge.pinned .toc-panel {
+                transform: translateX(0) !important;
+                pointer-events: auto !important;
+            }
+            /* The edge handle retreats behind the drawer as soon as it opens. */
+            #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)) .handle,
+            #smarttoc.octotree-edge:has(.toc-panel:hover) .handle,
+            #smarttoc.octotree-edge:focus-within .handle,
+            #smarttoc.octotree-edge.pinned .handle {
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                transform: translateX(100%) !important;
+                transition: opacity 120ms ease, transform 220ms cubic-bezier(.2,.75,.25,1), visibility 0s linear 220ms !important;
+            }
+            #smarttoc.octotree-edge .handle {
+                transition: opacity 120ms ease, transform 220ms cubic-bezier(.2,.75,.25,1), background 180ms ease, border-color 180ms ease !important;
+            }
+
+            #smarttoc.octotree-edge .toc-toolbar {
+                flex: 0 0 58px !important;
+                height: 58px !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: flex-end !important;
+                gap: 6px !important;
+                padding: 0 14px 0 18px !important;
+                border-bottom: 1px solid rgba(255,255,255,.075) !important;
+                background: rgba(255,255,255,.018) !important;
+            }
+            #smarttoc.octotree-edge .toc-toolbar button {
+                all: unset !important;
+                box-sizing: border-box !important;
+                display: inline-flex !important;
+                flex: 0 0 32px !important;
+                align-items: center !important;
+                justify-content: center !important;
+                width: 32px !important;
+                height: 32px !important;
+                border-radius: 10px !important;
+                color: #a1a1aa !important;
+                font: 18px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
+                cursor: pointer !important;
+                transition: color 160ms ease, background 160ms ease, transform 160ms ease !important;
+            }
+            #smarttoc.octotree-edge .toc-toolbar button:hover,
+            #smarttoc.octotree-edge .toc-toolbar button[aria-pressed="true"] {
+                color: #0a84ff !important;
+                background: rgba(10,132,255,.12) !important;
+            }
+            #smarttoc.octotree-edge .toc-toolbar button:active { transform: scale(.94) !important; }
+            #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title {
+                margin-right: auto !important;
+                color: #f5f5f7 !important;
+                font-size: 16px !important;
+                font-weight: 650 !important;
+                letter-spacing: -.025em !important;
+                white-space: nowrap !important;
+            }
+
+            #smarttoc.octotree-edge .toc-panel > ul {
+                position: relative !important;
+                display: block !important;
+                flex: 1 1 auto !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 12px 10px 18px 10px !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                background: transparent !important;
+                color: #e5e5ea !important;
+                opacity: 1 !important;
+                transform: none !important;
+                scrollbar-width: thin !important;
+                scrollbar-color: rgba(142,142,147,.42) transparent !important;
+            }
+            #smarttoc.octotree-edge .toc-panel ul,
+            #smarttoc.octotree-edge .toc-panel li { list-style: none !important; }
+            #smarttoc.octotree-edge .toc-panel li { display: block !important; margin: 1px 0 !important; padding: 0 !important; }
+            #smarttoc.octotree-edge .toc-row {
+                display: flex !important;
+                align-items: center !important;
+                min-height: 34px !important;
+                gap: 3px !important;
+                border-radius: 9px !important;
+                transition: background 140ms ease !important;
+            }
+            #smarttoc.octotree-edge .toc-expander {
+                all: unset !important;
+                flex: 0 0 22px !important;
+                width: 22px !important;
+                height: 30px !important;
+                display: inline-flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                color: #8e8e93 !important;
+                font: 12px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
+                cursor: pointer !important;
+                border-radius: 7px !important;
+                transition: color 140ms ease, background 140ms ease !important;
+            }
+            #smarttoc.octotree-edge .toc-expander:hover { background: rgba(142,142,147,.15) !important; color: #f5f5f7 !important; }
+            #smarttoc.octotree-edge .toc-expander.empty { cursor: default !important; }
+            #smarttoc.octotree-edge .toc-row > a {
+                all: unset !important;
+                box-sizing: border-box !important;
+                display: flex !important;
+                flex: 1 1 auto !important;
+                min-width: 0 !important;
+                align-items: baseline !important;
+                gap: 9px !important;
+                padding: 6px 8px !important;
+                border: 1px solid transparent !important;
+                border-radius: 8px !important;
+                color: #b7b7bf !important;
+                font: 13px/1.48 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif !important;
+                letter-spacing: -.008em !important;
+                text-decoration: none !important;
+                cursor: pointer !important;
+                white-space: normal !important;
+                overflow-wrap: anywhere !important;
+                transition: color 140ms ease, background 140ms ease, border-color 140ms ease !important;
+            }
+            #smarttoc.octotree-edge .toc-row > a:hover {
+                color: #f5f5f7 !important;
+                background: rgba(142,142,147,.12) !important;
+            }
+            #smarttoc.octotree-edge li.active > .toc-row > a {
+                color: #ffffff !important;
+                border-color: transparent !important;
+                background: transparent !important;
+                font-weight: 650 !important;
+            }
+            #smarttoc.octotree-edge .toc-level-icon {
+                flex: 0 0 14px !important;
+                width: 14px !important;
+                display: inline-block !important;
+                color: #8e8e93 !important;
+                text-align: center !important;
+                font-size: 11px !important;
+                line-height: 1 !important;
+            }
+            #smarttoc.octotree-edge li.active > .toc-row .toc-level-icon { color: inherit !important; }
+            #smarttoc.octotree-edge .toc-children { display: block !important; margin: 0 !important; padding: 0 0 0 10px !important; }
+            #smarttoc.octotree-edge .toc-panel ul.toc-children { margin: 0 !important; padding: 0 !important; line-height: 1.45 !important; }
+            #smarttoc.octotree-edge .toc-children.is-collapsed { display: none !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="1"] { padding-left: 0 !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="2"] { padding-left: 2px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="3"] { padding-left: 4px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="4"] { padding-left: 6px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="5"],
+            #smarttoc.octotree-edge .toc-row[data-level="6"] { padding-left: 8px !important; }
+            #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar { width: 6px !important; }
+            #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar-thumb { border-radius: 8px !important; background: rgba(142,142,147,.32) !important; border: 2px solid transparent !important; background-clip: padding-box !important; }
+
+            /* Follow the operating system appearance automatically. */
+            @media (prefers-color-scheme: light) {
+                #smarttoc.octotree-edge .handle {
+                    background: rgba(250,250,252,.94) !important;
+                    color: #1d1d1f !important;
+                    border-color: rgba(0,0,0,.14) !important;
+                    box-shadow: 0 4px 18px rgba(0,0,0,.12) !important;
+                }
+                #smarttoc.octotree-edge .handle:hover { background: rgba(255,255,255,.98) !important; border-color: rgba(0,0,0,.22) !important; }
+                #smarttoc.octotree-edge .handle .handle-chevron { color: #1d1d1f !important; }
+                #smarttoc.octotree-edge .handle .handle-label { color: #007aff !important; }
+                #smarttoc.octotree-edge .handle .handle-drag-grip { color: rgba(29,29,31,.55) !important; }
+                #smarttoc.octotree-edge .handle .handle-drag-grip:hover { color: #1d1d1f !important; background: rgba(0,0,0,.07) !important; }
+                #smarttoc.octotree-edge .toc-panel {
+                    background: rgba(250,250,252,.96) !important;
+                    color: #1d1d1f !important;
+                    border-color: rgba(0,0,0,.10) !important;
+                    box-shadow: 0 18px 55px rgba(0,0,0,.16), 0 2px 8px rgba(0,0,0,.08) !important;
+                }
+                #smarttoc.octotree-edge .toc-toolbar { border-bottom-color: rgba(0,0,0,.08) !important; background: rgba(0,0,0,.018) !important; }
+                #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title { color: #1d1d1f !important; }
+                #smarttoc.octotree-edge .toc-toolbar button { color: #6e6e73 !important; }
+                #smarttoc.octotree-edge .toc-toolbar button:hover,
+                #smarttoc.octotree-edge .toc-toolbar button[aria-pressed="true"] { color: #007aff !important; background: rgba(0,122,255,.10) !important; }
+                #smarttoc.octotree-edge .toc-panel > ul { color: #1d1d1f !important; scrollbar-color: rgba(60,60,67,.28) transparent !important; }
+                #smarttoc.octotree-edge .toc-expander { color: #8e8e93 !important; }
+                #smarttoc.octotree-edge .toc-expander:hover { color: #1d1d1f !important; background: rgba(60,60,67,.09) !important; }
+                #smarttoc.octotree-edge .toc-row > a { color: #636366 !important; }
+                #smarttoc.octotree-edge .toc-row > a:hover { color: #1d1d1f !important; background: rgba(60,60,67,.07) !important; }
+                #smarttoc.octotree-edge li.active > .toc-row > a { color: #1d1d1f !important; background: transparent !important; border-color: transparent !important; font-weight: 700 !important; }
+                #smarttoc.octotree-edge .toc-level-icon { color: #8e8e93 !important; }
+                #smarttoc.octotree-edge li.active > .toc-row .toc-level-icon { color: inherit !important; }
+                #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar-thumb { background: rgba(60,60,67,.25) !important; }
+            }
+            #smarttoc.octotree-edge.hidden { display: none !important; }
+
         `
         );
     }
@@ -2994,273 +3366,319 @@
         e.redraw = false;
     };
 
-    const TOC = function ({ $headings, $activeHeading, onClickHeading }) {
-        // $activeHeading.subscribe(activeIndex => {})
-        const toTree = function (headings) {
-            let i = 0;
-            let tree = { level: 0, children: [] };
-            let stack = [tree];
-            const top = (arr) => arr.slice(-1)[0];
-
-            while (i < headings.length) {
-                let { level, isActive } = headings[i];
-                if (level === stack.length) {
-                    const node = {
-                        heading: headings[i],
-                        children: [],
-                    };
-                    top(stack).children.push(node);
-                    stack.push(node);
-                    if (isActive) {
-                        stack.forEach((node) => {
-                            if (node.heading) {
-                                node.heading.isActive = true;
-                            }
-                        });
+    const autoTocPinnedLayout = (() => {
+        let originalHtmlWidth = null;
+        let originalHtmlWidthPriority = "";
+        let originalHtmlMaxWidth = null;
+        let originalHtmlMaxWidthPriority = "";
+        let originalBodyWidth = null;
+        let originalBodyWidthPriority = "";
+        let originalBodyMaxWidth = null;
+        let originalBodyMaxWidthPriority = "";
+        let originalBodyMarginRight = null;
+        let originalBodyMarginRightPriority = "";
+        return (enabled) => {
+            const html = document.documentElement;
+            const body = document.body;
+            if (!html) return;
+            if (enabled) {
+                if (!html.classList.contains("autotoc-pinned-layout")) {
+                    originalHtmlWidth = html.style.getPropertyValue("width");
+                    originalHtmlWidthPriority = html.style.getPropertyPriority("width");
+                    originalHtmlMaxWidth = html.style.getPropertyValue("max-width");
+                    originalHtmlMaxWidthPriority = html.style.getPropertyPriority("max-width");
+                    if (body) {
+                        originalBodyWidth = body.style.getPropertyValue("width");
+                        originalBodyWidthPriority = body.style.getPropertyPriority("width");
+                        originalBodyMaxWidth = body.style.getPropertyValue("max-width");
+                        originalBodyMaxWidthPriority = body.style.getPropertyPriority("max-width");
+                        originalBodyMarginRight = body.style.getPropertyValue("margin-right");
+                        originalBodyMarginRightPriority = body.style.getPropertyPriority("margin-right");
                     }
-                    i++;
-                } else if (level < stack.length) {
-                    stack.pop();
-                } else if (level > stack.length) {
-                    const node = {
-                        heading: null,
-                        children: [],
-                    };
-                    top(stack).children.push(node);
-                    stack.push(node);
+                }
+                html.classList.add("autotoc-pinned-layout");
+                html.style.setProperty("width", "100%", "important");
+                html.style.setProperty("max-width", "100%", "important");
+                if (body) {
+                    body.style.setProperty("width", "calc(100vw - 324px)", "important");
+                    body.style.setProperty("max-width", "calc(100vw - 324px)", "important");
+                    body.style.setProperty("margin-right", "0", "important");
+                }
+            } else {
+                html.classList.remove("autotoc-pinned-layout");
+                if (originalHtmlWidth) html.style.setProperty("width", originalHtmlWidth, originalHtmlWidthPriority);
+                else html.style.removeProperty("width");
+                if (originalHtmlMaxWidth) html.style.setProperty("max-width", originalHtmlMaxWidth, originalHtmlMaxWidthPriority);
+                else html.style.removeProperty("max-width");
+                if (body) {
+                    if (originalBodyWidth) body.style.setProperty("width", originalBodyWidth, originalBodyWidthPriority);
+                    else body.style.removeProperty("width");
+                    if (originalBodyMaxWidth) body.style.setProperty("max-width", originalBodyMaxWidth, originalBodyMaxWidthPriority);
+                    else body.style.removeProperty("max-width");
+                    if (originalBodyMarginRight) body.style.setProperty("margin-right", originalBodyMarginRight, originalBodyMarginRightPriority);
+                    else body.style.removeProperty("margin-right");
                 }
             }
-            return tree;
+            window.dispatchEvent(new Event("resize"));
+        };
+    })();
+
+    const TOC = function ({ $headings, $activeHeading, onClickHeading }) {
+        let expandedAll = false;
+        const expandedNodes = new Set();
+        let latestTree = [];
+        let rootList = null;
+
+        const toTree = function (headings) {
+            const root = { level: 0, children: [] };
+            const stack = [root];
+            headings.forEach((heading) => {
+                const node = { heading, level: heading.level || 1, children: [] };
+                while (stack.length > 1 && stack[stack.length - 1].level >= node.level) stack.pop();
+                stack[stack.length - 1].children.push(node);
+                stack.push(node);
+            });
+            return root.children;
         };
 
-        const UL = (children, { isRoot = false } = {}) =>
-            mithril(
-                "ul",
-                {
-                    onwheel: isRoot && restrictScroll,
-                    onclick: isRoot && onClickHeading,
-                },
-                children.map(LI)
-            );
+        const headingText = (heading) => {
+            if (heading.node.newTextContent) return heading.node.newTextContent;
+            const text = heading.node.textContent.trim();
+            if (text) return text;
+            if (heading.node.nextElementSibling) return heading.node.nextElementSibling.textContent.trim().substring(0, 80);
+            return "(untitled heading)";
+        };
 
-        const LI = ({ heading, children }, index) =>
-            mithril(
-                "li",
-                {
-                    class: heading && heading.isActive ? "active" : "",
-                    key: index,
-                },
-                [
-                    heading &&
-                        mithril(
-                            "a",
-                            {
-                                href: `#${heading.anchor}`,
-                                // title: heading.node.textContent,
-                                title: heading.node.newTextContent
-                                    ? heading.node.newTextContent
-                                    : heading.node.textContent.trim() !== ""
-                                    ? heading.node.textContent.trim()
-                                    : heading.node.nextElementSibling
-                                    ? heading.node.nextElementSibling.textContent
-                                          .trim()
-                                          .substring(0, 10)
-                                    : heading.node.textContent.trim(),
+        const levelSymbol = (level) => ({ 1: "■", 2: "△", 3: "◆", 4: "▴", 5: "▪", 6: "▫" }[level] || "▫");
+
+        const scrollActiveToCenter = () => {
+            requestAnimationFrame(() => {
+                if (!rootList) return;
+                const active = rootList.querySelector("li.active > .toc-row");
+                if (!active) return;
+                const listRect = rootList.getBoundingClientRect();
+                const rowRect = active.getBoundingClientRect();
+                rootList.scrollTop += (rowRect.top + rowRect.height / 2) - (listRect.top + listRect.height / 2);
+            });
+        };
+
+        const expandActivePath = () => {
+            const findPath = (nodes, path = []) => {
+                for (const node of nodes) {
+                    const nextPath = node.heading ? [...path, node] : path;
+                    if (node.heading && node.heading.isActive) return nextPath;
+                    const found = findPath(node.children || [], nextPath);
+                    if (found) return found;
+                }
+                return null;
+            };
+            const path = findPath(latestTree);
+            if (!path) return;
+            // On collapse, expose the active heading and every ancestor without expanding
+            // unrelated branches. This keeps the current location understandable.
+            expandedAll = false;
+            path.forEach((node) => {
+                if (node.children && node.children.length && node.heading) {
+                    expandedNodes.add(node.heading.anchor);
+                }
+            });
+            mithril.redraw();
+            scrollActiveToCenter();
+        };
+
+        const setAllExpanded = (expand) => {
+            expandedAll = expand;
+            expandedNodes.clear();
+            if (expand) {
+                const visit = (nodes) => nodes.forEach((node) => {
+                    if (node.children.length && node.heading) expandedNodes.add(node.heading.anchor);
+                    visit(node.children);
+                });
+                visit(latestTree);
+            }
+            mithril.redraw();
+            if (expand) scrollActiveToCenter();
+        };
+
+        const renderNodes = (nodes, isRoot = false) => mithril(
+            "ul",
+            {
+                class: isRoot ? "toc-root-list" : "toc-children",
+                onwheel: isRoot ? restrictScroll : undefined,
+                onclick: isRoot ? onClickHeading : undefined,
+            },
+            nodes.map((node) => {
+                const heading = node.heading;
+                const hasChildren = node.children.length > 0;
+                const expanded = expandedAll || (heading && expandedNodes.has(heading.anchor));
+                const isActive = heading && heading.isActive;
+                return mithril("li", {
+                    key: heading ? heading.anchor : Math.random(),
+                    class: isActive ? "active" : "",
+                }, [
+                    mithril("div.toc-row", { "data-level": node.level }, [
+                        hasChildren
+                            ? mithril("button.toc-expander", {
+                                type: "button",
+                                title: expanded ? "Collapse subheadings" : "Expand subheadings",
+                                "aria-expanded": expanded ? "true" : "false",
+                                onclick: (event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    if (expandedAll) {
+                                        expandedAll = false;
+                                        expandedNodes.clear();
+                                    }
+                                    if (expandedNodes.has(heading.anchor)) expandedNodes.delete(heading.anchor);
+                                    else expandedNodes.add(heading.anchor);
+                                },
+                            }, expanded ? "▾" : "▸")
+                            : mithril("span.toc-expander.empty", ""),
+                        heading && mithril("a", {
+                            href: `#${heading.anchor}`,
+                            title: headingText(heading),
+                            onclick: (event) => {
+                                // Let the root TOC click handler perform the existing scroll logic.
+                                if (event.target.closest(".toc-expander")) event.preventDefault();
                             },
-                            // "● " + heading.node.textContent
-                            // 如果当前标题内容为空, 则找相邻的下一个同级的元素用它的文本作为标题显示
-                            "● " +
-                                (heading.node.newTextContent
-                                    ? heading.node.newTextContent
-                                    : heading.node.textContent.trim() !== ""
-                                    ? heading.node.textContent.trim()
-                                    : heading.node.nextElementSibling
-                                    ? heading.node.nextElementSibling.textContent
-                                          .trim()
-                                          .substring(0, 10)
-                                    : heading.node.textContent.trim())
-                        ),
-                    children && children.length && UL(children),
-                ].filter(Boolean)
-            );
+                        }, [
+                            mithril("span.toc-level-icon", levelSymbol(node.level)),
+                            mithril("span.toc-heading-label", headingText(heading)),
+                        ]),
+                    ]),
+                    hasChildren && mithril("div", {
+                        class: `toc-children${expanded ? "" : " is-collapsed"}`,
+                    }, [renderNodes(node.children)]),
+                ].filter(Boolean));
+            })
+        );
+
+        const toolbarButton = (symbol, title, action, pressed) => mithril("button", {
+            type: "button",
+            title,
+            "aria-label": title,
+            "aria-pressed": pressed ? "true" : "false",
+            onclick: (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                action();
+            },
+        }, symbol);
 
         return {
             oncreate({ dom }) {
-                // scroll to heading if out of view
-                $activeHeading.subscribe((index) => {
-                    const target = [].slice
-                        .apply(dom.querySelectorAll(".active"))
-                        .pop();
-                    if (target) {
-                        const targetRect = target.getBoundingClientRect();
-                        const containerRect = dom.getBoundingClientRect();
-                        const outOfView =
-                            targetRect.top > containerRect.bottom ||
-                            targetRect.bottom < containerRect.top;
-                        if (outOfView) {
-                            scrollTo({
-                                targetElem: target,
-                                scrollElem: dom,
-                                maxDuration: 0,
-                                topMargin:
-                                    dom.offsetHeight / 2 -
-                                    target.offsetHeight / 2,
-                            });
+                rootList = dom.querySelector(".toc-root-list");
+                const smarttocRoot = document.getElementById("smarttoc");
+                if (smarttocRoot && !smarttocRoot.dataset.activePathOnCollapse) {
+                    smarttocRoot.dataset.activePathOnCollapse = "1";
+                    smarttocRoot.addEventListener("pointerleave", (event) => {
+                        // Only collapse behavior when the pointer actually leaves the whole
+                        // TOC/handle area; moving from the handle into the drawer won't fire it.
+                        if (!smarttocRoot.classList.contains("pinned") && !smarttocRoot.contains(event.relatedTarget)) {
+                            expandActivePath();
                         }
+                    });
+                }
+                $activeHeading.subscribe(() => {
+                    const target = dom.querySelector("li.active > .toc-row");
+                    if (!target || !rootList) return;
+                    const rect = target.getBoundingClientRect();
+                    const listRect = rootList.getBoundingClientRect();
+                    if (rect.top < listRect.top || rect.bottom > listRect.bottom) {
+                        scrollTo({ targetElem: target, scrollElem: rootList, maxDuration: 0,
+                            topMargin: rootList.offsetHeight / 2 - target.offsetHeight / 2 });
                     }
                 });
-                Stream.combine($headings, $activeHeading, () => null).subscribe(
-                    (_) => mithril.redraw()
-                );
+                Stream.combine($headings, $activeHeading, () => null).subscribe(() => mithril.redraw());
             },
             view() {
-                $headings().forEach(
-                    (h, i) => (h.isActive = i === $activeHeading())
-                );
-                const tree = toTree($headings());
-                // console.log("tree begin aaa")
-                // console.log(tree)
-                // console.log("tree end bbb")
-                return UL(tree.children, { isRoot: true });
+                $headings().forEach((heading, index) => { heading.isActive = index === $activeHeading(); });
+                latestTree = toTree($headings());
+                const smarttoc = document.getElementById("smarttoc");
+                const pinned = !!(smarttoc && smarttoc.classList.contains("pinned"));
+                return mithril("div.toc-panel", [
+                    mithril("div.toc-toolbar", [
+                        mithril("span.toc-toolbar-title", "Table of Contents"),
+                        toolbarButton("📌", pinned ? "Unpin TOC" : "Keep TOC open", () => {
+                            const root = document.getElementById("smarttoc");
+                            if (root) {
+                                const shouldPin = !root.classList.contains("pinned");
+                                root.classList.toggle("pinned", shouldPin);
+                                autoTocPinnedLayout(shouldPin);
+                                mithril.redraw();
+                            }
+                        }, pinned),
+                        toolbarButton(expandedAll ? "⊟" : "⊞", expandedAll ? "Collapse all headings" : "Expand all headings", () => setAllExpanded(!expandedAll), expandedAll),
+                    ]),
+                    renderNodes(latestTree, true),
+                ]);
             },
         };
-    };
-
-    const stop = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
     };
 
     let multi_click_cnt = 0;
     let last_click_ts = 0;
     let last_move_ts = 0;
 
-    const Handle = function ({ $userOffset }) {
-        let [sClientX, sClientY] = [0, 0];
-        let [sOffsetX, sOffsetY] = [0, 0];
-
-        const onDrag = throttle((e) => {
-            stop(e);
-            let [dX, dY] = [e.clientX - sClientX, e.clientY - sClientY];
-            $userOffset([sOffsetX + dX, sOffsetY + dY]);
-            e.redraw = false;
-        });
-
-        const onDragEnd = (e) => {
-            window.removeEventListener("mousemove", onDrag);
-            window.removeEventListener("mouseup", onDragEnd);
-            e.redraw = false;
-
-            var domain2width2offset = GM_getValue(
-                "menu_GAEEScript_auto_toc_domain_2_width_2_offset"
-            );
-            // 判断之前toc 的位置和现在的, 如果相等的话, 说明只是原地点击
-            if (
-                sOffsetX === $userOffset()[0] &&
-                sOffsetY === $userOffset()[1]
-            ) {
-                // console.log(
-                //     "[auto-toc, 原地点击, multi_click_cnt:]",
-                //     multi_click_cnt
-                // );
-                // if (Date.now() - last_click_ts < 666) {
-                // // 说明是双击, 走关闭 toc 逻辑
-                // console.log("[auto-toc, double click handle section]");
-                // menuSwitch("menu_GAEEScript_auto_open_toc");
-                // handleToc();
-
-                // 说明是双击逻辑, 走暗淡 toc 逻辑
-                // console.log("[auto-toc, double click handle section]");
-                menuSwitch("menu_GAEEScript_auto_collapse_toc");
-                handleToc();
-                return;
-                // }
-                // last_click_ts = Date.now();
-                // // 说明是单击逻辑, 走切换折行逻辑
-                // // console.log("[auto-toc, click handle section]");
-                // toc_text_wrap = !toc_text_wrap;
-                // toast("Toggle Headings Auto Wrap.");
-                // handleToc();
-
-                ////////////////////////////////////////// 以下这种实现方案导致单击有延迟, 故不采用
-                // if (multi_click_cnt > 0) {
-                //     // setInterval 已经启动, 所以我们记录单击次数
-                //     multi_click_cnt += 1;
-                //     return;
-                // }
-                // multi_click_cnt = 1;
-                // setTimeout(() => {
-                //     if (multi_click_cnt === 1) {
-                //         // 单击逻辑, 走暗淡 toc 逻辑
-                //         console.log("[auto-toc, click handle section]");
-                //         menuSwitch("menu_GAEEScript_auto_collapse_toc");
-                //     } else if (multi_click_cnt === 2) {
-                //         // 说明是双击, 走关闭 toc 逻辑
-                //         console.log("[auto-toc, double click handle section]");
-                //         menuSwitch("menu_GAEEScript_auto_open_toc");
-                //     }
-                //     handleToc();
-                //     multi_click_cnt = 0;
-                // }, 222);
-                return;
-            }
-            last_move_ts = Date.now();
-            if (domain2width2offset[window.location.host] == null) {
-                domain2width2offset[window.location.host] = {};
-            }
-            domain2width2offset[window.location.host][window.innerWidth] = $userOffset();
-            GM_setValue(
-                "menu_GAEEScript_auto_toc_domain_2_width_2_offset",
-                domain2width2offset
-            );
-            // console.log(
-            //     "[auto-toc, update domain offset]",
-            //     domain2width2offset[window.location.host]
-            // );
-            // console.log("[auto-toc, $userOffset()]", $userOffset());
-            // console.log(
-            //     "[auto-toc, update domain offset, domain2width2offset]",
-            //     domain2width2offset
-            // );
-        };
-
-        const onDragStart = (e) => {
-            if (e.button === 0) {
-                stop(e);
-                sClientX = e.clientX;
-                sClientY = e.clientY;
-                sOffsetX = $userOffset()[0];
-                sOffsetY = $userOffset()[1];
-                window.addEventListener("mousemove", onDrag);
-                window.addEventListener("mouseup", onDragEnd);
-            }
-            e.redraw = false;
-        };
-
-        const onDoubleClick = (e) => {
-            // console.log("[auto-toc, onDoubleClick]");
-            menuSwitch("menu_GAEEScript_auto_open_toc");
-            handleToc();
-        };
-
+    const Handle = function () {
         return {
+            oncreate({ dom }) {
+                const root = document.getElementById("smarttoc");
+                if (!root || dom.dataset.dragBound === "1") return;
+                dom.dataset.dragBound = "1";
+                if (root.classList.contains("pinned")) autoTocPinnedLayout(true);
+                const savedTop = GM_getValue("auto_toc_edge_handle_top", null);
+                if (savedTop != null) root.style.setProperty("--smarttoc-handle-top", `${savedTop}px`);
+                const grip = dom.querySelector(".handle-drag-grip");
+                if (!grip) return;
+                let startY = 0;
+                let startTop = 0;
+                let dragging = false;
+                grip.addEventListener("pointerdown", (event) => {
+                    if (event.button !== 0) return;
+                    dragging = true;
+                    root.classList.add("dragging");
+                    startY = event.clientY;
+                    const rect = dom.getBoundingClientRect();
+                    startTop = rect.top;
+                    grip.setPointerCapture?.(event.pointerId);
+                    event.preventDefault();
+                    event.stopPropagation();
+                });
+                grip.addEventListener("pointermove", (event) => {
+                    if (!dragging) return;
+                    const maxTop = Math.max(0, window.innerHeight - dom.offsetHeight);
+                    const nextTop = Math.max(0, Math.min(maxTop, startTop + event.clientY - startY));
+                    root.style.setProperty("--smarttoc-handle-top", `${nextTop}px`);
+                    GM_setValue("auto_toc_edge_handle_top", Math.round(nextTop));
+                });
+                const stopDrag = () => {
+                    dragging = false;
+                    root.classList.remove("dragging");
+                };
+                grip.addEventListener("pointerup", stopDrag);
+                grip.addEventListener("pointercancel", stopDrag);
+            },
             view() {
-                return mithril(
-                    ".handle",
-                    {
-                        onmousedown: onDragStart,
-                        // ondblclick: onDoubleClick,
-                    },
-                    // "○ ○ ○"
-                    // "■ ■ ■"
-                    "● ● ●"
-                    // "⚫ ⚫ ⚫"
-                    // "■ ● ■"
-                    // "● ■ ●"
-                );
+                return mithril("div.handle", { title: "Hover to open AutoTOC" }, [
+                    mithril("span.handle-chevron", "›"),
+                    mithril("span.handle-label", "AutoTOC"),
+                    mithril("span.handle-drag-grip", { title: "Drag to reposition", "aria-label": "Drag to reposition AutoTOC" }, "☰"),
+                ]);
             },
         };
     };
+
+    // Restore the page layout if the userscript removes its TOC root during navigation.
+    if (document.documentElement && !document.documentElement.dataset.autoTocPinObserver) {
+        document.documentElement.dataset.autoTocPinObserver = "1";
+        const pinObserver = new MutationObserver(() => {
+            if (!document.getElementById("smarttoc") && document.documentElement.classList.contains("autotoc-pinned-layout")) {
+                autoTocPinnedLayout(false);
+            }
+        });
+        pinObserver.observe(document.documentElement, { childList: true, subtree: true });
+    }
 
     const ARTICLE_TOC_GAP = 150;
     const TOP_MARGIN = 66;
@@ -3333,11 +3751,12 @@
                 // 放在右侧
                 // 我们假定 popperMetric.width 为 288, 方便固定 toc 在网页的位置
                 // 我们假定用户都开启了Edge浏览器侧边栏, 所以往左多移 36
-                let final_x =
-                    offsetX + Math.max(0, window.outerWidth - (288 + 36)); // restrict to visible area
-
-                // // 放在左侧, 多加 36, 免得靠浏览器左侧太近
-                // let final_x = offsetX + 36; // restrict to visible area
+                // Octotree-style drawer is anchored to the left viewport edge.
+                // The panel itself slides in/out using CSS, so page-specific drag offsets
+                // must not shift it away from the edge.
+                let final_x = 0;
+                // The Octotree-style drawer is fixed to the right viewport edge.
+                // Its small handle owns its own draggable vertical position.
 
                 // console.log('[auto-toc, makeSticky, final_y]', Math.max((scrollableTop + TOP_MARGIN), 888 - scrollY), final_y)
                 // console.log('[auto-toc, makeSticky, scrollableTop, topMargin]',scrollableTop, topMargin)
@@ -3354,10 +3773,11 @@
                 // if (shouldLog) console.log("[makeSticky,final_x, final_y]", final_x, final_y)
                 return {
                     position: "fixed",
-                    left: 0,
+                    right: 0,
+                    left: "auto",
                     top: 0,
-                    // transform: translate3d(x + offsetX, y + offsetY)
-                    transform: translate3d(final_x, final_y),
+                    // CSS keeps the drawer on the right edge; only the handle is vertically draggable.
+                    transform: "none",
                 };
             }
         );
@@ -3432,7 +3852,7 @@
         $topbarHeight,
         onClickHeading,
     }) {
-        const handle = Handle({ $userOffset });
+        const handle = Handle();
         const toc = TOC({ $headings, $activeHeading, onClickHeading });
         return {
             oncreate({ dom }) {
@@ -3458,6 +3878,7 @@
                     {
                         class: [
                             theme || "light",
+                            "octotree-edge",
                             $headings().filter((h) => h.level <= 2).length >
                                 50 && "lengthy",
                             $isShow() ? "" : "hidden",
@@ -3820,8 +4241,11 @@
             e.redraw = false;
             e.preventDefault();
             e.stopPropagation();
-            const temp = e.target.getAttribute("href");
-            if (!temp) return;
+            const clickedLink = e.target && e.target.closest
+                ? e.target.closest("a[href^='#']")
+                : null;
+            const temp = clickedLink ? clickedLink.getAttribute("href") : e.target.getAttribute("href");
+            if (!temp || temp === "#") return;
             const anchor = temp.substr(1);
             const heading = $headings().find(
                 (heading) => heading.anchor === anchor
