@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.67
+// @version      1.70
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -5042,7 +5042,6 @@
 })();
 
 
-
 // ============================================================
 // Youdao Dictionary web-page shortcut
 // ============================================================
@@ -5271,7 +5270,162 @@
         return scanYoudaoRoot(root);
     }
 
+    function installSafariFallback() {
+        // Safari has no Youdao floating-translation extension in this setup.
+        // When that extension host is absent, show a small toolbar for a
+        // selected English word and link directly to both Youdao pages.
+        let toolbar = null;
+        let rememberedWord = "";
+
+        function getSelectedWord() {
+            const selection = window.getSelection();
+            const word = normalizeEnglishWord(selection?.toString());
+            return word;
+        }
+
+        function hideToolbar() {
+            if (toolbar) toolbar.style.display = "none";
+        }
+
+        function ensureToolbar() {
+            if (toolbar) return toolbar;
+
+            toolbar = document.createElement("div");
+            toolbar.id = "auto-toc-youdao-safari-toolbar";
+            toolbar.style.cssText = [
+                "position:fixed",
+                "z-index:2147483647",
+                "display:none",
+                "align-items:center",
+                "gap:5px",
+                "padding:5px 7px",
+                "border:1px solid rgba(127,127,127,.35)",
+                "border-radius:10px",
+                "background:Canvas",
+                "color:CanvasText",
+                "box-shadow:0 3px 14px rgba(0,0,0,.22)",
+                "font:16px/1 system-ui,-apple-system,sans-serif"
+            ].join(";");
+
+            function makeLink(icon, title, urlBuilder) {
+                const link = document.createElement("a");
+                link.textContent = icon;
+                link.title = title;
+                link.setAttribute("aria-label", title);
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.style.cssText = [
+                    "display:inline-flex",
+                    "align-items:center",
+                    "justify-content:center",
+                    "width:30px",
+                    "height:30px",
+                    "border-radius:6px",
+                    "text-decoration:none",
+                    "cursor:pointer",
+                    "color:inherit"
+                ].join(";");
+
+                link.addEventListener("mouseenter", () => {
+                    link.style.background = "rgba(127,127,127,.18)";
+                });
+                link.addEventListener("mouseleave", () => {
+                    link.style.background = "transparent";
+                });
+
+                link.addEventListener("click", (event) => {
+                    // Rebuild the URL from the captured word immediately
+                    // before navigation. Keep native anchor behavior.
+                    if (!rememberedWord) {
+                        event.preventDefault();
+                        return;
+                    }
+                    link.href = urlBuilder(rememberedWord);
+                });
+
+                link.dataset.urlKind = icon === "📖" ? "word" : "result";
+                link.dataset.urlBuilder = "";
+                link.addEventListener("pointerdown", () => {
+                    if (rememberedWord) link.href = urlBuilder(rememberedWord);
+                });
+                return link;
+            }
+
+            const wordLink = makeLink(
+                "📖",
+                "Open Youdao dictionary page",
+                (word) => `https://dict.youdao.com/w/${encodeURIComponent(word)}`
+            );
+            const resultLink = makeLink(
+                "🔎",
+                "Open Youdao result page",
+                (word) => `https://dict.youdao.com/result?word=${encodeURIComponent(word)}&lang=en`
+            );
+
+            toolbar.append(wordLink, resultLink);
+            document.body.appendChild(toolbar);
+            return toolbar;
+        }
+
+        function showForSelection() {
+            // Don't duplicate the native Youdao-extension buttons on Chrome.
+            if (document.querySelector(HOST_SELECTOR) ||
+                document.querySelector(HOST_FALLBACK_SELECTOR)) {
+                hideToolbar();
+                return;
+            }
+
+            const word = getSelectedWord();
+            if (!word) {
+                // Keep the toolbar visible while its own controls are focused.
+                return;
+            }
+
+            rememberedWord = word;
+            lastSelectedEnglishWord = word;
+
+            const selection = window.getSelection();
+            if (!selection || selection.rangeCount === 0) return;
+            const rect = selection.getRangeAt(0).getBoundingClientRect();
+            if (!rect || (!rect.width && !rect.height)) return;
+
+            const bar = ensureToolbar();
+            const links = bar.querySelectorAll("a");
+            links[0].href = `https://dict.youdao.com/w/${encodeURIComponent(word)}`;
+            links[1].href = `https://dict.youdao.com/result?word=${encodeURIComponent(word)}&lang=en`;
+            bar.style.display = "inline-flex";
+
+            // Place the toolbar just below the selected word, clamped to viewport.
+            const left = Math.max(8, Math.min(rect.left, window.innerWidth - 90));
+            const top = Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - 48));
+            bar.style.left = `${left}px`;
+            bar.style.top = `${top}px`;
+        }
+
+        const scheduleShow = () => {
+            window.setTimeout(showForSelection, 0);
+        };
+
+        document.addEventListener("mouseup", scheduleShow, true);
+        document.addEventListener("dblclick", scheduleShow, true);
+        document.addEventListener("keyup", scheduleShow, true);
+
+        document.addEventListener("pointerdown", (event) => {
+            if (toolbar && toolbar.contains(event.target)) return;
+            // Defer so a new text selection can be read after pointer events.
+            window.setTimeout(() => {
+                if (!getSelectedWord()) hideToolbar();
+            }, 0);
+        }, true);
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") hideToolbar();
+        }, true);
+    }
+
     function start() {
+        installSafariFallback();
+
         // The screenshot shows the Youdao UI inside:
         // <y... id="yd-mg-huaci-host"><#shadow-root (open)>...</#shadow-root></y...>
         // Therefore we deliberately target that host instead of trying to
