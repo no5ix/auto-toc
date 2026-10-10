@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.66
+// @version      1.67
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否. 高级技巧: 单击TOC拖动栏可以自动暗淡 TOC, 双击TOC拖动栏可以关闭 TOC .
@@ -5060,6 +5060,33 @@
     };
 
     const processedRoots = new WeakSet();
+    const cardWords = new WeakMap();
+    let lastSelectedEnglishWord = "";
+
+    function normalizeEnglishWord(value) {
+        const word = String(value || "").trim();
+        // Accept a single English word, including common apostrophe/hyphen forms.
+        return /^[A-Za-z][A-Za-z'-]*$/.test(word) ? word : "";
+    }
+
+    function readSelectedEnglishWord() {
+        try {
+            return normalizeEnglishWord(window.getSelection()?.toString());
+        } catch (_) {
+            return "";
+        }
+    }
+
+    function rememberSelection() {
+        const word = readSelectedEnglishWord();
+        if (word) lastSelectedEnglishWord = word;
+    }
+
+    // Capture the selected word before clicking a popup control can clear the selection.
+    document.addEventListener("selectionchange", rememberSelection, true);
+    document.addEventListener("mouseup", rememberSelection, true);
+    document.addEventListener("dblclick", rememberSelection, true);
+    document.addEventListener("keyup", rememberSelection, true);
 
     function addStyles(root) {
         if (!root || !root.appendChild) return;
@@ -5083,8 +5110,9 @@
                 color: #666 !important;
                 cursor: pointer !important;
                 box-sizing: border-box !important;
-                font-size: 17px !important;
+                font-size: 19px !important;
                 line-height: 1 !important;
+                font-family: system-ui, -apple-system, sans-serif !important;
             }
             .${BUTTON_CLASS}:hover {
                 background: #f0f0f0 !important;
@@ -5098,8 +5126,21 @@
     }
 
     function getYoudaoWord(card) {
-        const wordElement = card.querySelector(".hc-word");
-        return wordElement?.textContent?.trim() || "";
+        // The selected English text is authoritative. Youdao's .hc-word may
+        // show a Chinese translation (e.g. “用户脚本”) instead of the source word.
+        const selected = readSelectedEnglishWord() || lastSelectedEnglishWord;
+        if (selected) {
+            if (card) cardWords.set(card, selected);
+            return selected;
+        }
+
+        const cached = card ? cardWords.get(card) : "";
+        if (cached) return cached;
+
+        const wordElement = card?.querySelector(".hc-word");
+        const popupWord = normalizeEnglishWord(wordElement?.textContent);
+        if (popupWord && card) cardWords.set(card, popupWord);
+        return popupWord;
     }
 
     function createYoudaoLink(className, title, urlBuilder, label) {
@@ -5107,23 +5148,38 @@
         link.className = `hc-footer-action ${BUTTON_CLASS} ${className}`;
         link.title = title;
         link.setAttribute("aria-label", title);
-        link.href = "#";
         link.target = "_blank";
         link.rel = "noopener noreferrer";
         link.textContent = BUTTON_ICONS[label] || "↗";
 
-        link.addEventListener("click", (event) => {
+        function updateDestination() {
             const card = link.closest(".hc-card");
-            const word = card ? getYoudaoWord(card) : "";
+            const word = getYoudaoWord(card);
             if (!word) {
+                link.removeAttribute("href");
+                link.setAttribute("aria-disabled", "true");
+                return "";
+            }
+
+            const url = urlBuilder(word);
+            link.href = url;
+            link.removeAttribute("aria-disabled");
+            return url;
+        }
+
+        // Set a real href as soon as the buttons are created, not only after
+        // the user begins clicking. Refresh it again immediately before navigation.
+        updateDestination();
+        link.addEventListener("pointerdown", updateDestination, true);
+        link.addEventListener("mousedown", updateDestination, true);
+        link.addEventListener("focus", updateDestination, true);
+        link.addEventListener("click", (event) => {
+            const url = updateDestination();
+            if (!url) {
                 event.preventDefault();
                 return;
             }
-
-            // Build the URL at click time so the button always uses the
-            // current word, even if Youdao reuses the same popup.
-            link.href = urlBuilder(word);
-            // Let the browser perform normal anchor navigation in a new tab.
+            // Keep native anchor navigation: no window.open race or placeholder "#".
         });
 
         return link;
