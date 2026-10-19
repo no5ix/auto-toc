@@ -22,6 +22,7 @@
 // @grant        GM.xmlHttpRequest
 // @connect       translate.googleapis.com
 // @connect       api.cognitive.microsofttranslator.com
+// @connect       api-edge.cognitive.microsofttranslator.com
 // @connect       localhost
 // @connect       127.0.0.1
 // @compatible        chrome
