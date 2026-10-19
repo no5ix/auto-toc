@@ -6018,7 +6018,7 @@
         line.dataset.autoTocTranslation = "true"; line.setAttribute("aria-live", "polite");
         line.style.cssText = "display:block;box-sizing:border-box;width:auto;max-width:100%;margin-top:.28em;margin-bottom:.8em;padding:0;white-space:pre-wrap;overflow-wrap:anywhere;" +
             "margin-left:" + cs.marginLeft + ";margin-right:" + cs.marginRight + ";font-family:" + cs.fontFamily + ";font-size:" + cs.fontSize + ";font-weight:" + cs.fontWeight + ";line-height:" + cs.lineHeight + ";text-align:" + cs.textAlign + ";";
-        line.style.color = "#808080";
+        line.style.color = "#B0B0B0";
         block.insertAdjacentElement("afterend", line); return line;
     }
     function removeCurrentLine() { if (activeLine && activeLine.isConnected) activeLine.remove(); activeLine = null; activeBlock = null; }
@@ -6037,21 +6037,21 @@
         const line = makeInlineLine(info.block);
         activeLine = line;
         line.textContent = "翻译中…";
-        line.style.color = "#808080";
+        line.style.color = "#B0B0B0";
         if (settings.showOriginal) line.textContent = info.text + "\n翻译中…";
         request = new AbortController();
         const controller = request;
         translate(info.text, controller.signal).then(function (value) {
             if (sequence !== requestSequence || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
             line.textContent = settings.showOriginal ? info.text + "\n" + value : value;
-            line.style.color = "#808080";
+            line.style.color = "#B0B0B0";
             line.title = "Translation service: " + settings.provider;
             if (request === controller) request = null;
         }).catch(function (error) {
             if (error && error.name === "AbortError") return;
             if (sequence !== requestSequence || activeLine !== line || !line.isConnected) return;
             line.textContent = "翻译失败（" + settings.provider + "）：" + (error.message || "请检查设置");
-            line.style.color = "#808080";
+            line.style.color = "#B0B0B0";
             console.warn("[AutoTOC inline translation]", error);
             if (request === controller) request = null;
         });
@@ -6119,7 +6119,7 @@
     function registerMenu() {
         if (menuAdded) return; const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand : (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
         if (!reg) return; menuAdded = true;
-        [[(settings.enabled ? "✅" : "❎") + " inline hold-to-translate", toggleEnabled], ["Inline translation: choose provider", chooseProvider], ["Inline translation: configure local oMLX / Qwen", configureOmlx], ["Inline translation: set hold delay", function () { const v = prompt("Hold delay in milliseconds (100–800):", String(settings.holdDelayMs)); if (v === null) return; const n = Number(v); if (!Number.isFinite(n) || n < 100 || n > 800) return toast("Choose a delay between 100 and 800 ms."); settings.holdDelayMs = n; saveSettings(); toast("Hold delay set to " + n + " ms."); }], ["Inline translation: toggle original text in output line", function () { settings.showOriginal = !settings.showOriginal; saveSettings(); toast("Original text: " + (settings.showOriginal ? "on" : "off")); }]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
+        [[(settings.enabled ? "✅" : "❎") + " inline hold-to-translate", toggleEnabled], ["Inline translation: choose provider", chooseProvider], ["Inline translation: configure local oMLX / Qwen", configureOmlx]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
     }
     function install() {
         if (!document.documentElement) return;
