@@ -5912,10 +5912,9 @@
     const SETTINGS_KEY = NS + ":settings";
     const CACHE_PREFIX = NS + ":cache:";
     const DEFAULTS = {
-        enabled: false, provider: "google", targetLanguage: "zh-CN", holdDelayMs: 280,
+        enabled: true, provider: "microsoft", targetLanguage: "zh-CN", holdDelayMs: 280,
         microsoftKey: "", microsoftRegion: "",
         omlxUrl: "http://127.0.0.1:8000/v1/chat/completions", omlxModel: "Qwen", omlxKey: "",
-        macBridgeUrl: "http://127.0.0.1:8787/translate", macBridgeToken: "",
         showOriginal: false
     };
     const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary";
@@ -5926,9 +5925,17 @@
     const cache = new Map();
 
     function loadSettings() {
-        try { const v = GM_getValue(SETTINGS_KEY, null); if (v && typeof v === "object") return Object.assign({}, DEFAULTS, v); } catch (_) {}
-        try { const v = localStorage.getItem(SETTINGS_KEY); if (v) return Object.assign({}, DEFAULTS, JSON.parse(v)); } catch (_) {}
-        return Object.assign({}, DEFAULTS);
+        let stored = null;
+        try { const v = GM_getValue(SETTINGS_KEY, null); if (v && typeof v === "object") stored = v; } catch (_) {}
+        if (!stored) {
+            try { const v = localStorage.getItem(SETTINGS_KEY); if (v) stored = JSON.parse(v); } catch (_) {}
+        }
+        // Upgrade existing installs to free Microsoft translation and enabled-by-default
+        // behavior, while preserving explicitly configured provider choices and oMLX keys.
+        const settings = Object.assign({}, DEFAULTS, stored || {});
+        if (!stored || stored.enabled == null) settings.enabled = true;
+        if (!stored || stored.provider == null || stored.provider === "google") settings.provider = "microsoft";
+        return settings;
     }
     function saveSettings() { try { GM_setValue(SETTINGS_KEY, settings); } catch (_) {} try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {} }
     function toast(message) {
@@ -5968,12 +5975,25 @@
         return requestText({ url: url, signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = Array.isArray(j[0]) ? j[0].map(function (p) { return Array.isArray(p) ? (p[0] || "") : ""; }).join("") : ""; if (!t.trim()) throw new Error("Google returned an empty translation."); return t.trim(); });
     }
     function translateMicrosoft(text, signal) {
-        if (!settings.microsoftKey.trim()) return Promise.reject(new Error("Configure your Azure Translator subscription key in the userscript menu first."));
+        // Use the keyless endpoint used by Microsoft's free Translator web experience,
+        // rather than the Azure subscription-key API.
         const lang = settings.targetLanguage === "zh-CN" ? "zh-Hans" : settings.targetLanguage;
-        const headers = { "Content-Type": "application/json", "Ocp-Apim-Subscription-Key": settings.microsoftKey.trim() };
-        if (settings.microsoftRegion.trim()) headers["Ocp-Apim-Subscription-Region"] = settings.microsoftRegion.trim();
-        const url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" + encodeURIComponent(lang);
-        return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify([{ Text: text }]), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j && j[0] && j[0].translations && j[0].translations[0] && j[0].translations[0].text; if (!t) throw new Error("Microsoft Translator returned no translation."); return t; });
+        const url = "https://api-edge.cognitive.microsofttranslator.com/translate?from=auto&to=" +
+            encodeURIComponent(lang) + "&api-version=3.0&textType=html";
+        return requestText({
+            url: url,
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            data: JSON.stringify([{ Text: text }]),
+            signal: signal
+        }).then(function (raw) {
+            const j = JSON.parse(raw);
+            const t = j && j[0] && j[0].translations && j[0].translations[0] && j[0].translations[0].text;
+            if (!t) throw new Error("Microsoft Translator returned no translation.");
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = t;
+            return wrapper.textContent || wrapper.innerText || t;
+        });
     }
     function translateOmlx(text, signal) {
         const url = settings.omlxUrl.trim(); if (!/^https?:\/\//i.test(url)) return Promise.reject(new Error("Set a valid oMLX OpenAI-compatible chat-completions URL."));
@@ -5981,18 +6001,12 @@
         const data = { model: settings.omlxModel.trim() || "Qwen", stream: false, temperature: 0.1, messages: [{ role: "system", content: "Translate the user text into Simplified Chinese. Return only the translation. Preserve meaning, names, URLs, and formatting; do not explain." }, { role: "user", content: text }] };
         return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify(data), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || j && j.message && j.message.content || j && j.response; if (!t || !String(t).trim()) throw new Error("oMLX returned no translation; check endpoint/model/API compatibility."); return String(t).trim(); });
     }
-    function translateMacBridge(text, signal) {
-        const url = settings.macBridgeUrl.trim(); if (!url) return Promise.reject(new Error("macOS native Translate needs a local Shortcut/bridge. A webpage userscript cannot call Apple native Translate directly."));
-        const headers = { "Content-Type": "application/json" }; if (settings.macBridgeToken.trim()) headers.Authorization = "Bearer " + settings.macBridgeToken.trim();
-        return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify({ text: text, sourceLanguage: "auto", targetLanguage: settings.targetLanguage, provider: "macos-translate" }), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j.translation || j.translatedText || j.text; if (typeof t !== "string" || !t.trim()) throw new Error("Bridge must return JSON with translation, translatedText, or text."); return t.trim(); });
-    }
     function translate(text, signal) {
         const cached = getCache(text); if (cached) return Promise.resolve(cached);
         let task;
         if (settings.provider === "google") task = translateGoogle(text, signal);
         else if (settings.provider === "microsoft") task = translateMicrosoft(text, signal);
         else if (settings.provider === "omlx") task = translateOmlx(text, signal);
-        else if (settings.provider === "macos") task = translateMacBridge(text, signal);
         else return Promise.reject(new Error("Unknown translation provider."));
         return task.then(function (value) { setCache(text, value); return value; });
     }
@@ -6040,14 +6054,9 @@
     }
     function onPointerUp(event) { if (activePointer === null || (event && event.pointerId !== activePointer)) return; cancelActive(); }
     function chooseProvider() {
-        const value = prompt("Translation provider: google, microsoft, omlx, macos", settings.provider); if (!value) return; const p = value.trim().toLowerCase();
-        if (["google", "microsoft", "omlx", "macos"].indexOf(p) < 0) return toast("Use google, microsoft, omlx, or macos.");
+        const value = prompt("Translation provider: microsoft or omlx", settings.provider); if (!value) return; const p = value.trim().toLowerCase();
+        if (["microsoft", "omlx"].indexOf(p) < 0) return toast("Use microsoft or omlx.");
         settings.provider = p; saveSettings(); toast("Translation provider set to " + p + ".");
-    }
-    function configureMicrosoft() {
-        const key = prompt("Azure Translator subscription key:", settings.microsoftKey); if (key === null) return;
-        const region = prompt("Azure Translator resource region (if required):", settings.microsoftRegion); if (region === null) return;
-        settings.microsoftKey = key.trim(); settings.microsoftRegion = region.trim(); saveSettings(); toast("Microsoft Translator settings saved.");
     }
     function configureOmlx() {
         const url = prompt("oMLX OpenAI-compatible /v1/chat/completions URL:", settings.omlxUrl); if (url === null) return;
@@ -6055,16 +6064,11 @@
         const key = prompt("Optional API key (blank if none):", settings.omlxKey); if (key === null) return;
         settings.omlxUrl = url.trim(); settings.omlxModel = model.trim(); settings.omlxKey = key.trim(); saveSettings(); toast("oMLX / Qwen settings saved.");
     }
-    function configureMacBridge() {
-        const url = prompt("Local macOS Translate Shortcut/bridge URL. It must accept POST {text, sourceLanguage, targetLanguage} and return JSON {translation}.", settings.macBridgeUrl); if (url === null) return;
-        const token = prompt("Optional bridge bearer token:", settings.macBridgeToken); if (token === null) return;
-        settings.macBridgeUrl = url.trim(); settings.macBridgeToken = token.trim(); saveSettings(); toast("macOS Translate bridge settings saved.");
-    }
     function toggleEnabled() { settings.enabled = !settings.enabled; saveSettings(); if (!settings.enabled) cancelActive(); toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled."); }
     function registerMenu() {
         if (menuAdded) return; const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand : (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
         if (!reg) return; menuAdded = true;
-        [[(settings.enabled ? "Disable" : "Enable") + " inline hold-to-translate", toggleEnabled], ["Inline translation: choose provider", chooseProvider], ["Inline translation: configure Microsoft", configureMicrosoft], ["Inline translation: configure local oMLX / Qwen", configureOmlx], ["Inline translation: configure macOS Translate bridge", configureMacBridge], ["Inline translation: set hold delay", function () { const v = prompt("Hold delay in milliseconds (100–800):", String(settings.holdDelayMs)); if (v === null) return; const n = Number(v); if (!Number.isFinite(n) || n < 100 || n > 800) return toast("Choose a delay between 100 and 800 ms."); settings.holdDelayMs = n; saveSettings(); toast("Hold delay set to " + n + " ms."); }], ["Inline translation: toggle original text in output line", function () { settings.showOriginal = !settings.showOriginal; saveSettings(); toast("Original text: " + (settings.showOriginal ? "on" : "off")); }]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
+        [[(settings.enabled ? "✅" : "❎") + " inline hold-to-translate", toggleEnabled], ["Inline translation: choose provider", chooseProvider], ["Inline translation: configure local oMLX / Qwen", configureOmlx], ["Inline translation: set hold delay", function () { const v = prompt("Hold delay in milliseconds (100–800):", String(settings.holdDelayMs)); if (v === null) return; const n = Number(v); if (!Number.isFinite(n) || n < 100 || n > 800) return toast("Choose a delay between 100 and 800 ms."); settings.holdDelayMs = n; saveSettings(); toast("Hold delay set to " + n + " ms."); }], ["Inline translation: toggle original text in output line", function () { settings.showOriginal = !settings.showOriginal; saveSettings(); toast("Original text: " + (settings.showOriginal ? "on" : "off")); }]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
     }
     function install() {
         if (!document.documentElement) return;
