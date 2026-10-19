@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.79
+// @version      1.80
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -18,6 +18,12 @@
 // @grant        GM.getValue
 // @grant        GM_addStyle
 // @grant        GM.addStyle
+// @grant        GM_xmlhttpRequest
+// @grant        GM.xmlHttpRequest
+// @connect       translate.googleapis.com
+// @connect       api.cognitive.microsofttranslator.com
+// @connect       localhost
+// @connect       127.0.0.1
 // @compatible        chrome
 // @compatible        edge
 // @compatible        safari
@@ -5894,3 +5900,177 @@
 // pass: https://mp.weixin.qq.com/s/f3TKUPy63-U61wjfvIC4zA
 // pass: https://mp.weixin.qq.com/s/CrmouLum_XHlRmjnKW8BrQ
 
+
+// ============================================================
+// Inline hold-to-translate (Immersive Translate-inspired)
+// Normal inline translation sibling; not a floating card.
+// ============================================================
+(function initInlineHoldTranslation() {
+    "use strict";
+
+    const NS = "auto-toc-inline-translate";
+    const SETTINGS_KEY = NS + ":settings";
+    const CACHE_PREFIX = NS + ":cache:";
+    const DEFAULTS = {
+        enabled: false, provider: "google", targetLanguage: "zh-CN", holdDelayMs: 280,
+        microsoftKey: "", microsoftRegion: "",
+        omlxUrl: "http://127.0.0.1:8000/v1/chat/completions", omlxModel: "Qwen", omlxKey: "",
+        macBridgeUrl: "http://127.0.0.1:8787/translate", macBridgeToken: "",
+        showOriginal: false
+    };
+    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary";
+    const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,a,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
+    let settings = loadSettings();
+    let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
+    let lastPoint = { x: 0, y: 0 }, menuAdded = false;
+    const cache = new Map();
+
+    function loadSettings() {
+        try { const v = GM_getValue(SETTINGS_KEY, null); if (v && typeof v === "object") return Object.assign({}, DEFAULTS, v); } catch (_) {}
+        try { const v = localStorage.getItem(SETTINGS_KEY); if (v) return Object.assign({}, DEFAULTS, JSON.parse(v)); } catch (_) {}
+        return Object.assign({}, DEFAULTS);
+    }
+    function saveSettings() { try { GM_setValue(SETTINGS_KEY, settings); } catch (_) {} try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {} }
+    function toast(message) {
+        let el = document.getElementById(NS + "-notice");
+        if (!el) { el = document.createElement("div"); el.id = NS + "-notice"; el.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:2147483647;background:rgba(32,32,36,.95);color:#fff;padding:9px 13px;border-radius:10px;font:13px/1.45 system-ui,sans-serif;box-shadow:0 5px 20px #0003;pointer-events:none;max-width:80vw"; document.documentElement.appendChild(el); }
+        el.textContent = message; el.style.opacity = "1"; clearTimeout(el.__hide); el.__hide = setTimeout(function () { el.style.opacity = "0"; }, 3200);
+    }
+    function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
+    function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+    function getBlock(target) {
+        if (!(target instanceof Element) || target.closest(IGNORE)) return null;
+        const block = target.closest(BLOCKS); if (!block || !block.isConnected || block.closest(IGNORE) || block.dataset.autoTocTranslation === "true") return null;
+        const text = normalize(block.innerText || block.textContent); if (text.length < 4 || text.length > 1500 || !/[A-Za-z]/.test(text)) return null;
+        if (block.tagName === "PRE" && text.length > 700) return null;
+        const rect = block.getBoundingClientRect(); if (rect.width < 50 || rect.height < 8) return null;
+        return { block: block, text: text };
+    }
+    function getCache(text) { if (cache.has(text)) return cache.get(text); try { const v = localStorage.getItem(CACHE_PREFIX + hash(text)); if (v) { cache.set(text, v); return v; } } catch (_) {} return ""; }
+    function setCache(text, value) { cache.set(text, value); if (cache.size > 300) cache.delete(cache.keys().next().value); try { localStorage.setItem(CACHE_PREFIX + hash(text), value); } catch (_) {} }
+    function requestText(options) {
+        return new Promise(function (resolve, reject) {
+            const gm = typeof GM_xmlhttpRequest === "function" ? GM_xmlhttpRequest : (typeof GM !== "undefined" && typeof GM.xmlHttpRequest === "function" ? GM.xmlHttpRequest.bind(GM) : null);
+            if (!gm) { fetch(options.url, { method: options.method || "GET", headers: options.headers || {}, body: options.data, signal: options.signal, credentials: "omit" }).then(async function (response) { const body = await response.text(); if (!response.ok) throw new Error("HTTP " + response.status + ": " + body.slice(0, 120)); resolve(body); }).catch(reject); return; }
+            if (options.signal && options.signal.aborted) { reject(new DOMException("Aborted", "AbortError")); return; }
+            let req; const abort = function () { try { if (req) req.abort(); } catch (_) {} reject(new DOMException("Aborted", "AbortError")); };
+            if (options.signal) options.signal.addEventListener("abort", abort, { once: true });
+            req = gm({ method: options.method || "GET", url: options.url, headers: options.headers || {}, data: options.data, timeout: 25000,
+                onload: function (r) { if (options.signal) options.signal.removeEventListener("abort", abort); if (r.status >= 200 && r.status < 300) resolve(r.responseText); else reject(new Error("HTTP " + r.status + ": " + String(r.responseText || "").slice(0, 160))); },
+                onerror: function () { if (options.signal) options.signal.removeEventListener("abort", abort); reject(new Error("Network request failed; check provider settings and availability.")); },
+                ontimeout: function () { reject(new Error("Translation request timed out.")); },
+                onabort: function () { reject(new DOMException("Aborted", "AbortError")); }
+            });
+        });
+    }
+    function translateGoogle(text, signal) {
+        const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + encodeURIComponent(settings.targetLanguage) + "&dt=t&q=" + encodeURIComponent(text);
+        return requestText({ url: url, signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = Array.isArray(j[0]) ? j[0].map(function (p) { return Array.isArray(p) ? (p[0] || "") : ""; }).join("") : ""; if (!t.trim()) throw new Error("Google returned an empty translation."); return t.trim(); });
+    }
+    function translateMicrosoft(text, signal) {
+        if (!settings.microsoftKey.trim()) return Promise.reject(new Error("Configure your Azure Translator subscription key in the userscript menu first."));
+        const lang = settings.targetLanguage === "zh-CN" ? "zh-Hans" : settings.targetLanguage;
+        const headers = { "Content-Type": "application/json", "Ocp-Apim-Subscription-Key": settings.microsoftKey.trim() };
+        if (settings.microsoftRegion.trim()) headers["Ocp-Apim-Subscription-Region"] = settings.microsoftRegion.trim();
+        const url = "https://api.cognitive.microsofttranslator.com/translate?api-version=3.0&to=" + encodeURIComponent(lang);
+        return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify([{ Text: text }]), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j && j[0] && j[0].translations && j[0].translations[0] && j[0].translations[0].text; if (!t) throw new Error("Microsoft Translator returned no translation."); return t; });
+    }
+    function translateOmlx(text, signal) {
+        const url = settings.omlxUrl.trim(); if (!/^https?:\/\//i.test(url)) return Promise.reject(new Error("Set a valid oMLX OpenAI-compatible chat-completions URL."));
+        const headers = { "Content-Type": "application/json" }; if (settings.omlxKey.trim()) headers.Authorization = "Bearer " + settings.omlxKey.trim();
+        const data = { model: settings.omlxModel.trim() || "Qwen", stream: false, temperature: 0.1, messages: [{ role: "system", content: "Translate the user text into Simplified Chinese. Return only the translation. Preserve meaning, names, URLs, and formatting; do not explain." }, { role: "user", content: text }] };
+        return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify(data), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || j && j.message && j.message.content || j && j.response; if (!t || !String(t).trim()) throw new Error("oMLX returned no translation; check endpoint/model/API compatibility."); return String(t).trim(); });
+    }
+    function translateMacBridge(text, signal) {
+        const url = settings.macBridgeUrl.trim(); if (!url) return Promise.reject(new Error("macOS native Translate needs a local Shortcut/bridge. A webpage userscript cannot call Apple native Translate directly."));
+        const headers = { "Content-Type": "application/json" }; if (settings.macBridgeToken.trim()) headers.Authorization = "Bearer " + settings.macBridgeToken.trim();
+        return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify({ text: text, sourceLanguage: "auto", targetLanguage: settings.targetLanguage, provider: "macos-translate" }), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j.translation || j.translatedText || j.text; if (typeof t !== "string" || !t.trim()) throw new Error("Bridge must return JSON with translation, translatedText, or text."); return t.trim(); });
+    }
+    function translate(text, signal) {
+        const cached = getCache(text); if (cached) return Promise.resolve(cached);
+        let task;
+        if (settings.provider === "google") task = translateGoogle(text, signal);
+        else if (settings.provider === "microsoft") task = translateMicrosoft(text, signal);
+        else if (settings.provider === "omlx") task = translateOmlx(text, signal);
+        else if (settings.provider === "macos") task = translateMacBridge(text, signal);
+        else return Promise.reject(new Error("Unknown translation provider."));
+        return task.then(function (value) { setCache(text, value); return value; });
+    }
+    function makeInlineLine(block) {
+        const next = block.nextElementSibling; if (next && next.dataset.autoTocTranslation === "true") return next;
+        const cs = getComputedStyle(block); const line = document.createElement("div");
+        line.dataset.autoTocTranslation = "true"; line.setAttribute("aria-live", "polite");
+        line.style.cssText = "display:block;box-sizing:border-box;width:auto;max-width:100%;margin-top:.28em;margin-bottom:.8em;padding:0;white-space:pre-wrap;overflow-wrap:anywhere;" +
+            "margin-left:" + cs.marginLeft + ";margin-right:" + cs.marginRight + ";font-family:" + cs.fontFamily + ";font-size:" + cs.fontSize + ";font-weight:" + cs.fontWeight + ";line-height:" + cs.lineHeight + ";text-align:" + cs.textAlign + ";";
+        line.style.color = matchMedia("(prefers-color-scheme: dark)").matches ? "#86d7ad" : "#218354";
+        block.insertAdjacentElement("afterend", line); return line;
+    }
+    function removeCurrentLine() { if (activeLine && activeLine.isConnected) activeLine.remove(); activeLine = null; activeBlock = null; }
+    function cancelPending() { if (holdTimer) clearTimeout(holdTimer); holdTimer = null; }
+    function cancelActive() { cancelPending(); activePointer = null; requestSequence++; if (request) { request.abort(); request = null; } removeCurrentLine(); }
+    function showTranslation(info, sequence) {
+        if (!info.block.isConnected || activePointer === null) return;
+        activeBlock = info.block; const line = makeInlineLine(info.block); activeLine = line; line.textContent = "翻译中…";
+        if (settings.showOriginal) line.textContent = info.text + "\n翻译中…";
+        request = new AbortController(); const controller = request;
+        translate(info.text, controller.signal).then(function (value) {
+            if (sequence !== requestSequence || activePointer === null || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
+            line.textContent = settings.showOriginal ? info.text + "\n" + value : value;
+            line.title = "Translation service: " + settings.provider;
+        }).catch(function (error) {
+            if (error && error.name === "AbortError") return;
+            if (sequence !== requestSequence || activePointer === null || activeLine !== line || !line.isConnected) return;
+            line.textContent = "翻译失败（" + settings.provider + "）：" + (error.message || "请检查设置");
+            line.style.color = matchMedia("(prefers-color-scheme: dark)").matches ? "#ffb4ab" : "#b42318";
+            console.warn("[AutoTOC inline translation]", error);
+        });
+    }
+    function onPointerDown(event) {
+        if (!settings.enabled || event.button !== 0 || !event.isPrimary) return;
+        const info = getBlock(event.target); if (!info) return;
+        cancelActive(); activePointer = event.pointerId; lastPointer = { x: event.clientX, y: event.clientY }; const id = activePointer;
+        holdTimer = setTimeout(function () { holdTimer = null; if (!settings.enabled || activePointer !== id) return; const infoNow = getBlock(document.elementFromPoint(lastPointer.x, lastPointer.y)); if (!infoNow) return; showTranslation(infoNow, ++requestSequence); }, Math.max(100, Math.min(800, Number(settings.holdDelayMs) || 280)));
+    }
+    function onPointerMove(event) {
+        lastPointer = { x: event.clientX, y: event.clientY }; if (!settings.enabled || activePointer === null || event.pointerId !== activePointer) return;
+        const info = getBlock(document.elementFromPoint(event.clientX, event.clientY));
+        if (!info) { cancelPending(); if (request) request.abort(); removeCurrentLine(); return; }
+        if (holdTimer) return;
+        if (activeBlock !== info.block) { if (request) request.abort(); requestSequence++; removeCurrentLine(); const id = ++requestSequence; holdTimer = setTimeout(function () { holdTimer = null; if (activePointer !== null) showTranslation(info, id); }, Math.max(100, Math.min(800, Number(settings.holdDelayMs) || 280))); }
+    }
+    function onPointerUp(event) { if (activePointer === null || (event && event.pointerId !== activePointer)) return; cancelActive(); }
+    function chooseProvider() {
+        const value = prompt("Translation provider: google, microsoft, omlx, macos", settings.provider); if (!value) return; const p = value.trim().toLowerCase();
+        if (["google", "microsoft", "omlx", "macos"].indexOf(p) < 0) return toast("Use google, microsoft, omlx, or macos.");
+        settings.provider = p; saveSettings(); toast("Translation provider set to " + p + ".");
+    }
+    function configureMicrosoft() {
+        const key = prompt("Azure Translator subscription key:", settings.microsoftKey); if (key === null) return;
+        const region = prompt("Azure Translator resource region (if required):", settings.microsoftRegion); if (region === null) return;
+        settings.microsoftKey = key.trim(); settings.microsoftRegion = region.trim(); saveSettings(); toast("Microsoft Translator settings saved.");
+    }
+    function configureOmlx() {
+        const url = prompt("oMLX OpenAI-compatible /v1/chat/completions URL:", settings.omlxUrl); if (url === null) return;
+        const model = prompt("Model ID served by oMLX (Qwen model name):", settings.omlxModel); if (model === null) return;
+        const key = prompt("Optional API key (blank if none):", settings.omlxKey); if (key === null) return;
+        settings.omlxUrl = url.trim(); settings.omlxModel = model.trim(); settings.omlxKey = key.trim(); saveSettings(); toast("oMLX / Qwen settings saved.");
+    }
+    function configureMacBridge() {
+        const url = prompt("Local macOS Translate Shortcut/bridge URL. It must accept POST {text, sourceLanguage, targetLanguage} and return JSON {translation}.", settings.macBridgeUrl); if (url === null) return;
+        const token = prompt("Optional bridge bearer token:", settings.macBridgeToken); if (token === null) return;
+        settings.macBridgeUrl = url.trim(); settings.macBridgeToken = token.trim(); saveSettings(); toast("macOS Translate bridge settings saved.");
+    }
+    function toggleEnabled() { settings.enabled = !settings.enabled; saveSettings(); if (!settings.enabled) cancelActive(); toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled."); }
+    function registerMenu() {
+        if (menuAdded) return; const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand : (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
+        if (!reg) return; menuAdded = true;
+        [[(settings.enabled ? "Disable" : "Enable") + " inline hold-to-translate", toggleEnabled], ["Inline translation: choose provider", chooseProvider], ["Inline translation: configure Microsoft", configureMicrosoft], ["Inline translation: configure local oMLX / Qwen", configureOmlx], ["Inline translation: configure macOS Translate bridge", configureMacBridge], ["Inline translation: set hold delay", function () { const v = prompt("Hold delay in milliseconds (100–800):", String(settings.holdDelayMs)); if (v === null) return; const n = Number(v); if (!Number.isFinite(n) || n < 100 || n > 800) return toast("Choose a delay between 100 and 800 ms."); settings.holdDelayMs = n; saveSettings(); toast("Hold delay set to " + n + " ms."); }], ["Inline translation: toggle original text in output line", function () { settings.showOriginal = !settings.showOriginal; saveSettings(); toast("Original text: " + (settings.showOriginal ? "on" : "off")); }]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
+    }
+    function install() {
+        if (!document.documentElement) return;
+        if (!document.getElementById(NS + "-style")) { const style = document.createElement("style"); style.id = NS + "-style"; style.textContent = "[data-auto-toc-translation=true]{isolation:isolate;user-select:text;-webkit-user-select:text;}"; (document.head || document.documentElement).appendChild(style); }
+        registerMenu(); document.addEventListener("pointerdown", onPointerDown, true); document.addEventListener("pointermove", onPointerMove, true); document.addEventListener("pointerup", onPointerUp, true); document.addEventListener("pointercancel", onPointerUp, true);
+        document.addEventListener("mouseup", function () { if (activePointer !== null) cancelActive(); }, true); window.addEventListener("blur", cancelActive); window.addEventListener("keydown", function (e) { if (e.key === "Escape") cancelActive(); });
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true }); else install();
+})();
