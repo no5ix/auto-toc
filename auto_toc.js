@@ -6012,7 +6012,8 @@
         return task.then(function (value) { setCache(text, value); return value; });
     }
     function makeInlineLine(block) {
-        const next = block.nextElementSibling; if (next && next.dataset.autoTocTranslation === "true") return next;
+        const next = block.nextElementSibling;
+        if (next && next.dataset.autoTocTranslation === "true") return next;
         const cs = getComputedStyle(block); const line = document.createElement("div");
         line.dataset.autoTocTranslation = "true"; line.setAttribute("aria-live", "polite");
         line.style.cssText = "display:block;box-sizing:border-box;width:auto;max-width:100%;margin-top:.28em;margin-bottom:.8em;padding:0;white-space:pre-wrap;overflow-wrap:anywhere;" +
@@ -6062,7 +6063,12 @@
     function onPointerDown(event) {
         if (!settings.enabled || event.button !== 0 || !event.isPrimary || hasSelectedText()) return;
         const info = getBlock(event.target); if (!info) return;
-        cancelActive();
+        cancelPending();
+        activePointer = null;
+        requestSequence++;
+        if (request) { request.abort(); request = null; }
+        activeBlock = null;
+        activeLine = null;
         activePointer = event.pointerId;
         lastPointer = { x: event.clientX, y: event.clientY };
         pointerDownPoint = { x: event.clientX, y: event.clientY };
@@ -6088,6 +6094,7 @@
         const dy = Math.abs(event.clientY - pointerDownPoint.y);
         if (hasSelectedText() || dx > 4 || dy > 4) {
             cancelPending();
+            activePointer = null;
             return;
         }
     }
