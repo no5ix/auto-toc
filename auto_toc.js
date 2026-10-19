@@ -5922,7 +5922,7 @@
     const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,a,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
     let settings = loadSettings();
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
-    let lastPoint = { x: 0, y: 0 }, menuAdded = false;
+    let lastPointer = { x: 0, y: 0 }, menuAdded = false;
     const cache = new Map();
 
     function loadSettings() {
