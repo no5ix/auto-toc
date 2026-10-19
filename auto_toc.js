@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.80
+// @version      1.81
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -5064,17 +5064,17 @@
     var menu_ALL = [
             [
                 "menu_GAEEScript_auto_open_toc",
-                "Enable TOC On Current Site(当前网站TOC开关)",
+                "Enable TOC On Current Site",
                 {},
             ],
             [
                 "menu_GAEEScript_auto_collapse_toc",
-                "Collapse TOC on current site(当前网站TOC自动折叠开关)",
+                "Collapse TOC on current site",
                 {},
             ],
             [
                 "menu_GAEEScript_shrink_img",
-                "Touch Fish On Current Site(当前网站摸鱼开关)",
+                "Touch Fish On Current Site",
                 {},
             ],
         ],
@@ -6119,7 +6119,7 @@
     function registerMenu() {
         if (menuAdded) return; const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand : (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
         if (!reg) return; menuAdded = true;
-        [[(settings.enabled ? "✅" : "❎") + " inline hold-to-translate", toggleEnabled], ["Inline translation: choose provider", chooseProvider], ["Inline translation: configure local oMLX / Qwen", configureOmlx]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
+        [[(settings.enabled ? "✅" : "❎") + " HTT (hold-to-translate)", toggleEnabled], ["🔀 HTT choose provider", chooseProvider], ["⚙️ HTT configure local LLM", configureOmlx]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
     }
     function install() {
         if (!document.documentElement) return;
