@@ -5922,7 +5922,7 @@
     const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,a,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
     let settings = loadSettings();
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
-    let lastPointer = { x: 0, y: 0 }, menuAdded = false;
+    let pointerPosition = { x: 0, y: 0 }, menuAdded = false;
     const cache = new Map();
 
     function loadSettings() {
@@ -6028,11 +6028,11 @@
     function onPointerDown(event) {
         if (!settings.enabled || event.button !== 0 || !event.isPrimary) return;
         const info = getBlock(event.target); if (!info) return;
-        cancelActive(); activePointer = event.pointerId; lastPointer = { x: event.clientX, y: event.clientY }; const id = activePointer;
-        holdTimer = setTimeout(function () { holdTimer = null; if (!settings.enabled || activePointer !== id) return; const infoNow = getBlock(document.elementFromPoint(lastPointer.x, lastPointer.y)); if (!infoNow) return; showTranslation(infoNow, ++requestSequence); }, Math.max(100, Math.min(800, Number(settings.holdDelayMs) || 280)));
+        cancelActive(); activePointer = event.pointerId; pointerPosition = { x: event.clientX, y: event.clientY }; const id = activePointer;
+        holdTimer = setTimeout(function () { holdTimer = null; if (!settings.enabled || activePointer !== id) return; const infoNow = getBlock(document.elementFromPoint(pointerPosition.x, pointerPosition.y)); if (!infoNow) return; showTranslation(infoNow, ++requestSequence); }, Math.max(100, Math.min(800, Number(settings.holdDelayMs) || 280)));
     }
     function onPointerMove(event) {
-        lastPointer = { x: event.clientX, y: event.clientY }; if (!settings.enabled || activePointer === null || event.pointerId !== activePointer) return;
+        pointerPosition = { x: event.clientX, y: event.clientY }; if (!settings.enabled || activePointer === null || event.pointerId !== activePointer) return;
         const info = getBlock(document.elementFromPoint(event.clientX, event.clientY));
         if (!info) { cancelPending(); if (request) request.abort(); removeCurrentLine(); return; }
         if (holdTimer) return;
