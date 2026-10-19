@@ -5922,7 +5922,7 @@
     const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,a,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
     let settings = loadSettings();
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
-    let lastPointer = { x: 0, y: 0 }, menuAdded = false;
+    let lastPointer = { x: 0, y: 0 }, pointerDownPoint = { x: 0, y: 0 }, menuAdded = false;
     const cache = new Map();
 
     function loadSettings() {
@@ -6017,43 +6017,86 @@
         line.dataset.autoTocTranslation = "true"; line.setAttribute("aria-live", "polite");
         line.style.cssText = "display:block;box-sizing:border-box;width:auto;max-width:100%;margin-top:.28em;margin-bottom:.8em;padding:0;white-space:pre-wrap;overflow-wrap:anywhere;" +
             "margin-left:" + cs.marginLeft + ";margin-right:" + cs.marginRight + ";font-family:" + cs.fontFamily + ";font-size:" + cs.fontSize + ";font-weight:" + cs.fontWeight + ";line-height:" + cs.lineHeight + ";text-align:" + cs.textAlign + ";";
-        line.style.color = matchMedia("(prefers-color-scheme: dark)").matches ? "#86d7ad" : "#218354";
+        line.style.color = "#808080";
         block.insertAdjacentElement("afterend", line); return line;
     }
     function removeCurrentLine() { if (activeLine && activeLine.isConnected) activeLine.remove(); activeLine = null; activeBlock = null; }
     function cancelPending() { if (holdTimer) clearTimeout(holdTimer); holdTimer = null; }
-    function cancelActive() { cancelPending(); activePointer = null; requestSequence++; if (request) { request.abort(); request = null; } removeCurrentLine(); }
+    function cancelActive() {
+        cancelPending();
+        activePointer = null;
+        requestSequence++;
+        if (request) { request.abort(); request = null; }
+        // Translation output is intentionally not removed here: successful results
+        // remain inline until the page is reloaded.
+    }
     function showTranslation(info, sequence) {
-        if (!info.block.isConnected || activePointer === null) return;
-        activeBlock = info.block; const line = makeInlineLine(info.block); activeLine = line; line.textContent = "翻译中…";
+        if (!info.block.isConnected) return;
+        activeBlock = info.block;
+        const line = makeInlineLine(info.block);
+        activeLine = line;
+        line.textContent = "翻译中…";
+        line.style.color = "#808080";
         if (settings.showOriginal) line.textContent = info.text + "\n翻译中…";
-        request = new AbortController(); const controller = request;
+        request = new AbortController();
+        const controller = request;
         translate(info.text, controller.signal).then(function (value) {
-            if (sequence !== requestSequence || activePointer === null || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
+            if (sequence !== requestSequence || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
             line.textContent = settings.showOriginal ? info.text + "\n" + value : value;
+            line.style.color = "#808080";
             line.title = "Translation service: " + settings.provider;
+            if (request === controller) request = null;
         }).catch(function (error) {
             if (error && error.name === "AbortError") return;
-            if (sequence !== requestSequence || activePointer === null || activeLine !== line || !line.isConnected) return;
+            if (sequence !== requestSequence || activeLine !== line || !line.isConnected) return;
             line.textContent = "翻译失败（" + settings.provider + "）：" + (error.message || "请检查设置");
-            line.style.color = matchMedia("(prefers-color-scheme: dark)").matches ? "#ffb4ab" : "#b42318";
+            line.style.color = "#808080";
             console.warn("[AutoTOC inline translation]", error);
+            if (request === controller) request = null;
         });
     }
+    function hasSelectedText() {
+        const selection = window.getSelection && window.getSelection();
+        return !!(selection && !selection.isCollapsed && String(selection).trim());
+    }
     function onPointerDown(event) {
-        if (!settings.enabled || event.button !== 0 || !event.isPrimary) return;
+        if (!settings.enabled || event.button !== 0 || !event.isPrimary || hasSelectedText()) return;
         const info = getBlock(event.target); if (!info) return;
-        cancelActive(); activePointer = event.pointerId; lastPointer = { x: event.clientX, y: event.clientY }; const id = activePointer;
-        holdTimer = setTimeout(function () { holdTimer = null; if (!settings.enabled || activePointer !== id) return; const infoNow = getBlock(document.elementFromPoint(lastPointer.x, lastPointer.y)); if (!infoNow) return; showTranslation(infoNow, ++requestSequence); }, Math.max(100, Math.min(800, Number(settings.holdDelayMs) || 280)));
+        cancelActive();
+        activePointer = event.pointerId;
+        lastPointer = { x: event.clientX, y: event.clientY };
+        pointerDownPoint = { x: event.clientX, y: event.clientY };
+        const id = activePointer;
+        holdTimer = setTimeout(function () {
+            holdTimer = null;
+            if (!settings.enabled || activePointer !== id || hasSelectedText()) return;
+            // A drag that starts selecting text must never trigger translation.
+            const dx = Math.abs(lastPointer.x - pointerDownPoint.x);
+            const dy = Math.abs(lastPointer.y - pointerDownPoint.y);
+            if (dx > 4 || dy > 4) return;
+            const infoNow = getBlock(document.elementFromPoint(lastPointer.x, lastPointer.y));
+            if (!infoNow) return;
+            showTranslation(infoNow, ++requestSequence);
+        }, Math.max(100, Math.min(800, Number(settings.holdDelayMs) || 280)));
     }
     function onPointerMove(event) {
-        lastPointer = { x: event.clientX, y: event.clientY }; if (!settings.enabled || activePointer === null || event.pointerId !== activePointer) return;
-        const info = getBlock(document.elementFromPoint(event.clientX, event.clientY));
-        if (!info) { cancelPending(); if (request) request.abort(); removeCurrentLine(); return; }
-        if (holdTimer) return;
-        if (activeBlock !== info.block) { if (request) request.abort(); requestSequence++; removeCurrentLine(); const id = ++requestSequence; holdTimer = setTimeout(function () { holdTimer = null; if (activePointer !== null) showTranslation(info, id); }, Math.max(100, Math.min(800, Number(settings.holdDelayMs) || 280))); }
+        lastPointer = { x: event.clientX, y: event.clientY };
+        if (!settings.enabled || activePointer === null || event.pointerId !== activePointer) return;
+        // Moving while the button is down may be a text-selection drag. Cancel the
+        // pending hold instead of translating selected text or deleting old results.
+        const dx = Math.abs(event.clientX - pointerDownPoint.x);
+        const dy = Math.abs(event.clientY - pointerDownPoint.y);
+        if (hasSelectedText() || dx > 4 || dy > 4) {
+            cancelPending();
+            return;
+        }
     }
-    function onPointerUp(event) { if (activePointer === null || (event && event.pointerId !== activePointer)) return; cancelActive(); }
+    function onPointerUp(event) {
+        if (activePointer === null || (event && event.pointerId !== activePointer)) return;
+        cancelPending();
+        activePointer = null;
+        // Keep completed translation output visible until this document reloads.
+    }
     function chooseProvider() {
         const value = prompt("Translation provider: microsoft or omlx", settings.provider); if (!value) return; const p = value.trim().toLowerCase();
         if (["microsoft", "omlx"].indexOf(p) < 0) return toast("Use microsoft or omlx.");
@@ -6075,7 +6118,14 @@
         if (!document.documentElement) return;
         if (!document.getElementById(NS + "-style")) { const style = document.createElement("style"); style.id = NS + "-style"; style.textContent = "[data-auto-toc-translation=true]{isolation:isolate;user-select:text;-webkit-user-select:text;}"; (document.head || document.documentElement).appendChild(style); }
         registerMenu(); document.addEventListener("pointerdown", onPointerDown, true); document.addEventListener("pointermove", onPointerMove, true); document.addEventListener("pointerup", onPointerUp, true); document.addEventListener("pointercancel", onPointerUp, true);
-        document.addEventListener("mouseup", function () { if (activePointer !== null) cancelActive(); }, true); window.addEventListener("blur", cancelActive); window.addEventListener("keydown", function (e) { if (e.key === "Escape") cancelActive(); });
+        document.addEventListener("mouseup", function () {
+            if (activePointer !== null) {
+                cancelPending();
+                activePointer = null;
+            }
+        }, true);
+        window.addEventListener("blur", cancelActive);
+        window.addEventListener("keydown", function (e) { if (e.key === "Escape") cancelActive(); });
     }
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once: true }); else install();
 })();
