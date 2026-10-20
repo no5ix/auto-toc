@@ -5691,7 +5691,9 @@
         const footer = card.querySelector(".hc-footer-actions");
         if (!footer) return false;
 
-        if (footer.querySelector(`.${BUTTON_CLASS}`)) return true;
+        if (footer.querySelector(".auto-toc-youdao-copy-button") &&
+            footer.querySelector(".auto-toc-youdao-result-button") &&
+            footer.querySelector(".auto-toc-youdao-word-button")) return true;
 
         const resultLink = createYoudaoLink(
             "auto-toc-youdao-result-button",
@@ -5873,7 +5875,11 @@
                 "text-shadow:none", "filter:none", "background:transparent",
                 "color:inherit", "cursor:pointer", "font:inherit"
             ].join(";");
-            copyButton.addEventListener("pointerdown", (event) => event.preventDefault());
+            copyButton.addEventListener("pointerdown", (event) => {
+                const selection = window.getSelection();
+                if (selection && selection.toString().trim()) rememberedWord = normalizeEnglishWord(selection.toString()) || rememberedWord;
+                event.preventDefault();
+            });
             copyButton.addEventListener("click", async () => {
                 if (!rememberedWord) return;
                 try {
