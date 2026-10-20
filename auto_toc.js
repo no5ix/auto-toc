@@ -5508,7 +5508,23 @@
         }
     }
 
+    function isTextEntryElement(element) {
+        if (!(element instanceof Element)) return false;
+        return !!element.closest("input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox']");
+    }
+
+    function selectionComesFromTextEntry(selection) {
+        if (!selection || !selection.rangeCount) return false;
+        const node = selection.anchorNode;
+        const element = node instanceof Element ? node : node?.parentElement;
+        if (isTextEntryElement(element)) return true;
+        // Selections in input/textarea controls are not represented by window.getSelection
+        // consistently across browsers, so inspect the active editing control too.
+        return isTextEntryElement(document.activeElement);
+    }
+
     function rememberSelection() {
+        if (selectionComesFromTextEntry(window.getSelection())) return;
         const word = readSelectedEnglishWord();
         if (word) lastSelectedEnglishWord = word;
     }
@@ -5787,6 +5803,7 @@
 
         function getSelectedWord() {
             const selection = window.getSelection();
+            if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) return "";
             const word = normalizeEnglishWord(selection?.toString());
             return word;
         }
@@ -5941,6 +5958,14 @@
                 return;
             }
 
+            // Keyboard selections inside inputs, textareas, and editable fields
+            // should never open the floating dictionary toolbar.
+            const selection = window.getSelection();
+            if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) {
+                hideToolbar();
+                return;
+            }
+
             const word = getSelectedWord();
             if (!word) {
                 // Keep the toolbar visible while its own controls are focused.
@@ -5950,9 +5975,9 @@
             rememberedWord = word;
             lastSelectedEnglishWord = word;
 
-            const selection = window.getSelection();
-            if (!selection || selection.rangeCount === 0) return;
-            const rect = selection.getRangeAt(0).getBoundingClientRect();
+            const currentSelection = window.getSelection();
+            if (!currentSelection || currentSelection.rangeCount === 0) return;
+            const rect = currentSelection.getRangeAt(0).getBoundingClientRect();
             if (!rect || (!rect.width && !rect.height)) return;
 
             const bar = ensureToolbar();
@@ -5968,7 +5993,12 @@
             bar.style.top = `${top}px`;
         }
 
-        const scheduleShow = () => {
+        const scheduleShow = (event) => {
+            // Ignore keyboard and mouse selection activity in form/editable fields.
+            if (isTextEntryElement(event?.target) || isTextEntryElement(document.activeElement)) {
+                hideToolbar();
+                return;
+            }
             window.setTimeout(showForSelection, 0);
         };
 
