@@ -5486,8 +5486,8 @@
 
     const BUTTON_ICONS = {
         copy: "📋",
-        result: "🔎",
-        word: "📖",
+        result: "🔍",
+        word: "📚",
     };
 
     const processedRoots = new WeakSet();
