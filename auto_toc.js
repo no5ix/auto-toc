@@ -5485,8 +5485,9 @@
     const HOST_FALLBACK_SELECTOR = "[id^='yd-mg-huaci']";
 
     const BUTTON_ICONS = {
-        word: "📖",
+        copy: "📋",
         result: "🔎",
+        word: "📖",
     };
 
     const processedRoots = new WeakSet();
@@ -5534,6 +5535,12 @@
                 flex: 0 0 28px !important;
                 margin: 0 6px 0 0 !important;
                 padding: 0 !important;
+                appearance: none !important;
+                -webkit-appearance: none !important;
+                outline: none !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+                filter: none !important;
                 border: 0 !important;
                 border-radius: 6px !important;
                 background: transparent !important;
@@ -5543,13 +5550,29 @@
                 font-size: 19px !important;
                 line-height: 1 !important;
                 font-family: system-ui, -apple-system, sans-serif !important;
+                vertical-align: middle !important;
+                text-decoration: none !important;
+                -webkit-tap-highlight-color: transparent !important;
             }
             .${BUTTON_CLASS}:hover {
-                background: #f0f0f0 !important;
-                color: #1677ff !important;
+                appearance: none !important;
+                background: rgba(127, 127, 127, 0.12) !important;
+                color: #444 !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+                filter: none !important;
             }
-            .${BUTTON_CLASS} {
-                text-decoration: none !important;
+            .${BUTTON_CLASS}:focus,
+            .${BUTTON_CLASS}:focus-visible,
+            .${BUTTON_CLASS}:active {
+                outline: none !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+                filter: none !important;
+            }
+            .${BUTTON_CLASS}::-moz-focus-inner {
+                border: 0 !important;
+                padding: 0 !important;
             }
         `;
         root.appendChild(style);
@@ -5571,6 +5594,52 @@
         const popupWord = normalizeEnglishWord(wordElement?.textContent);
         if (popupWord && card) cardWords.set(card, popupWord);
         return popupWord;
+    }
+
+    function createCopyButton() {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `hc-footer-action ${BUTTON_CLASS} auto-toc-youdao-copy-button`;
+        button.title = "Copy selected English word";
+        button.setAttribute("aria-label", "Copy selected English word");
+        button.textContent = BUTTON_ICONS.copy;
+        button.addEventListener("pointerdown", (event) => {
+            const selected = readSelectedEnglishWord();
+            if (selected) lastSelectedEnglishWord = selected;
+            event.preventDefault();
+        });
+        button.addEventListener("click", async () => {
+            const word = readSelectedEnglishWord() || lastSelectedEnglishWord;
+            if (!word) return;
+            try {
+                if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                    await navigator.clipboard.writeText(word);
+                } else {
+                    const textarea = document.createElement("textarea");
+                    textarea.value = word;
+                    textarea.setAttribute("readonly", "");
+                    textarea.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    const copied = document.execCommand("copy");
+                    textarea.remove();
+                    if (!copied) throw new Error("Clipboard copy was blocked.");
+                }
+                button.title = "Copied: " + word;
+                button.setAttribute("aria-label", "Copied " + word);
+                button.textContent = "✅";
+                window.setTimeout(() => {
+                    if (!button.isConnected) return;
+                    button.textContent = BUTTON_ICONS.copy;
+                    button.title = "Copy selected English word";
+                    button.setAttribute("aria-label", "Copy selected English word");
+                }, 900);
+            } catch (error) {
+                console.warn("[AutoTOC Youdao copy]", error);
+                button.title = "Unable to copy. Check clipboard permissions.";
+            }
+        });
+        return button;
     }
 
     function createYoudaoLink(className, title, urlBuilder, label) {
@@ -5624,13 +5693,6 @@
 
         if (footer.querySelector(`.${BUTTON_CLASS}`)) return true;
 
-        const wordLink = createYoudaoLink(
-            "auto-toc-youdao-word-button",
-            "在有道词典中打开单词页面",
-            (word) => `https://dict.youdao.com/w/${encodeURIComponent(word)}`,
-            "word"
-        );
-
         const resultLink = createYoudaoLink(
             "auto-toc-youdao-result-button",
             "在有道词典中打开结果页面",
@@ -5639,14 +5701,22 @@
             "result"
         );
 
-        // Put both new buttons immediately before Youdao's Copy button.
-        const copyButton = footer.querySelector(".hc-copy-action");
-        if (copyButton) {
-            footer.insertBefore(resultLink, copyButton);
-            footer.insertBefore(wordLink, resultLink);
+        const wordLink = createYoudaoLink(
+            "auto-toc-youdao-word-button",
+            "在有道词典中打开单词页面",
+            (word) => `https://dict.youdao.com/w/${encodeURIComponent(word)}`,
+            "word"
+        );
+        const copyButton = createCopyButton();
+
+        // Desired order: Copy → Result → Word, before Youdao's native Copy action.
+        const nativeCopyButton = footer.querySelector(".hc-copy-action");
+        if (nativeCopyButton) {
+            footer.insertBefore(copyButton, nativeCopyButton);
+            footer.insertBefore(resultLink, nativeCopyButton);
+            footer.insertBefore(wordLink, nativeCopyButton);
         } else {
-            footer.appendChild(wordLink);
-            footer.appendChild(resultLink);
+            footer.append(copyButton, resultLink, wordLink);
         }
 
         addStyles(card.getRootNode());
@@ -5734,7 +5804,7 @@
                 "border-radius:10px",
                 "background:Canvas",
                 "color:CanvasText",
-                "box-shadow:0 3px 14px rgba(0,0,0,.22)",
+                "box-shadow:none",
                 "font:16px/1 system-ui,-apple-system,sans-serif"
             ].join(";");
 
@@ -5754,14 +5824,23 @@
                     "border-radius:6px",
                     "text-decoration:none",
                     "cursor:pointer",
+                    "appearance:none",
+                    "-webkit-appearance:none",
+                    "outline:none",
+                    "box-shadow:none",
+                    "text-shadow:none",
+                    "filter:none",
+                    "background:transparent",
                     "color:inherit"
                 ].join(";");
 
                 link.addEventListener("mouseenter", () => {
-                    link.style.background = "rgba(127,127,127,.18)";
+                    link.style.background = "rgba(127,127,127,.12)";
+                    link.style.boxShadow = "none";
                 });
                 link.addEventListener("mouseleave", () => {
                     link.style.background = "transparent";
+                    link.style.boxShadow = "none";
                 });
 
                 link.addEventListener("click", (event) => {
@@ -5782,18 +5861,54 @@
                 return link;
             }
 
-            const wordLink = makeLink(
-                "📖",
-                "Open Youdao dictionary page",
-                (word) => `https://dict.youdao.com/w/${encodeURIComponent(word)}`
-            );
+            const copyButton = document.createElement("button");
+            copyButton.type = "button";
+            copyButton.textContent = BUTTON_ICONS.copy;
+            copyButton.title = "Copy selected English word";
+            copyButton.setAttribute("aria-label", "Copy selected English word");
+            copyButton.style.cssText = [
+                "display:inline-flex", "align-items:center", "justify-content:center",
+                "width:30px", "height:30px", "border:0", "border-radius:6px",
+                "appearance:none", "-webkit-appearance:none", "outline:none", "box-shadow:none",
+                "text-shadow:none", "filter:none", "background:transparent",
+                "color:inherit", "cursor:pointer", "font:inherit"
+            ].join(";");
+            copyButton.addEventListener("pointerdown", (event) => event.preventDefault());
+            copyButton.addEventListener("click", async () => {
+                if (!rememberedWord) return;
+                try {
+                    if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                        await navigator.clipboard.writeText(rememberedWord);
+                    } else {
+                        const textarea = document.createElement("textarea");
+                        textarea.value = rememberedWord;
+                        textarea.setAttribute("readonly", "");
+                        textarea.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0;";
+                        document.body.appendChild(textarea);
+                        textarea.select();
+                        const copied = document.execCommand("copy");
+                        textarea.remove();
+                        if (!copied) throw new Error("Clipboard copy was blocked.");
+                    }
+                    copyButton.textContent = "✅";
+                    window.setTimeout(() => { if (copyButton.isConnected) copyButton.textContent = BUTTON_ICONS.copy; }, 900);
+                } catch (error) {
+                    console.warn("[AutoTOC Youdao copy]", error);
+                }
+            });
+
             const resultLink = makeLink(
                 "🔎",
                 "Open Youdao result page",
                 (word) => `https://dict.youdao.com/result?word=${encodeURIComponent(word)}&lang=en`
             );
+            const wordLink = makeLink(
+                "📖",
+                "Open Youdao dictionary page",
+                (word) => `https://dict.youdao.com/w/${encodeURIComponent(word)}`
+            );
 
-            toolbar.append(wordLink, resultLink);
+            toolbar.append(copyButton, resultLink, wordLink);
             document.body.appendChild(toolbar);
             return toolbar;
         }
