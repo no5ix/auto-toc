@@ -5554,13 +5554,18 @@
                 text-decoration: none !important;
                 -webkit-tap-highlight-color: transparent !important;
             }
-            .${BUTTON_CLASS}:hover {
+            .${BUTTON_CLASS}:hover,
+            .${BUTTON_CLASS}:hover,
+            button.${BUTTON_CLASS}:hover,
+            .auto-toc-youdao-copy-button:hover {
                 appearance: none !important;
-                background: rgba(127, 127, 127, 0.12) !important;
-                color: #444 !important;
+                -webkit-appearance: none !important;
+                background: rgba(127, 127, 127, 0.22) !important;
+                color: #333 !important;
                 box-shadow: none !important;
                 text-shadow: none !important;
                 filter: none !important;
+                opacity: 1 !important;
             }
             .${BUTTON_CLASS}:focus,
             .${BUTTON_CLASS}:focus-visible,
@@ -5837,7 +5842,7 @@
                 ].join(";");
 
                 link.addEventListener("mouseenter", () => {
-                    link.style.background = "rgba(127,127,127,.12)";
+                    link.style.background = "rgba(127,127,127,.22)";
                     link.style.boxShadow = "none";
                 });
                 link.addEventListener("mouseleave", () => {
@@ -5873,8 +5878,17 @@
                 "width:30px", "height:30px", "border:0", "border-radius:6px",
                 "appearance:none", "-webkit-appearance:none", "outline:none", "box-shadow:none",
                 "text-shadow:none", "filter:none", "background:transparent",
-                "color:inherit", "cursor:pointer", "font:inherit"
+                "color:inherit", "cursor:pointer", "font:inherit",
+                "transition:background-color 120ms ease"
             ].join(";");
+            copyButton.addEventListener("mouseenter", () => {
+                copyButton.style.background = "rgba(127,127,127,.22)";
+                copyButton.style.boxShadow = "none";
+            });
+            copyButton.addEventListener("mouseleave", () => {
+                copyButton.style.background = "transparent";
+                copyButton.style.boxShadow = "none";
+            });
             copyButton.addEventListener("pointerdown", (event) => {
                 const selection = window.getSelection();
                 if (selection && selection.toString().trim()) rememberedWord = normalizeEnglishWord(selection.toString()) || rememberedWord;
