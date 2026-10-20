@@ -5860,7 +5860,7 @@
                     link.href = urlBuilder(rememberedWord);
                 });
 
-                link.dataset.urlKind = icon === "📖" ? "word" : "result";
+                link.dataset.urlKind = icon === BUTTON_ICONS.word ? "word" : "result";
                 link.dataset.urlBuilder = "";
                 link.addEventListener("pointerdown", () => {
                     if (rememberedWord) link.href = urlBuilder(rememberedWord);
@@ -5918,12 +5918,12 @@
             });
 
             const resultLink = makeLink(
-                "🔎",
+                BUTTON_ICONS.result,
                 "Open Youdao result page",
                 (word) => `https://dict.youdao.com/result?word=${encodeURIComponent(word)}&lang=en`
             );
             const wordLink = makeLink(
-                "📖",
+                BUTTON_ICONS.word,
                 "Open Youdao dictionary page",
                 (word) => `https://dict.youdao.com/w/${encodeURIComponent(word)}`
             );
