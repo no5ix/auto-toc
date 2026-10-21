@@ -6177,14 +6177,36 @@
         return task.then(function (value) { setCache(text, value); return value; });
     }
     function makeInlineLine(block) {
-        const next = block.nextElementSibling;
-        if (next && next.dataset.autoTocTranslation === "true") return next;
-        const cs = getComputedStyle(block); const line = document.createElement("div");
-        line.dataset.autoTocTranslation = "true"; line.setAttribute("aria-live", "polite");
-        line.style.cssText = "display:block;box-sizing:border-box;width:auto;max-width:100%;margin-top:.28em;margin-bottom:.8em;padding:0;white-space:pre-wrap;overflow-wrap:anywhere;" +
-            "margin-left:" + cs.marginLeft + ";margin-right:" + cs.marginRight + ";font-family:" + cs.fontFamily + ";font-size:" + cs.fontSize + ";font-weight:" + cs.fontWeight + ";line-height:" + cs.lineHeight + ";text-align:" + cs.textAlign + ";";
-        line.style.color = "#B0B0B0";
-        block.insertAdjacentElement("afterend", line); return line;
+        // Keep the translation outside normal document flow so adding it cannot
+        // push the source sentence or trigger scroll anchoring.
+        const line = document.createElement("div");
+        line.dataset.autoTocTranslation = "true";
+        line.setAttribute("aria-live", "polite");
+        line.style.cssText = "position:fixed;z-index:2147483646;display:block;box-sizing:border-box;width:max-content;max-width:min(680px,calc(100vw - 24px));padding:0;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:none;background:transparent;color:#B0B0B0;font-family:system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;text-align:left;contain:layout style;";
+        (document.body || document.documentElement).appendChild(line);
+        return line;
+    }
+
+    function positionTranslationLine(line, clientX, clientY) {
+        if (!line || !line.isConnected) return;
+        const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+        const viewportHeight = document.documentElement.clientHeight || window.innerHeight;
+        const rect = line.getBoundingClientRect();
+        const gap = 12;
+        let left = clientX + gap;
+        let top = clientY + gap;
+        if (left + rect.width > viewportWidth - 4) left = clientX - rect.width - gap;
+        if (top + rect.height > viewportHeight - 4) top = clientY - rect.height - gap;
+        line.style.left = Math.max(4, Math.min(left, viewportWidth - rect.width - 4)) + "px";
+        line.style.top = Math.max(4, Math.min(top, viewportHeight - rect.height - 4)) + "px";
+    }
+
+    function preservePageScroll(callback) {
+        const x = window.scrollX;
+        const y = window.scrollY;
+        callback();
+        // Restore only if the browser changes the page scroll while the overlay appears.
+        if (window.scrollX !== x || window.scrollY !== y) window.scrollTo(x, y);
     }
     function removeCurrentLine() { if (activeLine && activeLine.isConnected) activeLine.remove(); activeLine = null; activeBlock = null; }
     function cancelPending() { if (holdTimer) clearTimeout(holdTimer); holdTimer = null; }
@@ -6199,17 +6221,22 @@
     function showTranslation(info, sequence) {
         if (!info.block.isConnected) return;
         activeBlock = info.block;
+        const x = lastPointer.x;
+        const y = lastPointer.y;
         const line = makeInlineLine(info.block);
         activeLine = line;
         line.textContent = "翻译中…";
         line.style.color = "#B0B0B0";
+        preservePageScroll(function () { positionTranslationLine(line, x, y); });
         if (settings.showOriginal) line.textContent = info.text + "\n翻译中…";
+
         request = new AbortController();
         const controller = request;
         translate(info.text, controller.signal).then(function (value) {
             if (sequence !== requestSequence || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
             line.textContent = settings.showOriginal ? info.text + "\n" + value : value;
             line.style.color = "#B0B0B0";
+            preservePageScroll(function () { positionTranslationLine(line, x, y); });
             line.title = "Translation service: " + settings.provider;
             if (request === controller) request = null;
         }).catch(function (error) {
@@ -6217,6 +6244,7 @@
             if (sequence !== requestSequence || activeLine !== line || !line.isConnected) return;
             line.textContent = "翻译失败（" + settings.provider + "）：" + (error.message || "请检查设置");
             line.style.color = "#B0B0B0";
+            preservePageScroll(function () { positionTranslationLine(line, x, y); });
             console.warn("[AutoTOC inline translation]", error);
             if (request === controller) request = null;
         });
