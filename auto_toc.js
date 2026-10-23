@@ -6386,19 +6386,18 @@
             if (sequence !== requestSequence || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
             line.textContent = settings.showOriginal ? info.text + "\n" + value : value;
             line.style.color = "#B0B0B0";
-            line.title = "Translation service: " + (settings.provider === "omlx" ? "oMLX" : "Cloud (Google / Apple / Microsoft fallback)");
+            line.title = "Translation service: " + (settings.provider === "omlx" ? "oMLX" : "Cloud (Google → Apple → Microsoft fallback)");
             if (request === controller) request = null;
         }).catch(function (error) {
-            if (sequence !== requestSequence || activeLine !== line || !line.isConnected) return;
+            if (sequence !== requestSequence || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
             if (error && error.name === "AbortError") {
                 line.textContent = "翻译已取消";
                 line.style.color = "#B0B0B0";
-                if (request === controller) request = null;
-                return;
+            } else {
+                line.textContent = "翻译失败（" + (settings.provider === "omlx" ? "oMLX" : "Cloud") + "）：" + (error && error.message ? error.message : "请检查设置");
+                line.style.color = "#B0B0B0";
+                console.warn("[AutoTOC inline translation]", error);
             }
-            line.textContent = "翻译失败（" + (settings.provider === "omlx" ? "oMLX" : "Cloud") + "）：" + (error && error.message ? error.message : "请检查设置");
-            line.style.color = "#B0B0B0";
-            console.warn("[AutoTOC inline translation]", error);
             if (request === controller) request = null;
         });
     }
