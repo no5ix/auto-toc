@@ -6121,8 +6121,21 @@
         const rect = block.getBoundingClientRect(); if (rect.width < 50 || rect.height < 8) return null;
         return { block: block, text: text };
     }
-    function getCache(text) { if (cache.has(text)) return cache.get(text); try { const v = localStorage.getItem(CACHE_PREFIX + hash(text)); if (v) { cache.set(text, v); return v; } } catch (_) {} return ""; }
-    function setCache(text, value) { cache.set(text, value); if (cache.size > 300) cache.delete(cache.keys().next().value); try { localStorage.setItem(CACHE_PREFIX + hash(text), value); } catch (_) {} }
+    function getCache(text) {
+        const key = settings.provider + ":" + settings.targetLanguage + ":" + text;
+        if (cache.has(key)) return cache.get(key);
+        try {
+            const stored = localStorage.getItem(CACHE_PREFIX + hash(key));
+            if (stored) { cache.set(key, stored); return stored; }
+        } catch (_) {}
+        return "";
+    }
+    function setCache(text, value) {
+        const key = settings.provider + ":" + settings.targetLanguage + ":" + text;
+        cache.set(key, value);
+        if (cache.size > 300) cache.delete(cache.keys().next().value);
+        try { localStorage.setItem(CACHE_PREFIX + hash(key), value); } catch (_) {}
+    }
     function requestText(options) {
         return new Promise(function (resolve, reject) {
             const gm = typeof GM_xmlhttpRequest === "function" ? GM_xmlhttpRequest : (typeof GM !== "undefined" && typeof GM.xmlHttpRequest === "function" ? GM.xmlHttpRequest.bind(GM) : null);
@@ -6216,9 +6229,9 @@
         }
     }
 
-    function getMicrosoftEdgeCloudToken(signal) {
-        // Cache this temporary Edge web-translation token for less than its usual lifetime.
-        if (microsoftEdgeToken && Date.now() - microsoftEdgeTokenAt < 7 * 60 * 1000) {
+    function getMicrosoftEdgeCloudToken(signal, forceRefresh) {
+        // Reuse a short-lived token, but allow a fresh request after the service rejects it.
+        if (!forceRefresh && microsoftEdgeToken && Date.now() - microsoftEdgeTokenAt < 7 * 60 * 1000) {
             return Promise.resolve(microsoftEdgeToken);
         }
         if (microsoftEdgeTokenPromise) return microsoftEdgeTokenPromise;
@@ -6233,7 +6246,9 @@
                 if (typeof parsed === "string") token = parsed.trim();
                 else if (parsed && typeof parsed.token === "string") token = parsed.token.trim();
             } catch (_) {}
-            if (!token || token.length < 20) throw new Error("Microsoft Edge auth endpoint did not return a valid token.");
+            if (!token || token.length < 20 || /^</.test(token)) {
+                throw new Error("Microsoft Edge auth endpoint returned an invalid response; an HTTP 404 page is not a token.");
+            }
             microsoftEdgeToken = token;
             microsoftEdgeTokenAt = Date.now();
             return token;
@@ -6243,29 +6258,42 @@
         return microsoftEdgeTokenPromise;
     }
 
-    async function translateMicrosoftEdgeCloud(text, signal) {
-        const token = await getMicrosoftEdgeCloudToken(signal);
+    async function translateMicrosoftEdgeCloud(text, signal, retryUnauthorized) {
+        const token = await getMicrosoftEdgeCloudToken(signal, false);
         if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
         const targetLanguage = settings.targetLanguage === "zh-CN" ? "zh-Hans" :
             settings.targetLanguage === "zh-TW" ? "zh-Hant" : settings.targetLanguage;
         const url = "https://api-edge.cognitive.microsofttranslator.com/translate?from=&to=" +
             encodeURIComponent(targetLanguage) + "&api-version=3.0";
-        const raw = await requestText({
-            url: url,
-            method: "POST",
-            headers: {
-                "Authorization": "Bearer " + token,
-                "Content-Type": "application/json"
-            },
-            data: JSON.stringify([{ Text: text }]),
-            signal: signal
-        });
-        const j = JSON.parse(raw);
-        const value = j && j[0] && j[0].translations && j[0].translations[0] && j[0].translations[0].text;
-        if (!value) throw new Error("Microsoft Translator returned no translation.");
-        const wrapper = document.createElement("div");
-        wrapper.innerHTML = value;
-        return wrapper.textContent || wrapper.innerText || value;
+        try {
+            const raw = await requestText({
+                url: url,
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json"
+                },
+                data: JSON.stringify([{ Text: text }]),
+                signal: signal
+            });
+            const j = JSON.parse(raw);
+            const value = j && j[0] && j[0].translations && j[0].translations[0] && j[0].translations[0].text;
+            if (!value) throw new Error("Microsoft Translator returned no translation.");
+            const wrapper = document.createElement("div");
+            wrapper.innerHTML = value;
+            return wrapper.textContent || wrapper.innerText || value;
+        } catch (error) {
+            if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+            const message = error && error.message ? error.message : String(error || "");
+            const rejectedToken = /HTTP 401|HTTP 403|unauthori[sz]ed|invalid token|expired token/i.test(message);
+            if (retryUnauthorized && rejectedToken) {
+                microsoftEdgeToken = "";
+                microsoftEdgeTokenAt = 0;
+                await getMicrosoftEdgeCloudToken(signal, true);
+                return translateMicrosoftEdgeCloud(text, signal, false);
+            }
+            throw error;
+        }
     }
 
     function translateMicrosoft(text, signal) {
