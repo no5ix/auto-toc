@@ -6155,17 +6155,56 @@
     }
     function requestText(options) {
         return new Promise(function (resolve, reject) {
-            const gm = typeof GM_xmlhttpRequest === "function" ? GM_xmlhttpRequest : (typeof GM !== "undefined" && typeof GM.xmlHttpRequest === "function" ? GM.xmlHttpRequest.bind(GM) : null);
-            if (!gm) { fetch(options.url, { method: options.method || "GET", headers: options.headers || {}, body: options.data, signal: options.signal, credentials: "omit" }).then(async function (response) { const body = await response.text(); if (!response.ok) throw new Error("HTTP " + response.status + ": " + body.slice(0, 120)); resolve(body); }).catch(reject); return; }
-            if (options.signal && options.signal.aborted) { reject(new DOMException("Aborted", "AbortError")); return; }
-            let req; const abort = function () { try { if (req) req.abort(); } catch (_) {} reject(new DOMException("Aborted", "AbortError")); };
+            let settled = false;
+            let req = null;
+            const finish = function (fn, value) {
+                if (settled) return;
+                settled = true;
+                if (options.signal) options.signal.removeEventListener("abort", abort);
+                fn(value);
+            };
+            const abort = function () {
+                try { if (req) req.abort(); } catch (_) {}
+                finish(reject, new DOMException("Aborted", "AbortError"));
+            };
+            if (options.signal && options.signal.aborted) {
+                reject(new DOMException("Aborted", "AbortError"));
+                return;
+            }
+            const gm = typeof GM_xmlhttpRequest === "function" ? GM_xmlhttpRequest :
+                (typeof GM !== "undefined" && typeof GM.xmlHttpRequest === "function" ? GM.xmlHttpRequest.bind(GM) : null);
+            if (!gm) {
+                if (options.signal) options.signal.addEventListener("abort", abort, { once: true });
+                fetch(options.url, {
+                    method: options.method || "GET",
+                    headers: options.headers || {},
+                    body: options.data,
+                    signal: options.signal,
+                    credentials: "omit"
+                }).then(async function (response) {
+                    const body = await response.text();
+                    if (!response.ok) throw new Error("HTTP " + response.status + ": " + body.slice(0, 120));
+                    finish(resolve, body);
+                }).catch(function (error) { finish(reject, error); });
+                return;
+            }
             if (options.signal) options.signal.addEventListener("abort", abort, { once: true });
-            req = gm({ method: options.method || "GET", url: options.url, headers: options.headers || {}, data: options.data, timeout: 25000,
-                onload: function (r) { if (options.signal) options.signal.removeEventListener("abort", abort); if (r.status >= 200 && r.status < 300) resolve(r.responseText); else reject(new Error("HTTP " + r.status + ": " + String(r.responseText || "").slice(0, 160))); },
-                onerror: function () { if (options.signal) options.signal.removeEventListener("abort", abort); reject(new Error("Network request failed; check provider settings and availability.")); },
-                ontimeout: function () { reject(new Error("Translation request timed out.")); },
-                onabort: function () { reject(new DOMException("Aborted", "AbortError")); }
-            });
+            try {
+                req = gm({
+                    method: options.method || "GET",
+                    url: options.url,
+                    headers: options.headers || {},
+                    data: options.data,
+                    timeout: 12000,
+                    onload: function (response) {
+                        if (response.status >= 200 && response.status < 300) finish(resolve, response.responseText);
+                        else finish(reject, new Error("HTTP " + response.status + ": " + String(response.responseText || "").slice(0, 160)));
+                    },
+                    onerror: function () { finish(reject, new Error("Network request failed; check provider settings and availability.")); },
+                    ontimeout: function () { finish(reject, new Error("Translation request timed out after 12 seconds.")); },
+                    onabort: function () { finish(reject, new DOMException("Aborted", "AbortError")); }
+                });
+            } catch (error) { finish(reject, error); }
         });
     }
     function translateGoogle(text, signal) {
@@ -6278,14 +6317,31 @@
         throw new Error("All cloud translation providers failed. " + errors.join(" | "));
     }
 
-    function translate(text, signal) {
-        const cacheProvider = settings.provider === "omlx" ? "omlx" : "cloud";
-        const key = cacheProvider + ":" + settings.targetLanguage + ":" + text;
-        const cached = getCacheByKey(key);
-        if (cached) return Promise.resolve(cached);
-        const task = settings.provider === "omlx" ? translateOmlx(text, signal) : translateCloud(text, signal);
-        return withTimeout(task, settings.provider === "omlx" ? 20 * 1000 : 38 * 1000, signal, cacheProvider === "omlx" ? "oMLX translation" : "Cloud translation")
-            .then(function (value) { setCacheByKey(key, value); return value; });
+
+    function withTimeout(promise, ms, signal, label) {
+        return new Promise(function (resolve, reject) {
+            let settled = false;
+            const finish = function (fn, value) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                if (signal) signal.removeEventListener("abort", onAbort);
+                fn(value);
+            };
+            const onAbort = function () { finish(reject, new DOMException("Aborted", "AbortError")); };
+            const timer = setTimeout(function () {
+                finish(reject, new Error(label + " timed out after " + Math.round(ms / 1000) + " seconds."));
+            }, ms);
+            if (signal) {
+                if (signal.aborted) return onAbort();
+                signal.addEventListener("abort", onAbort, { once: true });
+            }
+            Promise.resolve(promise).then(function (value) { finish(resolve, value); }, function (error) { finish(reject, error); });
+        });
+    }
+
+    function getTranslationCacheKey(text) {
+        return (settings.provider === "omlx" ? "omlx" : "cloud") + ":" + settings.targetLanguage + ":" + text;
     }
     function getCacheByKey(key) {
         if (cache.has(key)) return cache.get(key);
@@ -6299,6 +6355,35 @@
         cache.set(key, value);
         if (cache.size > 300) cache.delete(cache.keys().next().value);
         try { localStorage.setItem(CACHE_PREFIX + hash(key), value); } catch (_) {}
+    }
+    async function translateCloud(text, signal) {
+        const errors = [];
+        const providers = [
+            ["Google", translateGoogle],
+            ["Apple", translateApple],
+            ["Microsoft", translateMicrosoftEdgeWeb]
+        ];
+        for (const pair of providers) {
+            if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+            try {
+                const value = await withTimeout(pair[1](text, signal), 12500, signal, pair[0]);
+                if (!value || !String(value).trim()) throw new Error("Empty translation.");
+                return String(value).trim();
+            } catch (error) {
+                if (error && error.name === "AbortError") throw error;
+                errors.push(pair[0] + ": " + (error && error.message ? error.message : String(error)));
+            }
+        }
+        throw new Error("Google, Apple, and Microsoft all failed. " + errors.join(" | "));
+    }
+    function translate(text, signal) {
+        const key = getTranslationCacheKey(text);
+        const cached = getCacheByKey(key);
+        if (cached) return Promise.resolve(cached);
+        const useOmlx = settings.provider === "omlx";
+        const task = useOmlx ? translateOmlx(text, signal) : translateCloud(text, signal);
+        return withTimeout(task, useOmlx ? 20000 : 39000, signal, useOmlx ? "oMLX translation" : "Cloud translation")
+            .then(function (value) { setCacheByKey(key, value); return value; });
     }
     function makeInlineLine(block) {
         const next = block.nextElementSibling;
