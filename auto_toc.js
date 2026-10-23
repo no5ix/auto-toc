@@ -6096,10 +6096,25 @@
         if (result.provider !== "omlx" && result.provider !== "cloud") result.provider = "cloud";
         return result;
     }
-    let settings = normalizeSettings(DEFAULTS);
+    function readLocalSettings() {
+        try {
+            const value = localStorage.getItem(SETTINGS_KEY);
+            return value ? JSON.parse(value) : null;
+        } catch (_) { return null; }
+    }
+    function readGlobalSettings() {
+        const getter = typeof GM_getValue === "function" ? GM_getValue :
+            (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
+        if (!getter) return Promise.resolve(null);
+        try {
+            return Promise.resolve(getter(SETTINGS_KEY, null)).then(function (value) {
+                return value && typeof value === "object" ? value : null;
+            }).catch(function () { return null; });
+        } catch (_) { return Promise.resolve(null); }
+    }
+    let settings = normalizeSettings(readLocalSettings());
     function saveSettings() {
         const snapshot = Object.assign({}, settings);
-        // GM.* is the userscript-manager's cross-origin storage; localStorage is only a fallback.
         try {
             if (typeof GM_setValue === "function") GM_setValue(SETTINGS_KEY, snapshot);
             else if (typeof GM !== "undefined" && typeof GM.setValue === "function") {
@@ -6113,50 +6128,23 @@
         if (!el) { el = document.createElement("div"); el.id = NS + "-notice"; el.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:2147483647;background:rgba(32,32,36,.95);color:#fff;padding:9px 13px;border-radius:10px;font:13px/1.45 system-ui,sans-serif;box-shadow:0 5px 20px #0003;pointer-events:none;max-width:80vw"; document.documentElement.appendChild(el); }
         el.textContent = message; el.style.opacity = "1"; clearTimeout(el.__hide); el.__hide = setTimeout(function () { el.style.opacity = "0"; }, 3200);
     }
-    readGlobalSettings().then(function (globalSettings) {
-        if (globalSettings) settings = normalizeSettings(globalSettings);
-        else saveSettings();
+    let globalSettingsReady = false;
+    const globalSettingsPromise = readGlobalSettings().then(function (globalSettings) {
+        if (globalSettings) {
+            settings = normalizeSettings(globalSettings);
+        } else {
+            const local = readLocalSettings();
+            if (local) settings = normalizeSettings(local);
+            saveSettings();
+        }
+        globalSettingsReady = true;
         const controls = document.getElementById(NS + "-controls");
         const select = controls && controls.querySelector("select");
         const toggle = controls && controls.querySelector("[data-htt-toggle]");
         if (select) select.value = settings.provider;
         if (toggle) toggle.textContent = settings.enabled ? "On" : "Off";
+        return settings;
     });
-
-    let globalSettingsReady = false;
-    const globalSettingsPromise = (function () {
-        const getter = typeof GM_getValue === "function" ? GM_getValue :
-            (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
-        if (!getter) {
-            try {
-                const local = localStorage.getItem(SETTINGS_KEY);
-                if (local) settings = normalizeSettings(JSON.parse(local));
-            } catch (_) {}
-            globalSettingsReady = true;
-            return Promise.resolve(settings);
-        }
-        let storedPromise;
-        try { storedPromise = Promise.resolve(getter(SETTINGS_KEY, null)); }
-        catch (_) { storedPromise = Promise.resolve(null); }
-        return storedPromise.catch(function () { return null; }).then(function (value) {
-            if (value && typeof value === "object") {
-                settings = normalizeSettings(value);
-            } else {
-                try {
-                    const local = localStorage.getItem(SETTINGS_KEY);
-                    if (local) settings = normalizeSettings(JSON.parse(local));
-                } catch (_) {}
-                saveSettings();
-            }
-            globalSettingsReady = true;
-            const controls = document.getElementById(NS + "-controls");
-            const select = controls && controls.querySelector("select");
-            const toggle = controls && controls.querySelector("[data-htt-toggle]");
-            if (select) select.value = settings.provider;
-            if (toggle) toggle.textContent = settings.enabled ? "On" : "Off";
-            return settings;
-        });
-    })();
 
     function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
