@@ -2,9 +2,9 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.83
+// @version      1.84
 // @license MIT
-// @description Generate table of contents and inline hold-to-translate for any website.
+// @description Generate table of contents for any website and inline hold-to-translate.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
 // @include      http://*
 // @include      https://*
@@ -22,7 +22,6 @@
 // @grant        GM.xmlHttpRequest
 // @grant        unsafeWindow
 // @grant        Scripting.Translation
-// @inject-into  content
 // @connect       translate.googleapis.com
 // @connect       edge.microsoft.com
 // @connect       localhost
@@ -6085,67 +6084,31 @@
         showOriginal: false
     };
     const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary";
-    const IGNORE = "#smarttoc,#smarttoc-toast,#auto-toc-inline-translate-controls,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
+    const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,a,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
+    let settings = loadSettings();
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
     let lastPointer = { x: 0, y: 0 }, pointerDownPoint = { x: 0, y: 0 }, menuAdded = false;
     const cache = new Map();
 
-    function normalizeSettings(value) {
-        const result = Object.assign({}, DEFAULTS, value || {});
-        if (result.enabled == null) result.enabled = true;
-        if (result.provider !== "omlx" && result.provider !== "cloud") result.provider = "cloud";
-        return result;
+    function loadSettings() {
+        let stored = null;
+        try { const v = GM_getValue(SETTINGS_KEY, null); if (v && typeof v === "object") stored = v; } catch (_) {}
+        if (!stored) {
+            try { const v = localStorage.getItem(SETTINGS_KEY); if (v) stored = JSON.parse(v); } catch (_) {}
+        }
+        // Upgrade existing installs to free Microsoft translation and enabled-by-default
+        // behavior, while preserving explicitly configured provider choices and oMLX keys.
+        const settings = Object.assign({}, DEFAULTS, stored || {});
+        if (!stored || stored.enabled == null) settings.enabled = true;
+        if (settings.provider !== "omlx" && settings.provider !== "cloud") settings.provider = "cloud";
+        return settings;
     }
-    function readLocalSettings() {
-        try {
-            const value = localStorage.getItem(SETTINGS_KEY);
-            return value ? JSON.parse(value) : null;
-        } catch (_) { return null; }
-    }
-    function readGlobalSettings() {
-        const getter = typeof GM_getValue === "function" ? GM_getValue :
-            (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
-        if (!getter) return Promise.resolve(null);
-        try {
-            return Promise.resolve(getter(SETTINGS_KEY, null)).then(function (value) {
-                return value && typeof value === "object" ? value : null;
-            }).catch(function () { return null; });
-        } catch (_) { return Promise.resolve(null); }
-    }
-    let settings = normalizeSettings(readLocalSettings());
-    function saveSettings() {
-        const snapshot = Object.assign({}, settings);
-        try {
-            if (typeof GM_setValue === "function") GM_setValue(SETTINGS_KEY, snapshot);
-            else if (typeof GM !== "undefined" && typeof GM.setValue === "function") {
-                Promise.resolve(GM.setValue(SETTINGS_KEY, snapshot)).catch(function () {});
-            }
-        } catch (_) {}
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(snapshot)); } catch (_) {}
-    }
+    function saveSettings() { try { GM_setValue(SETTINGS_KEY, settings); } catch (_) {} try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {} }
     function toast(message) {
         let el = document.getElementById(NS + "-notice");
         if (!el) { el = document.createElement("div"); el.id = NS + "-notice"; el.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:2147483647;background:rgba(32,32,36,.95);color:#fff;padding:9px 13px;border-radius:10px;font:13px/1.45 system-ui,sans-serif;box-shadow:0 5px 20px #0003;pointer-events:none;max-width:80vw"; document.documentElement.appendChild(el); }
         el.textContent = message; el.style.opacity = "1"; clearTimeout(el.__hide); el.__hide = setTimeout(function () { el.style.opacity = "0"; }, 3200);
     }
-    let globalSettingsReady = false;
-    const globalSettingsPromise = readGlobalSettings().then(function (globalSettings) {
-        if (globalSettings) {
-            settings = normalizeSettings(globalSettings);
-        } else {
-            const local = readLocalSettings();
-            if (local) settings = normalizeSettings(local);
-            saveSettings();
-        }
-        globalSettingsReady = true;
-        const controls = document.getElementById(NS + "-controls");
-        const select = controls && controls.querySelector("select");
-        const toggle = controls && controls.querySelector("[data-htt-toggle]");
-        if (select) select.value = settings.provider;
-        if (toggle) toggle.textContent = settings.enabled ? "On" : "Off";
-        return settings;
-    });
-
     function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
     function getBlock(target) {
@@ -6156,58 +6119,21 @@
         const rect = block.getBoundingClientRect(); if (rect.width < 50 || rect.height < 8) return null;
         return { block: block, text: text };
     }
+    function getCache(text) { if (cache.has(text)) return cache.get(text); try { const v = localStorage.getItem(CACHE_PREFIX + hash(text)); if (v) { cache.set(text, v); return v; } } catch (_) {} return ""; }
+    function setCache(text, value) { cache.set(text, value); if (cache.size > 300) cache.delete(cache.keys().next().value); try { localStorage.setItem(CACHE_PREFIX + hash(text), value); } catch (_) {} }
     function requestText(options) {
         return new Promise(function (resolve, reject) {
-            let settled = false;
-            let req = null;
-            const finish = function (fn, value) {
-                if (settled) return;
-                settled = true;
-                if (options.signal) options.signal.removeEventListener("abort", abort);
-                fn(value);
-            };
-            const abort = function () {
-                try { if (req) req.abort(); } catch (_) {}
-                finish(reject, new DOMException("Aborted", "AbortError"));
-            };
-            if (options.signal && options.signal.aborted) {
-                reject(new DOMException("Aborted", "AbortError"));
-                return;
-            }
-            const gm = typeof GM_xmlhttpRequest === "function" ? GM_xmlhttpRequest :
-                (typeof GM !== "undefined" && typeof GM.xmlHttpRequest === "function" ? GM.xmlHttpRequest.bind(GM) : null);
-            if (!gm) {
-                if (options.signal) options.signal.addEventListener("abort", abort, { once: true });
-                fetch(options.url, {
-                    method: options.method || "GET",
-                    headers: options.headers || {},
-                    body: options.data,
-                    signal: options.signal,
-                    credentials: "omit"
-                }).then(async function (response) {
-                    const body = await response.text();
-                    if (!response.ok) throw new Error("HTTP " + response.status + ": " + body.slice(0, 120));
-                    finish(resolve, body);
-                }).catch(function (error) { finish(reject, error); });
-                return;
-            }
+            const gm = typeof GM_xmlhttpRequest === "function" ? GM_xmlhttpRequest : (typeof GM !== "undefined" && typeof GM.xmlHttpRequest === "function" ? GM.xmlHttpRequest.bind(GM) : null);
+            if (!gm) { fetch(options.url, { method: options.method || "GET", headers: options.headers || {}, body: options.data, signal: options.signal, credentials: "omit" }).then(async function (response) { const body = await response.text(); if (!response.ok) throw new Error("HTTP " + response.status + ": " + body.slice(0, 120)); resolve(body); }).catch(reject); return; }
+            if (options.signal && options.signal.aborted) { reject(new DOMException("Aborted", "AbortError")); return; }
+            let req; const abort = function () { try { if (req) req.abort(); } catch (_) {} reject(new DOMException("Aborted", "AbortError")); };
             if (options.signal) options.signal.addEventListener("abort", abort, { once: true });
-            try {
-                req = gm({
-                    method: options.method || "GET",
-                    url: options.url,
-                    headers: options.headers || {},
-                    data: options.data,
-                    timeout: 12000,
-                    onload: function (response) {
-                        if (response.status >= 200 && response.status < 300) finish(resolve, response.responseText);
-                        else finish(reject, new Error("HTTP " + response.status + ": " + String(response.responseText || "").slice(0, 160)));
-                    },
-                    onerror: function () { finish(reject, new Error("Network request failed; check provider settings and availability.")); },
-                    ontimeout: function () { finish(reject, new Error("Translation request timed out after 12 seconds.")); },
-                    onabort: function () { finish(reject, new DOMException("Aborted", "AbortError")); }
-                });
-            } catch (error) { finish(reject, error); }
+            req = gm({ method: options.method || "GET", url: options.url, headers: options.headers || {}, data: options.data, timeout: 12000,
+                onload: function (r) { if (options.signal) options.signal.removeEventListener("abort", abort); if (r.status >= 200 && r.status < 300) resolve(r.responseText); else reject(new Error("HTTP " + r.status + ": " + String(r.responseText || "").slice(0, 160))); },
+                onerror: function () { if (options.signal) options.signal.removeEventListener("abort", abort); reject(new Error("Network request failed; check provider settings and availability.")); },
+                ontimeout: function () { reject(new Error("Translation request timed out.")); },
+                onabort: function () { reject(new DOMException("Aborted", "AbortError")); }
+            });
         });
     }
     function translateGoogle(text, signal) {
@@ -6224,36 +6150,28 @@
         try {
             if (typeof Scripting !== "undefined" && Scripting && Scripting.Translation) return Scripting.Translation;
         } catch (_) {}
-        try {
-            if (typeof unsafeWindow !== "undefined" && unsafeWindow && unsafeWindow.Scripting && unsafeWindow.Scripting.Translation) return unsafeWindow.Scripting.Translation;
-        } catch (_) {}
         return null;
     }
 
-    async function translateApple(text, signal) {
+    function translateApple(text, signal) {
         const api = getAppleTranslationAPI();
         if (!api || typeof api.translateInstalled !== "function") {
-            throw new Error("Apple's Safari translation API is unavailable. It requires a compatible Safari userscript manager, macOS/iOS 26+, and installed language models.");
+            return Promise.reject(new Error("Apple translation is unavailable in this Safari userscript manager or the language models are not installed."));
         }
-        if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
-        // translateInstalled requires an explicit source language; English is the common case for this script.
-        // Fall back may run when source-language autodetection is unavailable, so specify English explicitly.
+        if (signal && signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
         const target = settings.targetLanguage === "zh-CN" ? "zh-Hans" :
             settings.targetLanguage === "zh-TW" ? "zh-Hant" : settings.targetLanguage;
-        const result = await api.translateInstalled({ text: text, source: "en", target: target });
-        if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
-        if (!result || !String(result).trim()) throw new Error("Apple Translate returned an empty translation.");
-        return String(result).trim();
+        return Promise.resolve(api.translateInstalled({ text: text, source: "en", target: target })).then(function (value) {
+            if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+            if (!value || !String(value).trim()) throw new Error("Apple returned an empty translation.");
+            return String(value).trim();
+        });
     }
 
-    function translateMicrosoftEdgeWeb(text, signal) {
+    function translateMicrosoft(text, signal) {
         const targetLanguage = settings.targetLanguage === "zh-CN" ? "zh-Hans" :
             settings.targetLanguage === "zh-TW" ? "zh-Hant" : settings.targetLanguage;
-        const query = new URLSearchParams({
-            from: "",
-            to: targetLanguage,
-            isEnterpriseClient: "false"
-        });
+        const query = new URLSearchParams({ from: "", to: targetLanguage, isEnterpriseClient: "false" });
         return requestText({
             url: "https://edge.microsoft.com/translate/translatetext?" + query.toString(),
             method: "POST",
@@ -6261,9 +6179,7 @@
             data: JSON.stringify([text]),
             signal: signal
         }).then(function (raw) {
-            let parsed;
-            try { parsed = JSON.parse(raw); }
-            catch (_) { throw new Error("Microsoft Edge returned a non-JSON response."); }
+            const parsed = JSON.parse(raw);
             const item = Array.isArray(parsed) ? parsed[0] : null;
             const value = item && item.translations && item.translations[0] && item.translations[0].text;
             if (!value || !String(value).trim()) throw new Error("Microsoft Edge returned no translation.");
@@ -6282,75 +6198,54 @@
     function withTimeout(promise, ms, signal, label) {
         return new Promise(function (resolve, reject) {
             let settled = false;
-            const finish = function (fn, value) {
+            const done = function (fn, value) {
                 if (settled) return;
                 settled = true;
                 clearTimeout(timer);
-                if (signal) signal.removeEventListener("abort", onAbort);
+                if (signal) signal.removeEventListener("abort", abort);
                 fn(value);
             };
-            const onAbort = function () { finish(reject, new DOMException("Aborted", "AbortError")); };
-            const timer = setTimeout(function () {
-                finish(reject, new Error(label + " timed out after " + Math.round(ms / 1000) + " seconds."));
-            }, ms);
+            const abort = function () { done(reject, new DOMException("Aborted", "AbortError")); };
+            const timer = setTimeout(function () { done(reject, new Error(label + " timed out after " + Math.round(ms / 1000) + " seconds.")); }, ms);
             if (signal) {
-                if (signal.aborted) return onAbort();
-                signal.addEventListener("abort", onAbort, { once: true });
+                if (signal.aborted) return abort();
+                signal.addEventListener("abort", abort, { once: true });
             }
-            Promise.resolve(promise).then(function (value) { finish(resolve, value); }, function (error) { finish(reject, error); });
+            Promise.resolve(promise).then(function (value) { done(resolve, value); }, function (error) { done(reject, error); });
         });
     }
 
-    function getTranslationCacheKey(text) {
-        return (settings.provider === "omlx" ? "omlx" : "cloud") + ":" + settings.targetLanguage + ":" + text;
-    }
-    function getCacheByKey(key) {
-        if (cache.has(key)) return cache.get(key);
-        try {
-            const stored = localStorage.getItem(CACHE_PREFIX + hash(key));
-            if (stored) { cache.set(key, stored); return stored; }
-        } catch (_) {}
-        return "";
-    }
-    function setCacheByKey(key, value) {
-        cache.set(key, value);
-        if (cache.size > 300) cache.delete(cache.keys().next().value);
-        try { localStorage.setItem(CACHE_PREFIX + hash(key), value); } catch (_) {}
-    }
-    async function translateCloud(text, signal) {
-        const errors = [];
-        const providers = [
-            ["Google", translateGoogle],
-            ["Apple", translateApple],
-            ["Microsoft", translateMicrosoftEdgeWeb]
-        ];
-        for (const pair of providers) {
-            if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
-            try {
-                const value = await withTimeout(pair[1](text, signal), 12500, signal, pair[0]);
-                if (!value || !String(value).trim()) throw new Error("Empty translation.");
-                return String(value).trim();
-            } catch (error) {
+    function translateCloud(text, signal) {
+        const providers = [translateGoogle, translateApple, translateMicrosoft];
+        const names = ["Google", "Apple", "Microsoft"];
+        function tryNext(index, errors) {
+            if (signal && signal.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
+            if (index >= providers.length) return Promise.reject(new Error("All Cloud providers failed: " + errors.join(" | ")));
+            return withTimeout(providers[index](text, signal), 12000, signal, names[index]).catch(function (error) {
                 if (error && error.name === "AbortError") throw error;
-                errors.push(pair[0] + ": " + (error && error.message ? error.message : String(error)));
-            }
+                errors.push(names[index] + ": " + (error && error.message ? error.message : String(error)));
+                return tryNext(index + 1, errors);
+            });
         }
-        throw new Error("Google, Apple, and Microsoft all failed. " + errors.join(" | "));
-    }
-    function translate(text, signal) {
-        if (!globalSettingsReady) {
-            return withTimeout(globalSettingsPromise, 3000, signal, "Loading global translation settings")
-                .then(function () { return translate(text, signal); });
-        }
-        const key = getTranslationCacheKey(text);
-        const cached = getCacheByKey(key);
-        if (cached) return Promise.resolve(cached);
-        const useOmlx = settings.provider === "omlx";
-        const task = useOmlx ? translateOmlx(text, signal) : translateCloud(text, signal);
-        return withTimeout(task, useOmlx ? 20000 : 39000, signal, useOmlx ? "oMLX translation" : "Cloud translation")
-            .then(function (value) { setCacheByKey(key, value); return value; });
+        return tryNext(0, []);
     }
 
+    function translate(text, signal) {
+        const provider = settings.provider === "omlx" ? "omlx" : "cloud";
+        const key = provider + ":" + settings.targetLanguage + ":" + text;
+        if (cache.has(key)) return Promise.resolve(cache.get(key));
+        try {
+            const saved = localStorage.getItem(CACHE_PREFIX + hash(key));
+            if (saved) { cache.set(key, saved); return Promise.resolve(saved); }
+        } catch (_) {}
+        const task = provider === "omlx" ? translateOmlx(text, signal) : translateCloud(text, signal);
+        return withTimeout(task, provider === "omlx" ? 20000 : 39000, signal, provider === "omlx" ? "oMLX translation" : "Cloud translation").then(function (value) {
+            cache.set(key, value);
+            if (cache.size > 300) cache.delete(cache.keys().next().value);
+            try { localStorage.setItem(CACHE_PREFIX + hash(key), value); } catch (_) {}
+            return value;
+        });
+    }
     function makeInlineLine(block) {
         const next = block.nextElementSibling;
         if (next && next.dataset.autoTocTranslation === "true") return next;
@@ -6385,18 +6280,14 @@
             if (sequence !== requestSequence || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
             line.textContent = settings.showOriginal ? info.text + "\n" + value : value;
             line.style.color = "#B0B0B0";
-            line.title = "Translation service: " + (settings.provider === "omlx" ? "oMLX" : "Cloud (Google → Apple → Microsoft fallback)");
+            line.title = "Translation service: " + settings.provider;
             if (request === controller) request = null;
         }).catch(function (error) {
-            if (sequence !== requestSequence || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
-            if (error && error.name === "AbortError") {
-                line.textContent = "翻译已取消";
-                line.style.color = "#B0B0B0";
-            } else {
-                line.textContent = "翻译失败（" + (settings.provider === "omlx" ? "oMLX" : "Cloud") + "）：" + (error && error.message ? error.message : "请检查设置");
-                line.style.color = "#B0B0B0";
-                console.warn("[AutoTOC inline translation]", error);
-            }
+            if (error && error.name === "AbortError") return;
+            if (sequence !== requestSequence || activeLine !== line || !line.isConnected) return;
+            line.textContent = "翻译失败（" + settings.provider + "）：" + (error.message || "请检查设置");
+            line.style.color = "#B0B0B0";
+            console.warn("[AutoTOC inline translation]", error);
             if (request === controller) request = null;
         });
     }
@@ -6449,14 +6340,13 @@
         // Keep completed translation output visible until this document reloads.
     }
     function chooseProvider() {
-        const choice = prompt("Choose translation provider:\n1. oMLX\n2. Cloud (Google → Apple → Microsoft fallback)", settings.provider === "omlx" ? "1" : "2");
-        if (choice === null) return;
-        const normalized = choice.trim().toLowerCase();
-        if (normalized === "1" || normalized === "omlx") settings.provider = "omlx";
-        else if (normalized === "2" || normalized === "cloud") settings.provider = "cloud";
+        const value = prompt("Choose translation provider:\\n1. oMLX\\n2. Cloud (Google → Apple → Microsoft)", settings.provider === "omlx" ? "1" : "2");
+        if (!value) return;
+        const p = value.trim().toLowerCase();
+        if (p === "1" || p === "omlx") settings.provider = "omlx";
+        else if (p === "2" || p === "cloud") settings.provider = "cloud";
         else return toast("Choose 1 (oMLX) or 2 (Cloud).");
-        saveSettings();
-        toast("Translation provider set to " + (settings.provider === "omlx" ? "oMLX" : "Cloud") + ".");
+        saveSettings(); toast("Translation provider set to " + (settings.provider === "omlx" ? "oMLX" : "Cloud") + ".");
     }
     function configureOmlx() {
         const url = prompt("oMLX OpenAI-compatible /v1/chat/completions URL:", settings.omlxUrl); if (url === null) return;
@@ -6464,58 +6354,11 @@
         const key = prompt("Optional API key (blank if none):", settings.omlxKey); if (key === null) return;
         settings.omlxUrl = url.trim(); settings.omlxModel = model.trim(); settings.omlxKey = key.trim(); saveSettings(); toast("oMLX / Qwen settings saved.");
     }
-    function toggleEnabled() {
-        settings.enabled = !settings.enabled; saveSettings();
-        if (!settings.enabled) cancelActive();
-        toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled.");
-    }
-    function ensureInlineControls() {
-        if (document.getElementById(NS + "-controls")) return;
-        const root = document.createElement("div");
-        root.id = NS + "-controls";
-        root.style.cssText = "position:fixed;right:12px;bottom:18px;z-index:2147483647;display:flex;gap:6px;align-items:center;padding:6px;background:rgba(30,30,35,.88);border:1px solid rgba(255,255,255,.24);border-radius:10px;font:12px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;color:#fff;box-shadow:0 2px 12px #0003";
-        const label = document.createElement("span"); label.textContent = "HTT";
-        label.style.cssText = "font-weight:600;padding:0 4px;color:#fff";
-        const provider = document.createElement("select");
-        provider.setAttribute("aria-label", "Translation provider");
-        provider.style.cssText = "font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:#111;background:#fff;border:0;border-radius:5px;padding:4px;max-width:112px";
-        [["omlx","oMLX"],["cloud","Cloud"]].forEach(function (option) {
-            const el = document.createElement("option"); el.value = option[0]; el.textContent = option[1]; provider.appendChild(el);
-        });
-        provider.value = settings.provider;
-        provider.addEventListener("change", function () {
-            settings.provider = provider.value === "omlx" ? "omlx" : "cloud"; saveSettings();
-            toast("Translation provider set to " + (settings.provider === "omlx" ? "oMLX" : "Cloud") + ".");
-        });
-        const config = document.createElement("button"); config.type = "button"; config.textContent = "⚙"; config.title = "Configure oMLX";
-        config.style.cssText = "font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:#111;background:#fff;border:0;border-radius:5px;padding:4px 7px;cursor:pointer";
-        config.addEventListener("click", configureOmlx);
-        const toggle = document.createElement("button"); toggle.type = "button"; toggle.dataset.httToggle = "true";
-        toggle.textContent = settings.enabled ? "On" : "Off"; toggle.title = "Toggle hold-to-translate";
-        toggle.style.cssText = "font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:#111;background:#fff;border:0;border-radius:5px;padding:4px 7px;cursor:pointer";
-        toggle.addEventListener("click", function () {
-            settings.enabled = !settings.enabled; saveSettings(); toggle.textContent = settings.enabled ? "On" : "Off";
-            if (!settings.enabled) cancelActive();
-            toast(settings.enabled ? "Inline translation enabled." : "Inline translation disabled.");
-        });
-        const close = document.createElement("button"); close.type = "button"; close.textContent = "×"; close.title = "Hide HTT controls";
-        close.style.cssText = "font:14px -apple-system,BlinkMacSystemFont,sans-serif;color:#fff;background:transparent;border:0;padding:0 3px;cursor:pointer";
-        close.addEventListener("click", function () { root.remove(); });
-        root.appendChild(label); root.appendChild(provider); root.appendChild(config); root.appendChild(toggle); root.appendChild(close);
-        (document.body || document.documentElement).appendChild(root);
-    }
+    function toggleEnabled() { settings.enabled = !settings.enabled; saveSettings(); if (!settings.enabled) cancelActive(); toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled."); }
     function registerMenu() {
-        const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand :
-            (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
-        if (reg && !menuAdded) {
-            menuAdded = true;
-            [
-                ["HTT choose provider (oMLX / Cloud)", chooseProvider],
-                ["HTT configure oMLX", configureOmlx],
-                ["HTT enable / disable", toggleEnabled]
-            ].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
-        }
-        ensureInlineControls();
+        if (menuAdded) return; const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand : (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
+        if (!reg) return; menuAdded = true;
+        [[(settings.enabled ? "✅" : "❎") + " HTT (hold-to-translate)", toggleEnabled], ["🔀 HTT choose provider", chooseProvider], ["⚙️ HTT configure local LLM", configureOmlx]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
     }
     function install() {
         if (!document.documentElement) return;
