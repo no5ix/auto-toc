@@ -21,9 +21,10 @@
 // @grant        GM_xmlhttpRequest
 // @grant        GM.xmlHttpRequest
 // @grant        unsafeWindow
+// @grant        Scripting.Translation
+// @inject-into  content
 // @connect       translate.googleapis.com
 // @connect       edge.microsoft.com
-// @connect       localhost
 // @connect       localhost
 // @connect       127.0.0.1
 // @compatible        chrome
@@ -6079,8 +6080,7 @@
     const SETTINGS_KEY = NS + ":settings";
     const CACHE_PREFIX = NS + ":cache:";
     const DEFAULTS = {
-        enabled: true, provider: "microsoft", targetLanguage: "zh-CN", holdDelayMs: 280,
-        microsoftKey: "", microsoftRegion: "",
+        enabled: true, provider: "cloud", targetLanguage: "zh-CN", holdDelayMs: 280,
         omlxUrl: "http://127.0.0.1:8000/v1/chat/completions", omlxModel: "Qwen", omlxKey: "",
         showOriginal: false
     };
@@ -6093,18 +6093,36 @@
 
     function loadSettings() {
         let stored = null;
-        try { const v = GM_getValue(SETTINGS_KEY, null); if (v && typeof v === "object") stored = v; } catch (_) {}
+        // Tampermonkey/Userscripts storage is shared across sites. Prefer it to per-origin localStorage.
+        try {
+            const getter = typeof GM_getValue === "function" ? GM_getValue :
+                (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
+            if (getter) {
+                const v = getter(SETTINGS_KEY, null);
+                if (v && typeof v === "object" && typeof v.then !== "function") stored = v;
+            }
+        } catch (_) {}
         if (!stored) {
             try { const v = localStorage.getItem(SETTINGS_KEY); if (v) stored = JSON.parse(v); } catch (_) {}
         }
-        // Upgrade existing installs to free Microsoft translation and enabled-by-default
-        // behavior, while preserving explicitly configured provider choices and oMLX keys.
         const settings = Object.assign({}, DEFAULTS, stored || {});
         if (!stored || stored.enabled == null) settings.enabled = true;
-        if (!stored || stored.provider == null || stored.provider === "google") settings.provider = "microsoft";
+        if (!stored || !stored.provider) settings.provider = "cloud";
+        // Migrate old choices to the two supported menu modes.
+        if (settings.provider !== "omlx" && settings.provider !== "cloud") {
+            settings.provider = "cloud";
+        }
         return settings;
     }
-    function saveSettings() { try { GM_setValue(SETTINGS_KEY, settings); } catch (_) {} try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {} }
+    function saveSettings() {
+        try {
+            if (typeof GM_setValue === "function") GM_setValue(SETTINGS_KEY, settings);
+            else if (typeof GM !== "undefined" && typeof GM.setValue === "function") {
+                GM.setValue(SETTINGS_KEY, settings).catch(function () {});
+            }
+        } catch (_) {}
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
+    }
     function toast(message) {
         let el = document.getElementById(NS + "-notice");
         if (!el) { el = document.createElement("div"); el.id = NS + "-notice"; el.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:2147483647;background:rgba(32,32,36,.95);color:#fff;padding:9px 13px;border-radius:10px;font:13px/1.45 system-ui,sans-serif;box-shadow:0 5px 20px #0003;pointer-events:none;max-width:80vw"; document.documentElement.appendChild(el); }
@@ -6152,11 +6170,41 @@
     }
     function translateGoogle(text, signal) {
         const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + encodeURIComponent(settings.targetLanguage) + "&dt=t&q=" + encodeURIComponent(text);
-        return requestText({ url: url, signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = Array.isArray(j[0]) ? j[0].map(function (p) { return Array.isArray(p) ? (p[0] || "") : ""; }).join("") : ""; if (!t.trim()) throw new Error("Google returned an empty translation."); return t.trim(); });
+        return requestText({ url: url, signal: signal }).then(function (raw) {
+            const j = JSON.parse(raw);
+            const t = Array.isArray(j[0]) ? j[0].map(function (p) { return Array.isArray(p) ? (p[0] || "") : ""; }).join("") : "";
+            if (!t.trim()) throw new Error("Google returned an empty translation.");
+            return t.trim();
+        });
     }
+
+    function getAppleTranslationAPI() {
+        try {
+            if (typeof Scripting !== "undefined" && Scripting && Scripting.Translation) return Scripting.Translation;
+        } catch (_) {}
+        try {
+            if (typeof unsafeWindow !== "undefined" && unsafeWindow && unsafeWindow.Scripting && unsafeWindow.Scripting.Translation) return unsafeWindow.Scripting.Translation;
+        } catch (_) {}
+        return null;
+    }
+
+    async function translateApple(text, signal) {
+        const api = getAppleTranslationAPI();
+        if (!api || typeof api.translateInstalled !== "function") {
+            throw new Error("Apple's Safari translation API is unavailable. It requires a compatible Safari userscript manager, macOS/iOS 26+, and installed language models.");
+        }
+        if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+        // translateInstalled requires an explicit source language; English is the common case for this script.
+        // Fall back may run when source-language autodetection is unavailable, so specify English explicitly.
+        const target = settings.targetLanguage === "zh-CN" ? "zh-Hans" :
+            settings.targetLanguage === "zh-TW" ? "zh-Hant" : settings.targetLanguage;
+        const result = await api.translateInstalled({ text: text, source: "en", target: target });
+        if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+        if (!result || !String(result).trim()) throw new Error("Apple Translate returned an empty translation.");
+        return String(result).trim();
+    }
+
     function translateMicrosoftEdgeWeb(text, signal) {
-        // The old edge.microsoft.com/translate/auth token endpoint is returning 404.
-        // Edge's newer public frontend endpoint does not require that token.
         const targetLanguage = settings.targetLanguage === "zh-CN" ? "zh-Hans" :
             settings.targetLanguage === "zh-TW" ? "zh-Hant" : settings.targetLanguage;
         const query = new URLSearchParams({
@@ -6173,49 +6221,84 @@
         }).then(function (raw) {
             let parsed;
             try { parsed = JSON.parse(raw); }
-            catch (_) { throw new Error("Microsoft Edge returned a non-JSON response from its public translation endpoint."); }
-            // The Edge frontend endpoint returns one result per input string.
+            catch (_) { throw new Error("Microsoft Edge returned a non-JSON response."); }
             const item = Array.isArray(parsed) ? parsed[0] : null;
             const value = item && item.translations && item.translations[0] && item.translations[0].text;
-            if (!value || !String(value).trim()) {
-                throw new Error("Microsoft Edge public endpoint returned no translation or an unexpected response shape.");
-            }
+            if (!value || !String(value).trim()) throw new Error("Microsoft Edge returned no translation.");
             const wrapper = document.createElement("div");
             wrapper.innerHTML = String(value);
             return (wrapper.textContent || wrapper.innerText || String(value)).trim();
         });
     }
 
-    function translateMicrosoft(text, signal) {
-        // Use Edge's documented on-device API where available; otherwise use the
-        // current public Edge frontend translation endpoint. Do not call the retired
-        // /translate/auth endpoint or the old api-edge token-authenticated route.
-        return translateMicrosoftEdgeLocal(text, signal).catch(function (localError) {
-            if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
-            return translateMicrosoftEdgeWeb(text, signal).catch(function (webError) {
-                if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
-                const localMessage = localError && localError.message ? localError.message : String(localError || "Unavailable");
-                const webMessage = webError && webError.message ? webError.message : String(webError || "Unavailable");
-                throw new Error("Microsoft translation failed. Edge on-device: " + localMessage +
-                    " Edge public endpoint: " + webMessage +
-                    ". The legacy authentication endpoint is retired; try again in Microsoft Edge or choose Google/oMLX.");
-            });
-        });
-    }
     function translateOmlx(text, signal) {
         const url = settings.omlxUrl.trim(); if (!/^https?:\/\//i.test(url)) return Promise.reject(new Error("Set a valid oMLX OpenAI-compatible chat-completions URL."));
         const headers = { "Content-Type": "application/json" }; if (settings.omlxKey.trim()) headers.Authorization = "Bearer " + settings.omlxKey.trim();
         const data = { model: settings.omlxModel.trim() || "Qwen", stream: false, temperature: 0.1, messages: [{ role: "system", content: "Translate the user text into Simplified Chinese. Return only the translation. Preserve meaning, names, URLs, and formatting; do not explain." }, { role: "user", content: text }] };
         return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify(data), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || j && j.message && j.message.content || j && j.response; if (!t || !String(t).trim()) throw new Error("oMLX returned no translation; check endpoint/model/API compatibility."); return String(t).trim(); });
     }
+    function withTimeout(promise, ms, signal, label) {
+        return new Promise(function (resolve, reject) {
+            let settled = false;
+            const finish = function (fn, value) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timer);
+                if (signal) signal.removeEventListener("abort", onAbort);
+                fn(value);
+            };
+            const onAbort = function () { finish(reject, new DOMException("Aborted", "AbortError")); };
+            const timer = setTimeout(function () {
+                finish(reject, new Error(label + " timed out after " + ms / 1000 + " seconds."));
+            }, ms);
+            if (signal) {
+                if (signal.aborted) return onAbort();
+                signal.addEventListener("abort", onAbort, { once: true });
+            }
+            Promise.resolve(promise).then(function (value) { finish(resolve, value); }, function (error) { finish(reject, error); });
+        });
+    }
+
+    async function translateCloud(text, signal) {
+        const errors = [];
+        const providers = [
+            ["Google", translateGoogle],
+            ["Apple", translateApple],
+            ["Microsoft", translateMicrosoftEdgeWeb]
+        ];
+        for (const entry of providers) {
+            if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+            try {
+                return await withTimeout(entry[1](text, signal), 12 * 1000, signal, entry[0]);
+            } catch (error) {
+                if (error && error.name === "AbortError") throw error;
+                errors.push(entry[0] + ": " + (error && error.message ? error.message : String(error)));
+            }
+        }
+        throw new Error("All cloud translation providers failed. " + errors.join(" | "));
+    }
+
     function translate(text, signal) {
-        const cached = getCache(text); if (cached) return Promise.resolve(cached);
-        let task;
-        if (settings.provider === "google") task = translateGoogle(text, signal);
-        else if (settings.provider === "microsoft") task = translateMicrosoft(text, signal);
-        else if (settings.provider === "omlx") task = translateOmlx(text, signal);
-        else return Promise.reject(new Error("Unknown translation provider."));
-        return task.then(function (value) { setCache(text, value); return value; });
+        const cacheProvider = settings.provider === "omlx" ? "omlx" : "cloud";
+        const key = cacheProvider + ":" + settings.targetLanguage + ":" + text;
+        const cached = getCacheByKey(key);
+        if (cached) return Promise.resolve(cached);
+        const task = settings.provider === "omlx" ? translateOmlx(text, signal) : translateCloud(text, signal);
+        return withTimeout(task, settings.provider === "omlx" ? 20 * 1000 : 38 * 1000, signal, cacheProvider === "omlx" ? "oMLX translation" : "Cloud translation")
+            .then(function (value) { setCacheByKey(key, value); return value; });
+    }
+    function getCacheByKey(key) {
+        if (cache.has(key)) return cache.get(key);
+        try {
+            const stored = localStorage.getItem(CACHE_PREFIX + hash(key));
+            if (stored) { cache.set(key, stored); return stored; }
+        } catch (_) {}
+        return "";
+    }
+    function setCacheByKey(key, value) {
+        cache.set(key, value);
+        if (cache.size > 300) cache.delete(cache.keys().next().value);
+        try { localStorage.setItem(CACHE_PREFIX + hash(key), value); } catch (_) {}
     }
     function makeInlineLine(block) {
         const next = block.nextElementSibling;
@@ -6251,12 +6334,12 @@
             if (sequence !== requestSequence || !info.block.isConnected || activeLine !== line || !line.isConnected) return;
             line.textContent = settings.showOriginal ? info.text + "\n" + value : value;
             line.style.color = "#B0B0B0";
-            line.title = "Translation service: " + settings.provider;
+            line.title = "Translation service: " + (settings.provider === "omlx" ? "oMLX" : "Cloud (Google / Apple / Microsoft fallback)");
             if (request === controller) request = null;
         }).catch(function (error) {
             if (error && error.name === "AbortError") return;
             if (sequence !== requestSequence || activeLine !== line || !line.isConnected) return;
-            line.textContent = "翻译失败（" + settings.provider + "）：" + (error.message || "请检查设置");
+            line.textContent = "翻译失败（" + (settings.provider === "omlx" ? "oMLX" : "Cloud") + "）：" + (error && error.message ? error.message : "请检查设置");
             line.style.color = "#B0B0B0";
             console.warn("[AutoTOC inline translation]", error);
             if (request === controller) request = null;
@@ -6311,15 +6394,14 @@
         // Keep completed translation output visible until this document reloads.
     }
     function chooseProvider() {
-        const value = prompt("Translation provider: google, microsoft, or omlx", settings.provider);
-        if (!value) return;
-        const provider = value.trim().toLowerCase();
-        if (["google", "microsoft", "omlx"].indexOf(provider) < 0) {
-            return toast("Use google, microsoft, or omlx.");
-        }
-        settings.provider = provider;
+        const choice = prompt("Choose translation provider: 1 = oMLX, 2 = Cloud (Google → Apple → Microsoft)", settings.provider === "omlx" ? "1" : "2");
+        if (choice === null) return;
+        const normalized = choice.trim().toLowerCase();
+        if (normalized === "1" || normalized === "omlx") settings.provider = "omlx";
+        else if (normalized === "2" || normalized === "cloud") settings.provider = "cloud";
+        else return toast("Choose 1 (oMLX) or 2 (Cloud).");
         saveSettings();
-        toast("Translation provider set to " + provider + ".");
+        toast("Translation provider set to " + (settings.provider === "omlx" ? "oMLX" : "Cloud") + ".");
     }
     function configureOmlx() {
         const url = prompt("oMLX OpenAI-compatible /v1/chat/completions URL:", settings.omlxUrl); if (url === null) return;
@@ -6327,11 +6409,22 @@
         const key = prompt("Optional API key (blank if none):", settings.omlxKey); if (key === null) return;
         settings.omlxUrl = url.trim(); settings.omlxModel = model.trim(); settings.omlxKey = key.trim(); saveSettings(); toast("oMLX / Qwen settings saved.");
     }
-    function toggleEnabled() { settings.enabled = !settings.enabled; saveSettings(); if (!settings.enabled) cancelActive(); toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled."); }
+    function toggleEnabled() {
+        settings.enabled = !settings.enabled; saveSettings();
+        if (!settings.enabled) cancelActive();
+        toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled.");
+    }
     function registerMenu() {
-        if (menuAdded) return; const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand : (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
-        if (!reg) return; menuAdded = true;
-        [[(settings.enabled ? "✅" : "❎") + " HTT (hold-to-translate)", toggleEnabled], ["🔀 HTT choose provider", chooseProvider], ["⚙️ HTT configure local LLM", configureOmlx]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
+        if (menuAdded) return;
+        const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand :
+            (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
+        if (!reg) return;
+        menuAdded = true;
+        [
+            [(settings.enabled ? "✅" : "❎") + " HTT (hold-to-translate)", toggleEnabled],
+            ["🔀 HTT choose provider (oMLX / Cloud)", chooseProvider],
+            ["⚙️ HTT configure oMLX", configureOmlx]
+        ].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
     }
     function install() {
         if (!document.documentElement) return;
