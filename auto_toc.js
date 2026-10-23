@@ -6288,48 +6288,6 @@
             };
             const onAbort = function () { finish(reject, new DOMException("Aborted", "AbortError")); };
             const timer = setTimeout(function () {
-                finish(reject, new Error(label + " timed out after " + ms / 1000 + " seconds."));
-            }, ms);
-            if (signal) {
-                if (signal.aborted) return onAbort();
-                signal.addEventListener("abort", onAbort, { once: true });
-            }
-            Promise.resolve(promise).then(function (value) { finish(resolve, value); }, function (error) { finish(reject, error); });
-        });
-    }
-
-    async function translateCloud(text, signal) {
-        const errors = [];
-        const providers = [
-            ["Google", translateGoogle],
-            ["Apple", translateApple],
-            ["Microsoft", translateMicrosoftEdgeWeb]
-        ];
-        for (const entry of providers) {
-            if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
-            try {
-                return await withTimeout(entry[1](text, signal), 12 * 1000, signal, entry[0]);
-            } catch (error) {
-                if (error && error.name === "AbortError") throw error;
-                errors.push(entry[0] + ": " + (error && error.message ? error.message : String(error)));
-            }
-        }
-        throw new Error("All cloud translation providers failed. " + errors.join(" | "));
-    }
-
-
-    function withTimeout(promise, ms, signal, label) {
-        return new Promise(function (resolve, reject) {
-            let settled = false;
-            const finish = function (fn, value) {
-                if (settled) return;
-                settled = true;
-                clearTimeout(timer);
-                if (signal) signal.removeEventListener("abort", onAbort);
-                fn(value);
-            };
-            const onAbort = function () { finish(reject, new DOMException("Aborted", "AbortError")); };
-            const timer = setTimeout(function () {
                 finish(reject, new Error(label + " timed out after " + Math.round(ms / 1000) + " seconds."));
             }, ms);
             if (signal) {
@@ -6385,6 +6343,7 @@
         return withTimeout(task, useOmlx ? 20000 : 39000, signal, useOmlx ? "oMLX translation" : "Cloud translation")
             .then(function (value) { setCacheByKey(key, value); return value; });
     }
+
     function makeInlineLine(block) {
         const next = block.nextElementSibling;
         if (next && next.dataset.autoTocTranslation === "true") return next;
