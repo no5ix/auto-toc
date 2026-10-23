@@ -6141,24 +6141,14 @@
         return requestText({ url: url, signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = Array.isArray(j[0]) ? j[0].map(function (p) { return Array.isArray(p) ? (p[0] || "") : ""; }).join("") : ""; if (!t.trim()) throw new Error("Google returned an empty translation."); return t.trim(); });
     }
     function translateMicrosoft(text, signal) {
-        // Use the keyless endpoint used by Microsoft's free Translator web experience,
-        // rather than the Azure subscription-key API.
-        const lang = settings.targetLanguage === "zh-CN" ? "zh-Hans" : settings.targetLanguage;
-        const url = "https://api-edge.cognitive.microsofttranslator.com/translate?from=auto&to=" +
-            encodeURIComponent(lang) + "&api-version=3.0&textType=html";
-        return requestText({
-            url: url,
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            data: JSON.stringify([{ Text: text }]),
-            signal: signal
-        }).then(function (raw) {
-            const j = JSON.parse(raw);
-            const t = j && j[0] && j[0].translations && j[0].translations[0] && j[0].translations[0].text;
-            if (!t) throw new Error("Microsoft Translator returned no translation.");
-            const wrapper = document.createElement("div");
-            wrapper.innerHTML = t;
-            return wrapper.textContent || wrapper.innerText || t;
+        // Azure's documented Translator REST endpoint requires a subscription key.
+        // The previous keyless api-edge request returns HTTP 401, so fall back to
+        // the existing keyless Google Translate endpoint instead of surfacing 401.
+        // Keep the configured provider setting intact.
+        return translateGoogle(text, signal).catch(function (error) {
+            const message = error && error.message ? error.message : String(error || "Unknown error");
+            throw new Error("Microsoft Translator is unavailable without valid Azure credentials (HTTP 401). " +
+                "Google fallback failed: " + message);
         });
     }
     function translateOmlx(text, signal) {
