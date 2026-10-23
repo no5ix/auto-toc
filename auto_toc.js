@@ -6112,11 +6112,26 @@
     function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
     function getBlock(target) {
-        if (!(target instanceof Element) || target.closest(IGNORE)) return null;
-        // Documentation sites often wrap text in nested spans or links. Start with
-        // the closest supported text block and ignore only actual controls/editors.
-        const block = target.closest(BLOCKS);
+        // elementFromPoint may return an inline anchor, span, text wrapper, or
+        // even an element from a browser-generated overlay. Normalize text nodes first.
+        if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
+        if (!(target instanceof Element)) return null;
+        if (target.closest(IGNORE)) return null;
+
+        // Prefer the exact semantic block, including HyperFrames' data-as="p" spans.
+        let block = target.closest(BLOCKS);
+        // If the pointer is over the anchor within a data-as paragraph, closest(BLOCKS)
+        // should return that paragraph. This fallback covers sites where wrappers are
+        // inserted between the text and the semantic element.
+        if (!block) {
+            const semantic = target.closest("[data-as='p'],[data-as='li'],[data-as='blockquote']");
+            if (semantic) block = semantic;
+        }
         if (!block || !block.isConnected || block.closest(IGNORE) || block.dataset.autoTocTranslation === "true") return null;
+        if (block.closest("[data-auto-toc-translation='true']")) return null;
+
+        // Use visible rendered text; normalize non-breaking spaces and line breaks
+        // without losing text inside the nested links.
         const text = normalize(block.innerText || block.textContent);
         if (text.length < 4 || text.length > 1500 || !/[A-Za-z]/.test(text)) return null;
         if (block.tagName === "PRE" && text.length > 700) return null;
