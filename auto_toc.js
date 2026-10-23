@@ -6450,7 +6450,7 @@
         // Keep completed translation output visible until this document reloads.
     }
     function chooseProvider() {
-        const choice = prompt("Choose translation provider: 1 = oMLX, 2 = Cloud (Google → Apple → Microsoft)", settings.provider === "omlx" ? "1" : "2");
+        const choice = prompt("Choose translation provider:\n1. oMLX\n2. Cloud (Google → Apple → Microsoft fallback)", settings.provider === "omlx" ? "1" : "2");
         if (choice === null) return;
         const normalized = choice.trim().toLowerCase();
         if (normalized === "1" || normalized === "omlx") settings.provider = "omlx";
