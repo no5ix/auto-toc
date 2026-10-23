@@ -6093,24 +6093,32 @@
 
     function loadSettings() {
         let stored = null;
-        // Tampermonkey/Userscripts storage is shared across sites. Prefer it to per-origin localStorage.
+        let hasGlobalSettings = false;
+        // Script-manager storage is shared across origins and must win over origin-scoped localStorage.
         try {
             const getter = typeof GM_getValue === "function" ? GM_getValue :
                 (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
             if (getter) {
-                const v = getter(SETTINGS_KEY, null);
-                if (v && typeof v === "object" && typeof v.then !== "function") stored = v;
+                const value = getter(SETTINGS_KEY, null);
+                if (value && typeof value === "object" && typeof value.then !== "function") {
+                    stored = value;
+                    hasGlobalSettings = true;
+                }
             }
         } catch (_) {}
         if (!stored) {
-            try { const v = localStorage.getItem(SETTINGS_KEY); if (v) stored = JSON.parse(v); } catch (_) {}
+            try { const value = localStorage.getItem(SETTINGS_KEY); if (value) stored = JSON.parse(value); } catch (_) {}
         }
         const settings = Object.assign({}, DEFAULTS, stored || {});
         if (!stored || stored.enabled == null) settings.enabled = true;
         if (!stored || !stored.provider) settings.provider = "cloud";
-        // Migrate old choices to the two supported menu modes.
-        if (settings.provider !== "omlx" && settings.provider !== "cloud") {
-            settings.provider = "cloud";
+        if (settings.provider !== "omlx" && settings.provider !== "cloud") settings.provider = "cloud";
+        // Migrate a site's legacy provider choice into global userscript storage once, if global storage is empty.
+        if (!hasGlobalSettings) {
+            try {
+                if (typeof GM_setValue === "function") GM_setValue(SETTINGS_KEY, settings);
+                else if (typeof GM !== "undefined" && typeof GM.setValue === "function") GM.setValue(SETTINGS_KEY, settings).catch(function () {});
+            } catch (_) {}
         }
         return settings;
     }
@@ -6381,8 +6389,13 @@
             line.title = "Translation service: " + (settings.provider === "omlx" ? "oMLX" : "Cloud (Google / Apple / Microsoft fallback)");
             if (request === controller) request = null;
         }).catch(function (error) {
-            if (error && error.name === "AbortError") return;
             if (sequence !== requestSequence || activeLine !== line || !line.isConnected) return;
+            if (error && error.name === "AbortError") {
+                line.textContent = "翻译已取消";
+                line.style.color = "#B0B0B0";
+                if (request === controller) request = null;
+                return;
+            }
             line.textContent = "翻译失败（" + (settings.provider === "omlx" ? "oMLX" : "Cloud") + "）：" + (error && error.message ? error.message : "请检查设置");
             line.style.color = "#B0B0B0";
             console.warn("[AutoTOC inline translation]", error);
