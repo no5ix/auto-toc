@@ -6083,8 +6083,8 @@
         omlxUrl: "http://127.0.0.1:8000/v1/chat/completions", omlxModel: "Qwen", omlxKey: "",
         showOriginal: false
     };
-    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,[data-as='p'],[data-as='li'],[data-as='blockquote']";
-    const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
+    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,[data-as='p'],[data-as='li'],[data-as='blockquote'],#page-title,.eyebrow";
+    const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,footer,aside,[aria-hidden=true],#page-context-menu";
     let settings = loadSettings();
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
     let lastPointer = { x: 0, y: 0 }, pointerDownPoint = { x: 0, y: 0 }, menuAdded = false;
@@ -6116,6 +6116,8 @@
         // even an element from a browser-generated overlay. Normalize text nodes first.
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element)) return null;
+        // The site header includes useful text. Ignore only its copy/menu action panel,
+        // not the whole <header> ancestor.
         if (target.closest(IGNORE)) return null;
 
         // Prefer the exact semantic block, including HyperFrames' data-as="p" spans.
