@@ -6083,8 +6083,8 @@
         omlxUrl: "http://127.0.0.1:8000/v1/chat/completions", omlxModel: "Qwen", omlxKey: "",
         showOriginal: false
     };
-    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary";
-    const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,a,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
+    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,strong,span,[data-as='p'],[data-as='li'],[data-as='blockquote'],#page-title,.eyebrow";
+    const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,footer,aside,[aria-hidden=true],#page-context-menu";
     let settings = loadSettings();
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
     let lastPointer = { x: 0, y: 0 }, pointerDownPoint = { x: 0, y: 0 }, menuAdded = false;
@@ -6112,11 +6112,29 @@
     function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
     function getBlock(target) {
+        if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element) || target.closest(IGNORE)) return null;
-        const block = target.closest(BLOCKS); if (!block || !block.isConnected || block.closest(IGNORE) || block.dataset.autoTocTranslation === "true") return null;
-        const text = normalize(block.innerText || block.textContent); if (text.length < 4 || text.length > 1500 || !/[A-Za-z]/.test(text)) return null;
+
+        // Prefer semantic blocks, and support card text inside a strong/span in a div.
+        let block = target.closest(BLOCKS);
+        if (!block) {
+            const candidate = target.closest("div,article,section");
+            if (candidate) {
+                const candidateText = normalize(candidate.innerText || candidate.textContent);
+                if (candidateText.length >= 4 && candidateText.length <= 500 && /[A-Za-z]/.test(candidateText)) {
+                    const nestedBlocks = candidate.querySelectorAll("p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,[data-as='p'],[data-as='li'],[data-as='blockquote']");
+                    if (nestedBlocks.length === 0) block = candidate;
+                }
+            }
+        }
+        if (!block || !block.isConnected || block.closest(IGNORE) || block.dataset.autoTocTranslation === "true") return null;
+        if (block.closest("[data-auto-toc-translation='true']")) return null;
+
+        const text = normalize(block.innerText || block.textContent);
+        if (text.length < 4 || text.length > 1500 || !/[A-Za-z]/.test(text)) return null;
         if (block.tagName === "PRE" && text.length > 700) return null;
-        const rect = block.getBoundingClientRect(); if (rect.width < 50 || rect.height < 8) return null;
+        const rect = block.getBoundingClientRect();
+        if (rect.width < 50 || rect.height < 8) return null;
         return { block: block, text: text };
     }
     function getCache(text) { if (cache.has(text)) return cache.get(text); try { const v = localStorage.getItem(CACHE_PREFIX + hash(text)); if (v) { cache.set(text, v); return v; } } catch (_) {} return ""; }
