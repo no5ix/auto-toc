@@ -6148,21 +6148,6 @@
         const rect = block.getBoundingClientRect(); if (rect.width < 50 || rect.height < 8) return null;
         return { block: block, text: text };
     }
-    function getCache(text) {
-        const key = settings.provider + ":" + settings.targetLanguage + ":" + text;
-        if (cache.has(key)) return cache.get(key);
-        try {
-            const stored = localStorage.getItem(CACHE_PREFIX + hash(key));
-            if (stored) { cache.set(key, stored); return stored; }
-        } catch (_) {}
-        return "";
-    }
-    function setCache(text, value) {
-        const key = settings.provider + ":" + settings.targetLanguage + ":" + text;
-        cache.set(key, value);
-        if (cache.size > 300) cache.delete(cache.keys().next().value);
-        try { localStorage.setItem(CACHE_PREFIX + hash(key), value); } catch (_) {}
-    }
     function requestText(options) {
         return new Promise(function (resolve, reject) {
             let settled = false;
