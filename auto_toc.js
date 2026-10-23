@@ -6083,7 +6083,7 @@
         omlxUrl: "http://127.0.0.1:8000/v1/chat/completions", omlxModel: "Qwen", omlxKey: "",
         showOriginal: false
     };
-    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,[data-as='p'],[data-as='li'],[data-as='blockquote'],#page-title,.eyebrow";
+    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,strong,span,[data-as='p'],[data-as='li'],[data-as='blockquote'],#page-title,.eyebrow";
     const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,footer,aside,[aria-hidden=true],#page-context-menu";
     let settings = loadSettings();
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
@@ -6112,28 +6112,24 @@
     function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
     function getBlock(target) {
-        // elementFromPoint may return an inline anchor, span, text wrapper, or
-        // even an element from a browser-generated overlay. Normalize text nodes first.
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
-        if (!(target instanceof Element)) return null;
-        // The site header includes useful text. Ignore only its copy/menu action panel,
-        // not the whole <header> ancestor.
-        if (target.closest(IGNORE)) return null;
+        if (!(target instanceof Element) || target.closest(IGNORE)) return null;
 
-        // Prefer the exact semantic block, including HyperFrames' data-as="p" spans.
+        // Prefer semantic blocks, and support card text inside a strong/span in a div.
         let block = target.closest(BLOCKS);
-        // If the pointer is over the anchor within a data-as paragraph, closest(BLOCKS)
-        // should return that paragraph. This fallback covers sites where wrappers are
-        // inserted between the text and the semantic element.
         if (!block) {
-            const semantic = target.closest("[data-as='p'],[data-as='li'],[data-as='blockquote']");
-            if (semantic) block = semantic;
+            const candidate = target.closest("div,article,section");
+            if (candidate) {
+                const candidateText = normalize(candidate.innerText || candidate.textContent);
+                if (candidateText.length >= 4 && candidateText.length <= 500 && /[A-Za-z]/.test(candidateText)) {
+                    const nestedBlocks = candidate.querySelectorAll("p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,[data-as='p'],[data-as='li'],[data-as='blockquote']");
+                    if (nestedBlocks.length === 0) block = candidate;
+                }
+            }
         }
         if (!block || !block.isConnected || block.closest(IGNORE) || block.dataset.autoTocTranslation === "true") return null;
         if (block.closest("[data-auto-toc-translation='true']")) return null;
 
-        // Use visible rendered text; normalize non-breaking spaces and line breaks
-        // without losing text inside the nested links.
         const text = normalize(block.innerText || block.textContent);
         if (text.length < 4 || text.length > 1500 || !/[A-Za-z]/.test(text)) return null;
         if (block.tagName === "PRE" && text.length > 700) return null;
