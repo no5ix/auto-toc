@@ -20,7 +20,9 @@
 // @grant        GM.addStyle
 // @grant        GM_xmlhttpRequest
 // @grant        GM.xmlHttpRequest
+// @grant        unsafeWindow
 // @connect       translate.googleapis.com
+// @connect       edge.microsoft.com
 // @connect       api.cognitive.microsofttranslator.com
 // @connect       api-edge.cognitive.microsofttranslator.com
 // @connect       localhost
@@ -6140,15 +6142,146 @@
         const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + encodeURIComponent(settings.targetLanguage) + "&dt=t&q=" + encodeURIComponent(text);
         return requestText({ url: url, signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = Array.isArray(j[0]) ? j[0].map(function (p) { return Array.isArray(p) ? (p[0] || "") : ""; }).join("") : ""; if (!t.trim()) throw new Error("Google returned an empty translation."); return t.trim(); });
     }
+    let microsoftEdgeToken = "";
+    let microsoftEdgeTokenAt = 0;
+    let microsoftEdgeTokenPromise = null;
+    let microsoftLocalSessionPromise = null;
+
+    function getBrowserAIAPI(name) {
+        try {
+            if (typeof window !== "undefined" && window[name]) return window[name];
+        } catch (_) {}
+        try {
+            if (typeof unsafeWindow !== "undefined" && unsafeWindow && unsafeWindow[name]) return unsafeWindow[name];
+        } catch (_) {}
+        try {
+            if (typeof globalThis !== "undefined" && globalThis[name]) return globalThis[name];
+        } catch (_) {}
+        return null;
+    }
+
+    async function detectMicrosoftSourceLanguage(text) {
+        const Detector = getBrowserAIAPI("LanguageDetector");
+        if (!Detector || typeof Detector.create !== "function") return "en";
+        try {
+            if (typeof Detector.availability === "function") {
+                const available = await Detector.availability();
+                if (available === "unavailable") return "en";
+            }
+            const detector = await Detector.create();
+            try {
+                const results = await detector.detect(text);
+                if (!Array.isArray(results) || !results.length) return "en";
+                results.sort(function (a, b) { return (b.confidence || 0) - (a.confidence || 0); });
+                const code = results[0].detectedLanguage || results[0].language || "en";
+                return /^[a-z]{2,3}(?:-[A-Za-z0-9]+)?$/i.test(code) ? code : "en";
+            } finally {
+                if (detector && typeof detector.destroy === "function") detector.destroy();
+            }
+        } catch (_) {
+            return "en";
+        }
+    }
+
+    async function translateMicrosoftEdgeLocal(text, signal) {
+        const Translator = getBrowserAIAPI("Translator");
+        if (!Translator || typeof Translator.create !== "function") {
+            throw new Error("Microsoft Edge's on-device Translator API is not available in this browser.");
+        }
+        if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+        const sourceLanguage = await detectMicrosoftSourceLanguage(text);
+        const targetLanguage = settings.targetLanguage === "zh-CN" ? "zh-Hans" :
+            settings.targetLanguage === "zh-TW" ? "zh-Hant" : settings.targetLanguage;
+        if (typeof Translator.availability === "function") {
+            const availability = await Translator.availability({
+                sourceLanguage: sourceLanguage,
+                targetLanguage: targetLanguage
+            });
+            if (availability === "unavailable") {
+                throw new Error("Microsoft Edge has no on-device model for " + sourceLanguage + " → " + targetLanguage + ".");
+            }
+        }
+        if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+        const session = await Translator.create({
+            sourceLanguage: sourceLanguage,
+            targetLanguage: targetLanguage,
+            signal: signal
+        });
+        try {
+            const value = await session.translate(text);
+            if (!value || !String(value).trim()) throw new Error("Microsoft Edge returned an empty translation.");
+            return String(value).trim();
+        } finally {
+            if (session && typeof session.destroy === "function") session.destroy();
+        }
+    }
+
+    function getMicrosoftEdgeCloudToken(signal) {
+        // Cache this temporary Edge web-translation token for less than its usual lifetime.
+        if (microsoftEdgeToken && Date.now() - microsoftEdgeTokenAt < 7 * 60 * 1000) {
+            return Promise.resolve(microsoftEdgeToken);
+        }
+        if (microsoftEdgeTokenPromise) return microsoftEdgeTokenPromise;
+        microsoftEdgeTokenPromise = requestText({
+            url: "https://edge.microsoft.com/translate/auth",
+            method: "GET",
+            signal: signal
+        }).then(function (raw) {
+            let token = String(raw || "").trim();
+            try {
+                const parsed = JSON.parse(token);
+                if (typeof parsed === "string") token = parsed.trim();
+                else if (parsed && typeof parsed.token === "string") token = parsed.token.trim();
+            } catch (_) {}
+            if (!token || token.length < 20) throw new Error("Microsoft Edge auth endpoint did not return a valid token.");
+            microsoftEdgeToken = token;
+            microsoftEdgeTokenAt = Date.now();
+            return token;
+        }).finally(function () {
+            microsoftEdgeTokenPromise = null;
+        });
+        return microsoftEdgeTokenPromise;
+    }
+
+    async function translateMicrosoftEdgeCloud(text, signal) {
+        const token = await getMicrosoftEdgeCloudToken(signal);
+        if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+        const targetLanguage = settings.targetLanguage === "zh-CN" ? "zh-Hans" :
+            settings.targetLanguage === "zh-TW" ? "zh-Hant" : settings.targetLanguage;
+        const url = "https://api-edge.cognitive.microsofttranslator.com/translate?from=&to=" +
+            encodeURIComponent(targetLanguage) + "&api-version=3.0";
+        const raw = await requestText({
+            url: url,
+            method: "POST",
+            headers: {
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+            },
+            data: JSON.stringify([{ Text: text }]),
+            signal: signal
+        });
+        const j = JSON.parse(raw);
+        const value = j && j[0] && j[0].translations && j[0].translations[0] && j[0].translations[0].text;
+        if (!value) throw new Error("Microsoft Translator returned no translation.");
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = value;
+        return wrapper.textContent || wrapper.innerText || value;
+    }
+
     function translateMicrosoft(text, signal) {
-        // Azure's documented Translator REST endpoint requires a subscription key.
-        // The previous keyless api-edge request returns HTTP 401, so fall back to
-        // the existing keyless Google Translate endpoint instead of surfacing 401.
-        // Keep the configured provider setting intact.
-        return translateGoogle(text, signal).catch(function (error) {
-            const message = error && error.message ? error.message : String(error || "Unknown error");
-            throw new Error("Microsoft Translator is unavailable without valid Azure credentials (HTTP 401). " +
-                "Google fallback failed: " + message);
+        // Prefer the supported on-device Translator API when this is Microsoft Edge.
+        // If unavailable, try Edge's web-translation token flow used by Edge-based
+        // translation tools. This token flow is unofficial and may be disabled by Microsoft.
+        return translateMicrosoftEdgeLocal(text, signal).catch(function (localError) {
+            if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+            return translateMicrosoftEdgeCloud(text, signal).catch(function (cloudError) {
+                if (signal && signal.aborted) throw new DOMException("Aborted", "AbortError");
+                const localMessage = localError && localError.message ? localError.message : String(localError || "Unavailable");
+                const cloudMessage = cloudError && cloudError.message ? cloudError.message : String(cloudError || "Unavailable");
+                throw new Error("Microsoft translation is unavailable. Edge on-device: " + localMessage +
+                    " Edge web endpoint: " + cloudMessage +
+                    ". Switch to Google or local oMLX if neither Microsoft route is available.");
+            });
         });
     }
     function translateOmlx(text, signal) {
@@ -6260,9 +6393,15 @@
         // Keep completed translation output visible until this document reloads.
     }
     function chooseProvider() {
-        const value = prompt("Translation provider: microsoft or omlx", settings.provider); if (!value) return; const p = value.trim().toLowerCase();
-        if (["microsoft", "omlx"].indexOf(p) < 0) return toast("Use microsoft or omlx.");
-        settings.provider = p; saveSettings(); toast("Translation provider set to " + p + ".");
+        const value = prompt("Translation provider: google, microsoft, or omlx", settings.provider);
+        if (!value) return;
+        const provider = value.trim().toLowerCase();
+        if (["google", "microsoft", "omlx"].indexOf(provider) < 0) {
+            return toast("Use google, microsoft, or omlx.");
+        }
+        settings.provider = provider;
+        saveSettings();
+        toast("Translation provider set to " + provider + ".");
     }
     function configureOmlx() {
         const url = prompt("oMLX OpenAI-compatible /v1/chat/completions URL:", settings.omlxUrl); if (url === null) return;
