@@ -6096,25 +6096,10 @@
         if (result.provider !== "omlx" && result.provider !== "cloud") result.provider = "cloud";
         return result;
     }
-    function readLocalSettings() {
-        try {
-            const value = localStorage.getItem(SETTINGS_KEY);
-            return value ? JSON.parse(value) : null;
-        } catch (_) { return null; }
-    }
-    function readGlobalSettings() {
-        const getter = typeof GM_getValue === "function" ? GM_getValue :
-            (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
-        if (!getter) return Promise.resolve(null);
-        try {
-            return Promise.resolve(getter(SETTINGS_KEY, null)).then(function (value) {
-                return value && typeof value === "object" ? value : null;
-            }).catch(function () { return null; });
-        } catch (_) { return Promise.resolve(null); }
-    }
-    let settings = normalizeSettings(readLocalSettings());
+    let settings = normalizeSettings(DEFAULTS);
     function saveSettings() {
         const snapshot = Object.assign({}, settings);
+        // GM.* is the userscript-manager's cross-origin storage; localStorage is only a fallback.
         try {
             if (typeof GM_setValue === "function") GM_setValue(SETTINGS_KEY, snapshot);
             else if (typeof GM !== "undefined" && typeof GM.setValue === "function") {
@@ -6137,6 +6122,41 @@
         if (select) select.value = settings.provider;
         if (toggle) toggle.textContent = settings.enabled ? "On" : "Off";
     });
+
+    let globalSettingsReady = false;
+    const globalSettingsPromise = (function () {
+        const getter = typeof GM_getValue === "function" ? GM_getValue :
+            (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
+        if (!getter) {
+            try {
+                const local = localStorage.getItem(SETTINGS_KEY);
+                if (local) settings = normalizeSettings(JSON.parse(local));
+            } catch (_) {}
+            globalSettingsReady = true;
+            return Promise.resolve(settings);
+        }
+        let storedPromise;
+        try { storedPromise = Promise.resolve(getter(SETTINGS_KEY, null)); }
+        catch (_) { storedPromise = Promise.resolve(null); }
+        return storedPromise.catch(function () { return null; }).then(function (value) {
+            if (value && typeof value === "object") {
+                settings = normalizeSettings(value);
+            } else {
+                try {
+                    const local = localStorage.getItem(SETTINGS_KEY);
+                    if (local) settings = normalizeSettings(JSON.parse(local));
+                } catch (_) {}
+                saveSettings();
+            }
+            globalSettingsReady = true;
+            const controls = document.getElementById(NS + "-controls");
+            const select = controls && controls.querySelector("select");
+            const toggle = controls && controls.querySelector("[data-htt-toggle]");
+            if (select) select.value = settings.provider;
+            if (toggle) toggle.textContent = settings.enabled ? "On" : "Off";
+            return settings;
+        });
+    })();
 
     function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
@@ -6330,6 +6350,10 @@
         throw new Error("Google, Apple, and Microsoft all failed. " + errors.join(" | "));
     }
     function translate(text, signal) {
+        if (!globalSettingsReady) {
+            return withTimeout(globalSettingsPromise, 3000, signal, "Loading global translation settings")
+                .then(function () { return translate(text, signal); });
+        }
         const key = getTranslationCacheKey(text);
         const cached = getCacheByKey(key);
         if (cached) return Promise.resolve(cached);
