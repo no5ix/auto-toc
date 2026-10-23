@@ -2,9 +2,9 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.81
+// @version      1.83
 // @license MIT
-// @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
+// @description Generate table of contents and inline hold-to-translate for any website.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
 // @include      http://*
 // @include      https://*
@@ -6085,57 +6085,59 @@
         showOriginal: false
     };
     const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary";
-    const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,a,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
-    let settings = loadSettings();
+    const IGNORE = "#smarttoc,#smarttoc-toast,#auto-toc-inline-translate-controls,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,[contenteditable=true],[contenteditable=''],script,style,nav,header,footer,aside,[aria-hidden=true]";
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
     let lastPointer = { x: 0, y: 0 }, pointerDownPoint = { x: 0, y: 0 }, menuAdded = false;
     const cache = new Map();
 
-    function loadSettings() {
-        let stored = null;
-        let hasGlobalSettings = false;
-        // Script-manager storage is shared across origins and must win over origin-scoped localStorage.
-        try {
-            const getter = typeof GM_getValue === "function" ? GM_getValue :
-                (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
-            if (getter) {
-                const value = getter(SETTINGS_KEY, null);
-                if (value && typeof value === "object" && typeof value.then !== "function") {
-                    stored = value;
-                    hasGlobalSettings = true;
-                }
-            }
-        } catch (_) {}
-        if (!stored) {
-            try { const value = localStorage.getItem(SETTINGS_KEY); if (value) stored = JSON.parse(value); } catch (_) {}
-        }
-        const settings = Object.assign({}, DEFAULTS, stored || {});
-        if (!stored || stored.enabled == null) settings.enabled = true;
-        if (!stored || !stored.provider) settings.provider = "cloud";
-        if (settings.provider !== "omlx" && settings.provider !== "cloud") settings.provider = "cloud";
-        // Migrate a site's legacy provider choice into global userscript storage once, if global storage is empty.
-        if (!hasGlobalSettings) {
-            try {
-                if (typeof GM_setValue === "function") GM_setValue(SETTINGS_KEY, settings);
-                else if (typeof GM !== "undefined" && typeof GM.setValue === "function") GM.setValue(SETTINGS_KEY, settings).catch(function () {});
-            } catch (_) {}
-        }
-        return settings;
+    function normalizeSettings(value) {
+        const result = Object.assign({}, DEFAULTS, value || {});
+        if (result.enabled == null) result.enabled = true;
+        if (result.provider !== "omlx" && result.provider !== "cloud") result.provider = "cloud";
+        return result;
     }
-    function saveSettings() {
+    function readLocalSettings() {
         try {
-            if (typeof GM_setValue === "function") GM_setValue(SETTINGS_KEY, settings);
+            const value = localStorage.getItem(SETTINGS_KEY);
+            return value ? JSON.parse(value) : null;
+        } catch (_) { return null; }
+    }
+    function readGlobalSettings() {
+        const getter = typeof GM_getValue === "function" ? GM_getValue :
+            (typeof GM !== "undefined" && typeof GM.getValue === "function" ? GM.getValue.bind(GM) : null);
+        if (!getter) return Promise.resolve(null);
+        try {
+            return Promise.resolve(getter(SETTINGS_KEY, null)).then(function (value) {
+                return value && typeof value === "object" ? value : null;
+            }).catch(function () { return null; });
+        } catch (_) { return Promise.resolve(null); }
+    }
+    let settings = normalizeSettings(readLocalSettings());
+    function saveSettings() {
+        const snapshot = Object.assign({}, settings);
+        try {
+            if (typeof GM_setValue === "function") GM_setValue(SETTINGS_KEY, snapshot);
             else if (typeof GM !== "undefined" && typeof GM.setValue === "function") {
-                GM.setValue(SETTINGS_KEY, settings).catch(function () {});
+                Promise.resolve(GM.setValue(SETTINGS_KEY, snapshot)).catch(function () {});
             }
         } catch (_) {}
-        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
+        try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(snapshot)); } catch (_) {}
     }
     function toast(message) {
         let el = document.getElementById(NS + "-notice");
         if (!el) { el = document.createElement("div"); el.id = NS + "-notice"; el.style.cssText = "position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:2147483647;background:rgba(32,32,36,.95);color:#fff;padding:9px 13px;border-radius:10px;font:13px/1.45 system-ui,sans-serif;box-shadow:0 5px 20px #0003;pointer-events:none;max-width:80vw"; document.documentElement.appendChild(el); }
         el.textContent = message; el.style.opacity = "1"; clearTimeout(el.__hide); el.__hide = setTimeout(function () { el.style.opacity = "0"; }, 3200);
     }
+    readGlobalSettings().then(function (globalSettings) {
+        if (globalSettings) settings = normalizeSettings(globalSettings);
+        else saveSettings();
+        const controls = document.getElementById(NS + "-controls");
+        const select = controls && controls.querySelector("select");
+        const toggle = controls && controls.querySelector("[data-htt-toggle]");
+        if (select) select.value = settings.provider;
+        if (toggle) toggle.textContent = settings.enabled ? "On" : "Off";
+    });
+
     function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
     function getBlock(target) {
@@ -6470,17 +6472,53 @@
         if (!settings.enabled) cancelActive();
         toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled.");
     }
+    function ensureInlineControls() {
+        if (document.getElementById(NS + "-controls")) return;
+        const root = document.createElement("div");
+        root.id = NS + "-controls";
+        root.style.cssText = "position:fixed;right:12px;bottom:18px;z-index:2147483647;display:flex;gap:6px;align-items:center;padding:6px;background:rgba(30,30,35,.88);border:1px solid rgba(255,255,255,.24);border-radius:10px;font:12px/1.2 -apple-system,BlinkMacSystemFont,sans-serif;color:#fff;box-shadow:0 2px 12px #0003";
+        const label = document.createElement("span"); label.textContent = "HTT";
+        label.style.cssText = "font-weight:600;padding:0 4px;color:#fff";
+        const provider = document.createElement("select");
+        provider.setAttribute("aria-label", "Translation provider");
+        provider.style.cssText = "font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:#111;background:#fff;border:0;border-radius:5px;padding:4px;max-width:112px";
+        [["omlx","oMLX"],["cloud","Cloud"]].forEach(function (option) {
+            const el = document.createElement("option"); el.value = option[0]; el.textContent = option[1]; provider.appendChild(el);
+        });
+        provider.value = settings.provider;
+        provider.addEventListener("change", function () {
+            settings.provider = provider.value === "omlx" ? "omlx" : "cloud"; saveSettings();
+            toast("Translation provider set to " + (settings.provider === "omlx" ? "oMLX" : "Cloud") + ".");
+        });
+        const config = document.createElement("button"); config.type = "button"; config.textContent = "⚙"; config.title = "Configure oMLX";
+        config.style.cssText = "font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:#111;background:#fff;border:0;border-radius:5px;padding:4px 7px;cursor:pointer";
+        config.addEventListener("click", configureOmlx);
+        const toggle = document.createElement("button"); toggle.type = "button"; toggle.dataset.httToggle = "true";
+        toggle.textContent = settings.enabled ? "On" : "Off"; toggle.title = "Toggle hold-to-translate";
+        toggle.style.cssText = "font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:#111;background:#fff;border:0;border-radius:5px;padding:4px 7px;cursor:pointer";
+        toggle.addEventListener("click", function () {
+            settings.enabled = !settings.enabled; saveSettings(); toggle.textContent = settings.enabled ? "On" : "Off";
+            if (!settings.enabled) cancelActive();
+            toast(settings.enabled ? "Inline translation enabled." : "Inline translation disabled.");
+        });
+        const close = document.createElement("button"); close.type = "button"; close.textContent = "×"; close.title = "Hide HTT controls";
+        close.style.cssText = "font:14px -apple-system,BlinkMacSystemFont,sans-serif;color:#fff;background:transparent;border:0;padding:0 3px;cursor:pointer";
+        close.addEventListener("click", function () { root.remove(); });
+        root.appendChild(label); root.appendChild(provider); root.appendChild(config); root.appendChild(toggle); root.appendChild(close);
+        (document.body || document.documentElement).appendChild(root);
+    }
     function registerMenu() {
-        if (menuAdded) return;
         const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand :
             (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
-        if (!reg) return;
-        menuAdded = true;
-        [
-            [(settings.enabled ? "✅" : "❎") + " HTT (hold-to-translate)", toggleEnabled],
-            ["🔀 HTT choose provider (oMLX / Cloud)", chooseProvider],
-            ["⚙️ HTT configure oMLX", configureOmlx]
-        ].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
+        if (reg && !menuAdded) {
+            menuAdded = true;
+            [
+                ["HTT choose provider (oMLX / Cloud)", chooseProvider],
+                ["HTT configure oMLX", configureOmlx],
+                ["HTT enable / disable", toggleEnabled]
+            ].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
+        }
+        ensureInlineControls();
     }
     function install() {
         if (!document.documentElement) return;
