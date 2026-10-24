@@ -4907,7 +4907,7 @@
     function registerMenuCommand() {
         console.log("[auto_toc] - registerMenuCommand, menu_ALL : ", menu_ALL);
         for (let i = 0; i < menu_ID.length; i++) {
-            // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
+            // Safari userscript managers may not support menu unregistration.
             if (!isSafari()) {
                 // alert("非safari");
                 GM_unregisterMenuCommand(menu_ID[i]);
