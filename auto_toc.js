@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.97
+// @version      1.98
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -3527,52 +3527,58 @@
     let last_click_ts = 0;
     let last_move_ts = 0;
 
-    const Handle = function () {
+        const Handle = function () {
         let handleElement = null;
         let rootElement = null;
         let dragState = null;
         let resizeListener = null;
+        let pinObserver = null;
 
         const STORAGE_KEY = "auto_toc_edge_handle_top";
         const HANDLE_HEIGHT = 100;
-        const HANDLE_WIDTH = 30;
-
         const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-        const viewportMaxTop = () => Math.max(0, window.innerHeight - HANDLE_HEIGHT);
-        const centeredTop = () => viewportMaxTop() / 2;
+        const maxTop = () => Math.max(0, window.innerHeight - HANDLE_HEIGHT);
+        const centeredTop = () => maxTop() / 2;
         const readSavedTop = () => {
             const raw = GM_getValue(STORAGE_KEY, null);
             if (raw === null || raw === undefined || raw === "") return null;
             const value = Number(raw);
-            return Number.isFinite(value) ? clamp(value, 0, viewportMaxTop()) : null;
+            return Number.isFinite(value) ? clamp(value, 0, maxTop()) : null;
         };
-        const persistTop = (top) => GM_setValue(STORAGE_KEY, Math.round(clamp(top, 0, viewportMaxTop())));
-        const applyTop = (top) => {
-            if (!handleElement) return;
-            const value = clamp(top, 0, viewportMaxTop());
-            // Position using a transform on a top-level fixed element; no parent
-            // layout stream, CSS custom-property inheritance, or containing block
-            // can overwrite the vertical coordinate.
+        const setTop = (top) => {
+            if (!handleElement) return 0;
+            const value = clamp(top, 0, maxTop());
             handleElement.style.setProperty("top", "0px", "important");
-            handleElement.style.setProperty("transform", "translate3d(0, " + value + "px, 0)", "important");
+            handleElement.style.setProperty("transform", "translate3d(0," + value + "px,0)", "important");
             handleElement.dataset.autoTocDragTop = String(value);
             return value;
         };
+        const getTop = () => {
+            if (!handleElement) return centeredTop();
+            const value = Number(handleElement.dataset.autoTocDragTop);
+            return Number.isFinite(value) ? clamp(value, 0, maxTop()) : centeredTop();
+        };
+        const setPinState = (pinned) => {
+            if (!rootElement) return;
+            rootElement.classList.toggle("pinned", !!pinned);
+            if (typeof autoTocPinnedLayout === "function") autoTocPinnedLayout(!!pinned);
+            if (typeof mithril !== "undefined" && typeof mithril.redraw === "function") mithril.redraw();
+        };
 
         const beginDrag = (event) => {
-            if (!handleElement || !event.target.closest(".handle-drag-grip")) return;
+            const target = event.target instanceof Element ? event.target : null;
+            if (!handleElement || !target || !target.closest(".handle-drag-grip")) return;
             if (event.button !== 0 || dragState) return;
             event.preventDefault();
             event.stopPropagation();
-            const current = Number(handleElement.dataset.autoTocDragTop);
-            const startTop = Number.isFinite(current) ? current : centeredTop();
-            dragState = {
+            const state = {
                 pointerId: event.pointerId,
                 startY: event.clientY,
-                startTop,
+                startTop: getTop(),
                 latestY: event.clientY,
                 frame: 0,
             };
+            dragState = state;
             handleElement.classList.add("is-dragging");
             try { handleElement.setPointerCapture(event.pointerId); } catch (_) {}
         };
@@ -3584,10 +3590,9 @@
             state.latestY = event.clientY;
             if (!state.frame) {
                 state.frame = requestAnimationFrame(() => {
-                    if (!dragState || dragState !== state) return;
+                    if (dragState !== state) return;
                     state.frame = 0;
-                    const next = applyTop(state.startTop + state.latestY - state.startY);
-                    if (next !== undefined) handleElement.dataset.autoTocDragTop = String(next);
+                    setTop(state.startTop + state.latestY - state.startY);
                 });
             }
             event.preventDefault();
@@ -3600,16 +3605,15 @@
             if (state.frame) {
                 cancelAnimationFrame(state.frame);
                 state.frame = 0;
-                const next = applyTop(state.startTop + state.latestY - state.startY);
-                if (next !== undefined) handleElement.dataset.autoTocDragTop = String(next);
+                setTop(state.startTop + state.latestY - state.startY);
             }
-            const finalTop = Number(handleElement.dataset.autoTocDragTop);
+            const top = getTop();
             dragState = null;
-            handleElement.classList.remove("is-dragging");
-            if (event && handleElement.hasPointerCapture?.(event.pointerId)) {
+            if (handleElement) handleElement.classList.remove("is-dragging");
+            if (event && handleElement && handleElement.hasPointerCapture?.(event.pointerId)) {
                 try { handleElement.releasePointerCapture(event.pointerId); } catch (_) {}
             }
-            if (Number.isFinite(finalTop)) persistTop(finalTop);
+            GM_setValue(STORAGE_KEY, Math.round(top));
         };
 
         const removeHandle = () => {
@@ -3619,17 +3623,15 @@
                 handleElement.remove();
             }
             if (resizeListener) window.removeEventListener("resize", resizeListener);
+            if (pinObserver) pinObserver.disconnect();
             handleElement = null;
             rootElement = null;
             resizeListener = null;
+            pinObserver = null;
         };
 
         return {
             oncreate() {
-                // Reconstruct the draggable handle as a direct child of body.
-                // It intentionally does not live under #smarttoc: the TOC wrapper
-                // participates in a sticky-layout/redraw lifecycle and must not own
-                // or constrain the handle position.
                 rootElement = document.getElementById("smarttoc");
                 if (!rootElement) return;
                 const existing = document.getElementById("smarttoc-edge-handle");
@@ -3645,31 +3647,58 @@
                     document.body.appendChild(handleElement);
                 }
 
-                const savedTop = readSavedTop();
-                const initialTop = savedTop === null ? centeredTop() : savedTop;
-                handleElement.dataset.autoTocDragTop = String(initialTop);
-                applyTop(initialTop);
-
+                setTop(readSavedTop() ?? centeredTop());
                 handleElement.addEventListener("pointerdown", beginDrag, true);
                 window.addEventListener("pointermove", moveDrag, true);
                 window.addEventListener("pointerup", endDrag, true);
                 window.addEventListener("pointercancel", endDrag, true);
                 window.addEventListener("blur", () => endDrag());
 
-                resizeListener = () => {
-                    const top = Number(handleElement && handleElement.dataset.autoTocDragTop);
-                    applyTop(Number.isFinite(top) ? top : centeredTop());
-                };
+                // The parent remains the source of truth for open/pinned state;
+                // the independent handle only dispatches the existing UI action.
+                handleElement.addEventListener("click", (event) => {
+                    if (event.target.closest(".handle-drag-grip")) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        return;
+                    }
+                    if (rootElement && rootElement.classList.contains("pinned")) return;
+                    rootElement && rootElement.classList.toggle("forced-open");
+                }, true);
+
+                resizeListener = () => setTop(getTop());
                 window.addEventListener("resize", resizeListener);
+
+                // Sync drawer visibility with hover on the independent handle.
+                const syncHover = () => {
+                    if (!rootElement || rootElement.classList.contains("pinned")) return;
+                    const active = handleElement.matches(":hover") || !!rootElement.querySelector(".toc-panel:hover");
+                    rootElement.classList.toggle("edge-handle-hover", active);
+                };
+                handleElement.addEventListener("pointerenter", syncHover);
+                handleElement.addEventListener("pointerleave", () => {
+                    requestAnimationFrame(() => {
+                        if (!rootElement) return;
+                        const panel = rootElement.querySelector(".toc-panel");
+                        rootElement.classList.toggle("edge-handle-hover", !!(panel && panel.matches(":hover")));
+                    });
+                });
+                rootElement.addEventListener("pointerenter", syncHover);
+                rootElement.addEventListener("pointerleave", () => {
+                    if (rootElement && !handleElement.matches(":hover")) rootElement.classList.remove("edge-handle-hover");
+                });
+
+                pinObserver = new MutationObserver(() => {
+                    const pinned = rootElement && rootElement.classList.contains("pinned");
+                    handleElement.classList.toggle("is-pinned", !!pinned);
+                });
+                pinObserver.observe(rootElement, { attributes: true, attributeFilter: ["class"] });
+                handleElement.classList.toggle("is-pinned", rootElement.classList.contains("pinned"));
             },
             onremove() {
-                // The direct body child is managed independently from Mithril.
-                // Only remove listeners if its TOC instance is genuinely removed.
                 removeHandle();
             },
             view() {
-                // Return an inert placeholder; the visible handle is independently
-                // mounted under document.body to escape the TOC layout lifecycle.
                 return mithril("span.smarttoc-handle-placeholder", { "aria-hidden": "true" });
             },
         };
