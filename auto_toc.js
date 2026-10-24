@@ -677,6 +677,45 @@
                 font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif !important;
                 font-size: 16px !important; line-height: 1.8 !important; -webkit-font-smoothing: antialiased !important;
             }
+
+            /* Rebuilt edge handle is mounted directly under body, outside #smarttoc. */
+            #smarttoc-edge-handle {
+                all: initial !important;
+                position: fixed !important; top: 0 !important; right: 0 !important; left: auto !important;
+                width: 30px !important; height: 100px !important; min-height: 0 !important;
+                box-sizing: border-box !important; display: flex !important; align-items: center !important;
+                justify-content: center !important; gap: 4px !important; padding: 7px 5px 27px 14px !important;
+                border: 0 !important; border-radius: 8px 0 0 8px !important;
+                background: rgba(245,245,245,.96) !important; color: #555 !important;
+                box-shadow: 0 0 6px rgba(0,0,0,.65) !important; z-index: 2147483647 !important;
+                cursor: grab !important; user-select: none !important; -webkit-user-select: none !important;
+                touch-action: none !important; writing-mode: vertical-rl !important;
+            }
+            #smarttoc-edge-handle * { all: unset; box-sizing: border-box !important; }
+            #smarttoc-edge-handle .handle-chevron { display: block !important; font-size: 20px !important; line-height: 1 !important; color: #555 !important; pointer-events: none !important; }
+            #smarttoc-edge-handle .handle-label { display: block !important; font: 650 11px/1 sans-serif !important; color: #777 !important; pointer-events: none !important; }
+            #smarttoc-edge-handle .handle-drag-grip {
+                position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 27px !important;
+                display: flex !important; align-items: center !important; justify-content: center !important;
+                writing-mode: horizontal-tb !important; color: rgba(29,29,31,.55) !important;
+                font: 13px/1 sans-serif !important; cursor: ns-resize !important; touch-action: none !important;
+                border-radius: 0 0 0 8px !important; z-index: 2 !important;
+            }
+            #smarttoc-edge-handle:hover { background: #fff !important; }
+            #smarttoc-edge-handle .handle-drag-grip:hover { color: #202024 !important; background: rgba(0,0,0,.06) !important; }
+            #smarttoc-edge-handle.is-dragging { cursor: grabbing !important; }
+            #smarttoc-edge-handle.is-pinned { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) .toc-panel {
+                transform: translateX(0) !important; pointer-events: auto !important;
+            }
+            #smarttoc.octotree-edge.forced-open:not(.pinned) .toc-panel {
+                transform: translateX(0) !important; pointer-events: auto !important;
+            }
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) { width: 300px !important; }
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) .handle {
+                opacity: 0 !important; visibility: hidden !important; transform: translateX(100%) !important;
+            }
+
             #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
             /* Keep a continuous hover target across the tab-to-panel transition.
                A brief delay prevents repeated open/close flicker when the pointer
