@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.88
+// @version      1.89
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -731,6 +731,8 @@
             #smarttoc.octotree-edge:has(.toc-panel:hover) .toc-panel,
             #smarttoc.octotree-edge:focus-within .toc-panel,
             #smarttoc.octotree-edge.pinned .toc-panel { transform:translateX(0) !important; pointer-events:auto !important; }
+            /* Hovering the drag grip is for repositioning only; it must not reveal the drawer. */
+            #smarttoc.octotree-edge:has(.handle-drag-grip:hover):not(.pinned) .toc-panel { transform:translateX(calc(100% + 2px)) !important; pointer-events:none !important; }
             /* Do not remove the handle from hit testing as soon as it opens:
                its disappearing hit area causes Safari hover to toggle repeatedly. */
             #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)) .handle,
@@ -828,7 +830,16 @@
                 #smarttoc.octotree-edge .toc-row > a:hover { color:#fff !important; }
                 #smarttoc.octotree-edge li.active > .toc-row > a,
                 #smarttoc.octotree-edge li.active > .toc-row .toc-level-icon { color:#87daff !important; }
-                #smarttoc.octotree-edge .handle { background:rgba(40,40,40,.96) !important; color:#eee !important; border-color:rgba(255,255,255,.14) !important; }
+                #smarttoc.octotree-edge .handle {
+                    background:rgba(38,38,38,.98) !important; color:#e5e5e5 !important;
+                    border-color:rgba(255,255,255,.14) !important;
+                    box-shadow:0 0 8px rgba(0,0,0,.65) !important;
+                }
+                #smarttoc.octotree-edge .handle:hover { background:#333 !important; border-color:rgba(255,255,255,.24) !important; }
+                #smarttoc.octotree-edge .handle .handle-chevron,
+                #smarttoc.octotree-edge .handle .handle-label { color:#d0d0d0 !important; }
+                #smarttoc.octotree-edge .handle .handle-drag-grip { color:rgba(235,235,235,.55) !important; background:transparent !important; }
+                #smarttoc.octotree-edge .handle .handle-drag-grip:hover { color:#fff !important; background:rgba(255,255,255,.09) !important; }
             }
             @media (max-width: 520px) {
                 #smarttoc.octotree-edge { width:92vw !important; }
