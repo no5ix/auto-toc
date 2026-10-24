@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.90
+// @version      2.02
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -682,7 +682,7 @@
                A brief delay prevents repeated open/close flicker when the pointer
                approaches the edge tab slowly. */
             #smarttoc.octotree-edge .toc-panel { pointer-events: none !important; }
-            #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)),
+            #smarttoc.octotree-edge:has(.handle:hover),
             #smarttoc.octotree-edge:has(.toc-panel:hover),
             #smarttoc.octotree-edge:focus-within,
             #smarttoc.octotree-edge.pinned { width: 300px !important; }
@@ -705,7 +705,7 @@
                 -webkit-backdrop-filter:blur(18px) !important; backdrop-filter:blur(18px) !important;
                 color:#555 !important; font-size:12px !important; font-family:inherit !important; font-variant:normal !important;
                 font-weight:600 !important; letter-spacing:0 !important; writing-mode:vertical-rl !important; transform:none !important;
-                opacity:1 !important; cursor:grab !important; user-select:none !important; touch-action:none !important;
+                opacity:1 !important; cursor:pointer !important; user-select:none !important;
                 z-index:5 !important;
                 box-shadow:0 0 6px rgba(0, 0, 0,0.65) !important;
                 transition:background 180ms ease,border-color 180ms ease !important;
@@ -714,12 +714,10 @@
             #smarttoc.octotree-edge .handle:hover { background:#fff !important; border-color:rgba(0,0,0,.22) !important; }
             #smarttoc.octotree-edge .handle .handle-chevron { display:block !important; font-size:20px !important; line-height:1 !important; font-weight:400 !important; color:#555 !important; }
             #smarttoc.octotree-edge .handle .handle-label { display:block !important; color:#777 !important; font-size:11px !important; line-height:1 !important; font-weight:650 !important; max-height:58px !important; overflow:hidden !important; flex:0 1 auto !important; pointer-events:none !important; }
-            #smarttoc.octotree-edge .handle .handle-drag-grip {
              position:absolute !important; bottom:0 !important; left:0 !important; width:100% !important; height:27px !important; display:flex !important; align-items:center !important; justify-content:center !important; writing-mode:horizontal-tb !important; color:rgba(29,29,31,.48) !important; font-size:13px !important; line-height:1 !important; letter-spacing:-2px !important; cursor:ns-resize !important; touch-action:none !important; border-radius: 0px 0px 0px 8px !important;
                 z-index:2 !important; 
              }
             #smarttoc.octotree-edge .handle .handle-chevron { flex:0 0 auto !important; pointer-events:none !important; }
-            #smarttoc.octotree-edge .handle .handle-drag-grip:hover { color:#202024 !important; background:rgba(0,0,0,.06) !important; }
 
             #smarttoc.octotree-edge .toc-panel {
                 position:absolute !important; top:0 !important; right:0 !important; bottom:0 !important;
@@ -730,20 +728,18 @@
                 transform:translateX(calc(100% + 2px)) !important; transition:transform 260ms cubic-bezier(.2,.75,.25,1) !important;
                 display:flex !important; flex-direction:column !important;
             }
-            #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)) .toc-panel,
+            #smarttoc.octotree-edge:has(.handle:hover) .toc-panel,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .toc-panel,
             #smarttoc.octotree-edge:focus-within .toc-panel,
             #smarttoc.octotree-edge.pinned .toc-panel { transform:translateX(0) !important; pointer-events:auto !important; }
             /* Drag-grip hover is reserved for repositioning and must not reveal the panel. */
-            #smarttoc.octotree-edge:not(.pinned):has(.handle-drag-grip:hover) .toc-panel {
                 transform:translateX(calc(100% + 2px)) !important;
                 pointer-events:none !important;
             }
             /* Hovering the drag grip is for repositioning only; it must not reveal the drawer. */
-            #smarttoc.octotree-edge:has(.handle-drag-grip:hover):not(.pinned) .toc-panel { transform:translateX(calc(100% + 2px)) !important; pointer-events:none !important; }
             /* Do not remove the handle from hit testing as soon as it opens:
                its disappearing hit area causes Safari hover to toggle repeatedly. */
-            #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)) .handle,
+            #smarttoc.octotree-edge:has(.handle:hover) .handle,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .handle,
             #smarttoc.octotree-edge:focus-within .handle,
             #smarttoc.octotree-edge.pinned .handle { opacity:0 !important; visibility:hidden !important; transform:translateX(100%) !important; transition:opacity 120ms ease,transform 220ms cubic-bezier(.2,.75,.25,1),visibility 0s linear 220ms !important; }
@@ -846,12 +842,10 @@
                 #smarttoc.octotree-edge .handle:hover { background:#333 !important; border-color:rgba(255,255,255,.24) !important; }
                 #smarttoc.octotree-edge .handle .handle-chevron,
                 #smarttoc.octotree-edge .handle .handle-label { color:#d0d0d0 !important; }
-                #smarttoc.octotree-edge .handle .handle-drag-grip { color:rgba(235,235,235,.55) !important; background:transparent !important; }
-                #smarttoc.octotree-edge .handle .handle-drag-grip:hover { color:#fff !important; background:rgba(255,255,255,.09) !important; }
             }
             @media (max-width: 520px) {
                 #smarttoc.octotree-edge { width:92vw !important; }
-                #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)),
+                #smarttoc.octotree-edge:has(.handle:hover),
                 #smarttoc.octotree-edge:has(.toc-panel:hover),
                 #smarttoc.octotree-edge:focus-within,
                 #smarttoc.octotree-edge.pinned { width:92vw !important; }
@@ -3497,50 +3491,13 @@
     let last_click_ts = 0;
     let last_move_ts = 0;
 
+    // Hover-only edge tab; no drag grip or drag handlers.
     const Handle = function () {
         return {
-            oncreate({ dom }) {
-                const root = document.getElementById("smarttoc");
-                if (!root || dom.dataset.dragBound === "1") return;
-                dom.dataset.dragBound = "1";
-                if (root.classList.contains("pinned")) autoTocPinnedLayout(true);
-                const savedTop = GM_getValue("auto_toc_edge_handle_top", null);
-                if (savedTop != null) root.style.setProperty("--smarttoc-handle-top", `${savedTop}px`);
-                const grip = dom.querySelector(".handle-drag-grip");
-                if (!grip) return;
-                let startY = 0;
-                let startTop = 0;
-                let dragging = false;
-                grip.addEventListener("pointerdown", (event) => {
-                    if (event.button !== 0) return;
-                    dragging = true;
-                    root.classList.add("dragging");
-                    startY = event.clientY;
-                    const rect = dom.getBoundingClientRect();
-                    startTop = rect.top;
-                    grip.setPointerCapture?.(event.pointerId);
-                    event.preventDefault();
-                    event.stopPropagation();
-                });
-                grip.addEventListener("pointermove", (event) => {
-                    if (!dragging) return;
-                    const maxTop = Math.max(0, window.innerHeight - dom.offsetHeight);
-                    const nextTop = Math.max(0, Math.min(maxTop, startTop + event.clientY - startY));
-                    root.style.setProperty("--smarttoc-handle-top", `${nextTop}px`);
-                    GM_setValue("auto_toc_edge_handle_top", Math.round(nextTop));
-                });
-                const stopDrag = () => {
-                    dragging = false;
-                    root.classList.remove("dragging");
-                };
-                grip.addEventListener("pointerup", stopDrag);
-                grip.addEventListener("pointercancel", stopDrag);
-            },
             view() {
-                return mithril("div.handle", { title: "Hover to open AutoTOC" }, [
+                return mithril("div.handle", { title: "Hover to open AutoTOC", "aria-label": "Open AutoTOC" }, [
                     mithril("span.handle-chevron", "⌵"),
                     mithril("span.handle-label", ""),
-                    mithril("span.handle-drag-grip", { title: "Drag to reposition", "aria-label": "Drag to reposition AutoTOC" }, "☰"),
                 ]);
             },
         };
@@ -4933,22 +4890,11 @@
 
     var menu_ALL = [
             [
-                "menu_GAEEScript_auto_open_toc",
-                "Enable TOC On Current Site",
-                {},
-            ],
-            [
-                "menu_GAEEScript_auto_collapse_toc",
-                "Collapse TOC on current site",
-                {},
-            ],
-            [
                 "menu_GAEEScript_shrink_img",
                 "Touch Fish On Current Site",
                 {},
             ],
         ],
-        menu_ID = [];
 
     function handleMenu() {
         // console.log("")
@@ -5949,7 +5895,7 @@
     const CACHE_PREFIX = NS + ":cache:";
     const DEFAULTS = {
         enabled: true, provider: "cloud", targetLanguage: "zh-CN", holdDelayMs: 280,
-        omlxUrl: "http://127.0.0.1:8000/v1/chat/completions", omlxModel: "Qwen", omlxKey: "",
+        localaiUrl: "http://127.0.0.1:8000/v1/chat/completions", localaiModel: "Qwen", localaiKey: "",
         showOriginal: false
     };
     const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,strong,span,[data-as='p'],[data-as='li'],[data-as='blockquote'],#page-title,.eyebrow";
@@ -5966,10 +5912,15 @@
             try { const v = localStorage.getItem(SETTINGS_KEY); if (v) stored = JSON.parse(v); } catch (_) {}
         }
         // Upgrade existing installs to free Microsoft translation and enabled-by-default
-        // behavior, while preserving explicitly configured provider choices and oMLX keys.
-        const settings = Object.assign({}, DEFAULTS, stored || {});
+        // behavior, while preserving explicitly configured provider choices and LocalAI keys.
+        const legacy = stored ? Object.assign({}, stored) : {};
+        if (legacy.localaiUrl == null && legacy.omlxUrl != null) legacy.localaiUrl = legacy.omlxUrl;
+        if (legacy.localaiModel == null && legacy.omlxModel != null) legacy.localaiModel = legacy.omlxModel;
+        if (legacy.localaiKey == null && legacy.omlxKey != null) legacy.localaiKey = legacy.omlxKey;
+        const settings = Object.assign({}, DEFAULTS, legacy);
         if (!stored || stored.enabled == null) settings.enabled = true;
-        if (settings.provider !== "omlx" && settings.provider !== "cloud") settings.provider = "cloud";
+        if (settings.provider === "omlx") settings.provider = "localai";
+        if (settings.provider !== "localai" && settings.provider !== "cloud") settings.provider = "cloud";
         return settings;
     }
     function saveSettings() { try { GM_setValue(SETTINGS_KEY, settings); } catch (_) {} try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {} }
@@ -6081,11 +6032,11 @@
             return (wrapper.textContent || wrapper.innerText || String(value)).trim();
         });
     }
-    function translateOmlx(text, signal) {
-        const url = settings.omlxUrl.trim(); if (!/^https?:\/\//i.test(url)) return Promise.reject(new Error("Set a valid oMLX OpenAI-compatible chat-completions URL."));
-        const headers = { "Content-Type": "application/json" }; if (settings.omlxKey.trim()) headers.Authorization = "Bearer " + settings.omlxKey.trim();
-        const data = { model: settings.omlxModel.trim() || "Qwen", stream: false, temperature: 0.1, messages: [{ role: "system", content: "Translate the user text into Simplified Chinese. Return only the translation. Preserve meaning, names, URLs, and formatting; do not explain." }, { role: "user", content: text }] };
-        return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify(data), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || j && j.message && j.message.content || j && j.response; if (!t || !String(t).trim()) throw new Error("oMLX returned no translation; check endpoint/model/API compatibility."); return String(t).trim(); });
+    function translateLocalAI(text, signal) {
+        const url = settings.localaiUrl.trim(); if (!/^https?:\/\//i.test(url)) return Promise.reject(new Error("Set a valid LocalAI OpenAI-compatible chat-completions URL."));
+        const headers = { "Content-Type": "application/json" }; if (settings.localaiKey.trim()) headers.Authorization = "Bearer " + settings.omlxKey.trim();
+        const data = { model: settings.localaiModel.trim() || "Qwen", stream: false, temperature: 0.1, messages: [{ role: "system", content: "Translate the user text into Simplified Chinese. Return only the translation. Preserve meaning, names, URLs, and formatting; do not explain." }, { role: "user", content: text }] };
+        return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify(data), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || j && j.message && j.message.content || j && j.response; if (!t || !String(t).trim()) throw new Error("LocalAI returned no translation; check endpoint/model/API compatibility."); return String(t).trim(); });
     }
     function withTimeout(promise, ms, signal, label) {
         return new Promise(function (resolve, reject) {
@@ -6122,12 +6073,12 @@
         return attempt(0);
     }
     function translate(text, signal) {
-        const provider = settings.provider === "omlx" ? "omlx" : "cloud";
+        const provider = (settings.provider === "omlx" || settings.provider === "localai") ? "localai" : "cloud";
         const key = provider + ":" + settings.targetLanguage + ":" + text;
         const cached = getCache(key);
         if (cached) return Promise.resolve(cached);
-        const task = provider === "omlx" ? translateOmlx(text, signal) : translateCloud(text, signal);
-        return withTimeout(task, provider === "omlx" ? 20000 : 39000, signal, provider === "omlx" ? "oMLX translation" : "Cloud translation")
+        const task = provider === "localai" ? translateLocalAI(text, signal) : translateCloud(text, signal);
+        return withTimeout(task, provider === "localai" ? 20000 : 39000, signal, provider === "localai" ? "LocalAI translation" : "Cloud translation")
             .then(function (value) { setCache(key, value); return value; });
     }
     function makeInlineLine(block) {
@@ -6224,25 +6175,25 @@
         // Keep completed translation output visible until this document reloads.
     }
     function chooseProvider() {
-        const value = prompt("Choose translation provider: \n1. oMLX \n2. Cloud (Google → Apple → Microsoft)", settings.provider === "omlx" ? "1" : "2");
+        const value = prompt("Choose translation provider: \n1. LocalAI \n2. Cloud (Google → Apple → Microsoft)", (settings.provider === "omlx" || settings.provider === "localai") ? "1" : "2");
         if (!value) return;
         const p = value.trim().toLowerCase();
-        if (p === "1" || p === "omlx") settings.provider = "omlx";
+        if (p === "1" || p === "localai" || p === "omlx") settings.provider = "localai";
         else if (p === "2" || p === "cloud") settings.provider = "cloud";
-        else return toast("Choose 1 (oMLX) or 2 (Cloud).");
-        saveSettings(); toast("Translation provider set to " + (settings.provider === "omlx" ? "oMLX" : "Cloud") + ".");
+        else return toast("Choose 1 (LocalAI) or 2 (Cloud).");
+        saveSettings(); toast("Translation provider set to " + ((settings.provider === "omlx" || settings.provider === "localai") ? "LocalAI" : "Cloud") + ".");
     }
-    function configureOmlx() {
-        const url = prompt("oMLX OpenAI-compatible /v1/chat/completions URL:", settings.omlxUrl); if (url === null) return;
-        const model = prompt("Model ID served by oMLX (Qwen model name):", settings.omlxModel); if (model === null) return;
+    function configureLocalAI() {
+        const url = prompt("LocalAI OpenAI-compatible /v1/chat/completions URL:", settings.omlxUrl); if (url === null) return;
+        const model = prompt("Model ID served by LocalAI (Qwen model name):", settings.omlxModel); if (model === null) return;
         const key = prompt("Optional API key (blank if none):", settings.omlxKey); if (key === null) return;
-        settings.omlxUrl = url.trim(); settings.omlxModel = model.trim(); settings.omlxKey = key.trim(); saveSettings(); toast("oMLX / Qwen settings saved.");
+        settings.omlxUrl = url.trim(); settings.omlxModel = model.trim(); settings.omlxKey = key.trim(); saveSettings(); toast("LocalAI / Qwen settings saved.");
     }
     function toggleEnabled() { settings.enabled = !settings.enabled; saveSettings(); if (!settings.enabled) cancelActive(); toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled."); }
     function registerMenu() {
         if (menuAdded) return; const reg = typeof GM_registerMenuCommand === "function" ? GM_registerMenuCommand : (typeof GM !== "undefined" && typeof GM.registerMenuCommand === "function" ? GM.registerMenuCommand.bind(GM) : null);
         if (!reg) return; menuAdded = true;
-        [[(settings.enabled ? "✅" : "❎") + " HTT (hold-to-translate)", toggleEnabled], ["🔀 HTT choose provider (oMLX / Cloud)", chooseProvider], ["⚙️ HTT configure oMLX", configureOmlx]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
+        [[(settings.enabled ? "✅" : "❎") + " HTT (hold-to-translate)", toggleEnabled], ["🔀 HTT choose provider (LocalAI / Cloud)", chooseProvider], ["⚙️ HTT configure LocalAI", configureLocalAI]].forEach(function (item) { try { reg(item[0], item[1]); } catch (_) {} });
     }
     function install() {
         if (!document.documentElement) return;
