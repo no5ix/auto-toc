@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.87
+// @version      1.88
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -735,18 +735,15 @@
                 padding:0 18px 0 22px !important; border-bottom:1px solid #d8d8d8 !important; background:#eee !important;
             }
             #smarttoc.octotree-edge .toc-toolbar button {
-                all:unset !important; box-sizing:border-box !important; display:inline-flex !important; flex:0 0 32px !important;
-                align-items:center !important; justify-content:center !important; width:32px !important; height:32px !important;
-                border-radius:8px !important; color:#888 !important; font:18px/1 -apple-system,BlinkMacSystemFont,sans-serif !important;
+                all:unset !important; box-sizing:border-box !important; display:inline-flex !important; flex:0 0 28px !important;
+                align-items:center !important; justify-content:center !important; width:28px !important; height:28px !important;
+                border-radius:8px !important; color:#888 !important; font:14px/1 -apple-system,BlinkMacSystemFont,sans-serif !important;
                 cursor:pointer !important; transition:color 160ms ease,background 160ms ease,transform 160ms ease !important;
             }
             #smarttoc.octotree-edge .toc-toolbar button:hover,
             #smarttoc.octotree-edge .toc-toolbar button[aria-pressed="true"] { color:#222 !important; background:rgba(0,0,0,.06) !important; }
             #smarttoc.octotree-edge .toc-toolbar button:active { transform:scale(.94) !important; }
-            #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title {
-                margin-right:auto !important; color:#111 !important; font-size:17px !important; font-weight:500 !important;
-                letter-spacing:0 !important; white-space:nowrap !important;
-            }
+            #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title { display:none !important; }
 
             #smarttoc.octotree-edge .toc-panel > ul {
                 position:relative !important; display:block !important; flex:1 1 auto !important; width:100% !important;
@@ -768,7 +765,7 @@
             #smarttoc.octotree-edge .toc-expander.empty { cursor:default !important; }
             #smarttoc.octotree-edge .toc-row > a {
                 all:unset !important; box-sizing:border-box !important; display:flex !important; flex:1 1 auto !important;
-                min-width:0 !important; align-items:baseline !important; gap:8px !important; padding:2px 2px !important;
+                min-width:0 !important; align-items:baseline !important; gap:8px !important; padding:4px 2px !important;
                 border:0 !important; border-radius:0 !important; color:#777 !important;
                 font:14px/1.8 "PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif !important;
                 letter-spacing:0 !important; text-decoration:none !important; cursor:pointer !important;
@@ -3390,7 +3387,6 @@
                 const pinned = !!(smarttoc && smarttoc.classList.contains("pinned"));
                 return mithril("div.toc-panel", [
                     mithril("div.toc-toolbar", [
-                        mithril("span.toc-toolbar-title", "Table of Contents"),
                         toolbarButton("📌", pinned ? "Unpin TOC" : "Keep TOC open", () => {
                             const root = document.getElementById("smarttoc");
                             if (root) {
