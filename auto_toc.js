@@ -715,8 +715,9 @@
             #smarttoc.octotree-edge .toc-panel {
                 position:absolute !important; top:0 !important; right:0 !important; bottom:0 !important;
                 width:300px !important; height:auto !important; box-sizing:border-box !important; overflow:hidden !important;
-                background:#eee !important; color:#777 !important; border:0 !important; border-left:1px solid rgba(0,0,0,.08) !important;
-                border-radius:0 !important; box-shadow:0 0 8px rgba(0,0,0,.20) !important;
+                background:#eee !important; color:#777 !important; border:0 !important; 
+                
+                border-radius:0 !important; box-shadow:0 0 8px rgba(0,0,0,0.65) !important;
                 transform:translateX(calc(100% + 2px)) !important; transition:transform 260ms cubic-bezier(.2,.75,.25,1) !important;
                 display:flex !important; flex-direction:column !important;
             }
