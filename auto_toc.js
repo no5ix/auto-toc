@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.94
+// @version      1.95
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -3272,7 +3272,7 @@
             });
         };
 
-        const expandActivePath = () => {
+        const getActivePath = () => {
             const findPath = (nodes, path = []) => {
                 for (const node of nodes) {
                     const nextPath = node.heading ? [...path, node] : path;
@@ -3282,11 +3282,16 @@
                 }
                 return null;
             };
-            const path = findPath(latestTree);
-            if (!path) return;
-            // On collapse, expose the active heading and every ancestor without expanding
-            // unrelated branches. This keeps the current location understandable.
+            return findPath(latestTree) || [];
+        };
+
+        const expandActivePath = () => {
+            const path = getActivePath();
+            if (!path.length) return;
+            // Match Hexo Theme Neo: keep the active heading and its ancestor path
+            // visible, but collapse unrelated branches.
             expandedAll = false;
+            expandedNodes.clear();
             path.forEach((node) => {
                 if (node.children && node.children.length && node.heading) {
                     expandedNodes.add(node.heading.anchor);
@@ -3294,6 +3299,34 @@
             });
             mithril.redraw();
             scrollActiveToCenter();
+        };
+
+        const syncActivePath = () => {
+            if (expandedAll) return;
+            const path = getActivePath();
+            if (!path.length) return;
+
+            const activeBranchAnchors = new Set(
+                path.filter((node) => node.children && node.children.length && node.heading)
+                    .map((node) => node.heading.anchor)
+            );
+            let changed = false;
+
+            // The active heading's ancestor path stays expanded. All other branches
+            // are collapsed automatically as the reader scrolls through the article.
+            for (const anchor of expandedNodes) {
+                if (!activeBranchAnchors.has(anchor)) {
+                    expandedNodes.delete(anchor);
+                    changed = true;
+                }
+            }
+            for (const anchor of activeBranchAnchors) {
+                if (!expandedNodes.has(anchor)) {
+                    expandedNodes.add(anchor);
+                    changed = true;
+                }
+            }
+            if (changed) mithril.redraw();
         };
 
         const setAllExpanded = (expand) => {
@@ -3305,9 +3338,16 @@
                     visit(node.children);
                 });
                 visit(latestTree);
+            } else {
+                const path = getActivePath();
+                path.forEach((node) => {
+                    if (node.children && node.children.length && node.heading) {
+                        expandedNodes.add(node.heading.anchor);
+                    }
+                });
             }
             mithril.redraw();
-            if (expand) scrollActiveToCenter();
+            scrollActiveToCenter();
         };
 
         const renderNodes = (nodes, isRoot = false) => mithril(
@@ -3341,6 +3381,7 @@
                                     }
                                     if (expandedNodes.has(heading.anchor)) expandedNodes.delete(heading.anchor);
                                     else expandedNodes.add(heading.anchor);
+                                    // The scroll-active branch is synchronized on the next active-heading update.
                                 },
                             }, expanded ? "▾" : "▸")
                             : mithril("span.toc-expander.empty", ""),
@@ -3390,6 +3431,9 @@
                     });
                 }
                 $activeHeading.subscribe(() => {
+                    // Follow the current heading as the page scrolls, like Hexo Theme Neo's
+                    // active-current behavior: keep its ancestor path open and hide stale branches.
+                    syncActivePath();
                     const target = dom.querySelector("li.active > .toc-row");
                     if (!target || !rootList) return;
                     const rect = target.getBoundingClientRect();
