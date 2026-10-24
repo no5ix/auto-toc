@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.85
+// @version      1.86
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -770,7 +770,7 @@
                 all:unset !important; box-sizing:border-box !important; display:flex !important; flex:1 1 auto !important;
                 min-width:0 !important; align-items:baseline !important; gap:8px !important; padding:5px 2px !important;
                 border:0 !important; border-radius:0 !important; color:#777 !important;
-                font:16px/1.8 "PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif !important;
+                font:14px/1.8 "PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif !important;
                 letter-spacing:0 !important; text-decoration:none !important; cursor:pointer !important;
                 white-space:normal !important; overflow-wrap:anywhere !important; transition:color 140ms ease !important;
             }
