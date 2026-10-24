@@ -757,7 +757,7 @@
             #smarttoc.octotree-edge .toc-panel li { display:block !important; margin:0 !important; padding:0 !important; }
             #smarttoc.octotree-edge .toc-row { display:flex !important; align-items:baseline !important; min-height:0 !important; gap:0 !important; border-radius:0 !important; transition:background 140ms ease !important; }
             #smarttoc.octotree-edge .toc-expander {
-                all:unset !important; flex:0 0 18px !important; width:18px !important; height:28px !important; display:inline-flex !important;
+                all:unset !important; flex:0 0 18px !important; width:18px !important; height:18px !important; display:inline-flex !important;
                 align-items:center !important; justify-content:center !important; color:#999 !important; font:12px/1 sans-serif !important;
                 cursor:pointer !important; border-radius:0 !important; transition:color 140ms ease,background 140ms ease !important;
             }
