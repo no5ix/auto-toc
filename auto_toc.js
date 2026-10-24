@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.84
+// @version      1.85
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -791,12 +791,12 @@
             #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar-thumb { border-radius:8px !important; background:rgba(120,120,120,.32) !important; border:2px solid transparent !important; background-clip:padding-box !important; }
 
             /* Mirror the user's Hexo Theme Neo marker shapes by heading depth. */
-            #smarttoc.octotree-edge .toc-row[data-level="1"] .toc-level-icon { color:#999 !important; font-size:15px !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="2"] .toc-level-icon { color:#999 !important; font-size:14px !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="3"] .toc-level-icon { color:#999 !important; font-size:11px !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="4"] .toc-level-icon { color:#999 !important; font-size:10px !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="5"] .toc-level-icon,
-            #smarttoc.octotree-edge .toc-row[data-level="6"] .toc-level-icon { color:#999 !important; font-size:10px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="1"] .toc-level-icon { color:#999 !important; font-size:100% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="2"] .toc-level-icon { color:#999 !important; font-size:100% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="3"] .toc-level-icon { color:#999 !important; font-size:60% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="4"] .toc-level-icon { color:#999 !important; font-size:100% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="5"] .toc-level-icon { color:#999 !important; font-size:60% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="6"] .toc-level-icon { color:#999 !important; font-size:90% !important; }
 
             @media (prefers-color-scheme: dark) {
                 #smarttoc.octotree-edge .toc-panel { background:#282828 !important; color:#bbb !important; border-left-color:rgba(255,255,255,.10) !important; }
@@ -3241,7 +3241,7 @@
             return "(untitled heading)";
         };
 
-        const levelSymbol = (level) => ({ 1: "■", 2: "△", 3: "◆", 4: "▴", 5: "▪", 6: "▫" }[level] || "▫");
+        const levelSymbol = (level) => ({ 1: "●", 2: "◆", 3: "▲", 4: "■", 5: "⬟", 6: "⬣" }[level] || "●");
 
         const scrollActiveToCenter = () => {
             requestAnimationFrame(() => {
