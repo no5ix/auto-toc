@@ -4673,7 +4673,7 @@
             // toast('Will generate TOC in 3.8 seconds ...', 1600);
             setTimeout(() => {
                 if ((toc && !toc.isValid()) || toc == null) {
-                    toast("No article/headings are detected.");
+                    // toast("No article/headings are detected.");
                 }
             }, 3800);
 
@@ -4693,7 +4693,7 @@
         // console.log("[auto_toc] - window.innerWidth = " + window.innerWidth);
         // console.log("[auto_toc] - lastBrowserWidth = " + lastBrowserWidth);
         if (window.innerWidth - lastBrowserWidth > 300 || lastBrowserWidth - window.innerWidth > 300) {
-            toast("window.innerWidth changed.");
+            // toast("window.innerWidth changed.");
             if (shouldLog) console.log("[auto_toc] - window.innerWidth changed.");
             lastBrowserWidth = window.innerWidth;
             handleToc();
