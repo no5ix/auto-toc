@@ -1,0 +1,1 @@
+// AutoTOC source restoration required; follow-up change will replace this file with the implementation.
