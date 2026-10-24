@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.98
+// @version      1.99
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -706,6 +706,14 @@
             #smarttoc-edge-handle:hover { background:#fff !important; }
             #smarttoc-edge-handle:active, #smarttoc-edge-handle.is-dragging { cursor:grabbing !important; }
             #smarttoc-edge-handle .handle-drag-grip:hover { color:#202024 !important; background:rgba(0,0,0,.06) !important; }
+            /* Drawer state is driven by the standalone body-level handle. */
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) { width:300px !important; }
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) .toc-panel {
+                transform:translateX(0) !important; pointer-events:auto !important;
+            }
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) .handle { opacity:0 !important; visibility:hidden !important; transform:translateX(100%) !important; }
+            #smarttoc-edge-handle.is-pinned { opacity:0 !important; visibility:hidden !important; pointer-events:none !important; }
+
 
             #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
             /* Keep a continuous hover target across the tab-to-panel transition.
