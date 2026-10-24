@@ -737,7 +737,7 @@
             #smarttoc.octotree-edge .toc-toolbar button {
                 all:unset !important; box-sizing:border-box !important; display:inline-flex !important; flex:0 0 28px !important;
                 align-items:center !important; justify-content:center !important; width:28px !important; height:28px !important;
-                border:1px solid rgba(0,0,0,.07) !important; border-radius:8px !important;
+                border:0px solid rgba(0,0,0,.07) !important; border-radius:8px !important;
                 background:rgba(0,0,0,.045) !important; color:#777 !important;
                 font:14px/1 -apple-system,BlinkMacSystemFont,sans-serif !important;
                 cursor:pointer !important; transition:color 160ms ease,background 160ms ease,border-color 160ms ease,transform 160ms ease !important;
