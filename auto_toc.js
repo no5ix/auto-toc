@@ -6187,7 +6187,7 @@
         const url = prompt("LocalAI OpenAI-compatible /v1/chat/completions URL:", settings.localaiUrl); if (url === null) return;
         const model = prompt("Model ID served by LocalAI (Qwen model name):", settings.localaiModel); if (model === null) return;
         const key = prompt("Optional API key (blank if none):", settings.localaiKey); if (key === null) return;
-        settings.omlxUrl = url.trim(); settings.omlxModel = model.trim(); settings.omlxKey = key.trim(); saveSettings(); toast("LocalAI / Qwen settings saved.");
+        settings.localaiUrl = url.trim(); settings.localaiModel = model.trim(); settings.localaiKey = key.trim(); saveSettings(); toast("LocalAI / Qwen settings saved.");
     }
     function toggleEnabled() { settings.enabled = !settings.enabled; saveSettings(); if (!settings.enabled) cancelActive(); toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled."); }
     function registerMenu() {
