@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      2.00
+// @version      2.01
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -3591,6 +3591,9 @@
             };
             dragState = state;
             handleElement.classList.add("is-dragging");
+            // Immediately close the drawer and suspend hover-driven opening for
+            // the entire drag gesture.
+            if (rootElement) rootElement.classList.remove("edge-handle-hover");
             try { handleElement.setPointerCapture(event.pointerId); } catch (_) {}
         };
 
@@ -3621,6 +3624,8 @@
             const top = getTop();
             dragState = null;
             if (handleElement) handleElement.classList.remove("is-dragging");
+            // Do not reopen on pointerup itself. Normal hover handlers will reopen
+            // only after a fresh pointer-enter/move following the drag.
             if (event && handleElement && handleElement.hasPointerCapture?.(event.pointerId)) {
                 try { handleElement.releasePointerCapture(event.pointerId); } catch (_) {}
             }
@@ -3682,19 +3687,28 @@
 
                 // Sync drawer visibility with hover on the independent handle.
                 const syncHover = () => {
-                    if (!rootElement || rootElement.classList.contains("pinned")) return;
+                    if (!rootElement) return;
+                    // Dragging always wins over hover: keep the drawer closed until
+                    // the pointer is released, even if the handle remains under it.
+                    if (dragState) {
+                        rootElement.classList.remove("edge-handle-hover");
+                        return;
+                    }
+                    if (rootElement.classList.contains("pinned")) return;
                     const active = handleElement.matches(":hover") || !!rootElement.querySelector(".toc-panel:hover");
                     rootElement.classList.toggle("edge-handle-hover", active);
                 };
                 handleElement.addEventListener("pointerenter", syncHover);
+                handleElement.addEventListener("pointermove", syncHover);
                 handleElement.addEventListener("pointerleave", () => {
                     requestAnimationFrame(() => {
-                        if (!rootElement) return;
+                        if (!rootElement || dragState) return;
                         const panel = rootElement.querySelector(".toc-panel");
                         rootElement.classList.toggle("edge-handle-hover", !!(panel && panel.matches(":hover")));
                     });
                 });
                 rootElement.addEventListener("pointerenter", syncHover);
+                rootElement.addEventListener("pointermove", syncHover);
                 rootElement.addEventListener("pointerleave", () => {
                     if (rootElement && !handleElement.matches(":hover")) rootElement.classList.remove("edge-handle-hover");
                 });
