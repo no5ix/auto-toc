@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.92
+// @version      1.93
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -687,9 +687,9 @@
             html.autotoc-pinned-layout { width:100% !important; max-width:100% !important; box-sizing:border-box !important; overflow-x:clip !important; }
             html.autotoc-pinned-layout body { width:calc(100vw - 300px) !important; max-width:calc(100vw - 300px) !important; margin-right:0 !important; box-sizing:border-box !important; }
             html.autotoc-pinned-layout body > *,
-            html.autotoc-pinned-layout body > * > * { max-width:calc(100vw - 336px) !important; box-sizing:border-box !important; }
+            html.autotoc-pinned-layout body > * > * { max-width:calc(100vw - 300px) !important; box-sizing:border-box !important; }
             html.autotoc-pinned-layout body [style*="position: fixed"],
-            html.autotoc-pinned-layout body [style*="position:fixed"] { max-width:calc(100vw - 336px) !important; }
+            html.autotoc-pinned-layout body [style*="position:fixed"] { max-width:calc(100vw - 300px) !important; }
 
             #smarttoc.octotree-edge .handle {
                 position:absolute !important; top:var(--smarttoc-handle-top, 38%) !important; right:0 !important; left:auto !important;
