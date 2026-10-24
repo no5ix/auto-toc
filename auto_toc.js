@@ -3508,7 +3508,7 @@
     }
 
     const ARTICLE_TOC_GAP = 150;
-    const TOP_MARGIN = 66;
+    const TOP_MARGIN = 0;
 
     const makeSticky = function (options) {
         let {
