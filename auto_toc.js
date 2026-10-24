@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.90
+// @version      1.91
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -696,9 +696,11 @@
 
             #smarttoc.octotree-edge .handle {
                 position:absolute !important; top:38% !important; right:0 !important; left:auto !important;
-                width:30px !important; height:100px !important; min-height:0 !important; box-sizing:border-box !important;
+                width:10px !important;
+                height:80px !important;
+                min-height:0 !important; box-sizing:border-box !important;
                 display:flex !important; align-items:center !important; justify-content:center !important; gap:4px !important;
-                padding:7px 5px 17px 14px !important;
+                padding:7px 5px 6px 14px !important;
                 border: 0px solid rgba(0,0,0,.14) !important; border-right:0 !important;
                 border-radius:8px 0 0 8px !important; 
                 background:rgba(245,245,245,.96) !important;
