@@ -40,7 +40,7 @@ Generate TOC(table of contents) for any website. 可以为任何网站生成TOC�
 
 By default, TOC is enabled on all websites. Sites where a legacy saved preference explicitly disables TOC remain disabled.
 
-可以为任何网站生成TOC网站目录大纲, 默认是不打开的, 需要去插件菜单里为想要打开 toc 的网站开启开关, 插件会记住这个开关, 下回再打开这个网站会自动根据开关来生成 toc 与否.
+可以为任何网站生成 TOC 网站目录大纲。默认在所有网站启用；如果旧设置明确关闭了某个网站，则继续尊重该设置。
 
 <!-- 
 # 捐赠
