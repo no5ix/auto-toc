@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.93
+// @version      1.94
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -678,6 +678,9 @@
                 font-size: 16px !important; line-height: 1.8 !important; -webkit-font-smoothing: antialiased !important;
             }
             #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
+            /* Keep a continuous hover target across the tab-to-panel transition.
+               A brief delay prevents repeated open/close flicker when the pointer
+               approaches the edge tab slowly. */
             #smarttoc.octotree-edge .toc-panel { pointer-events: none !important; }
             #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)),
             #smarttoc.octotree-edge:has(.toc-panel:hover),
@@ -725,10 +728,12 @@
             #smarttoc.octotree-edge:has(.toc-panel:hover) .toc-panel,
             #smarttoc.octotree-edge:focus-within .toc-panel,
             #smarttoc.octotree-edge.pinned .toc-panel { transform:translateX(0) !important; pointer-events:auto !important; }
+            /* Do not remove the handle from hit testing as soon as it opens:
+               its disappearing hit area causes Safari hover to toggle repeatedly. */
             #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)) .handle,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .handle,
             #smarttoc.octotree-edge:focus-within .handle,
-            #smarttoc.octotree-edge.pinned .handle { opacity:0 !important; visibility:hidden !important; pointer-events:none !important; transform:translateX(100%) !important; transition:opacity 120ms ease,transform 220ms cubic-bezier(.2,.75,.25,1),visibility 0s linear 220ms !important; }
+            #smarttoc.octotree-edge.pinned .handle { opacity:0 !important; visibility:hidden !important; transform:translateX(100%) !important; transition:opacity 120ms ease,transform 220ms cubic-bezier(.2,.75,.25,1),visibility 0s linear 220ms !important; }
 
             #smarttoc.octotree-edge .toc-toolbar {
                 flex:0 0 68px !important; height:68px !important; box-sizing:border-box !important;
