@@ -788,12 +788,12 @@
             #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar-thumb { border-radius:8px !important; background:rgba(120,120,120,.32) !important; border:2px solid transparent !important; background-clip:padding-box !important; }
 
             /* Mirror the user's Hexo Theme Neo marker shapes by heading depth. */
-            #smarttoc.octotree-edge .toc-row[data-level="1"] .toc-level-icon { color:#999 !important; font-size:100% !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="2"] .toc-level-icon { color:#999 !important; font-size:100% !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="3"] .toc-level-icon { color:#999 !important; font-size:60% !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="4"] .toc-level-icon { color:#999 !important; font-size:100% !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="5"] .toc-level-icon { color:#999 !important; font-size:60% !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="6"] .toc-level-icon { color:#999 !important; font-size:90% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="1"] .toc-level-icon { color:#999 !important; font-size:80% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="2"] .toc-level-icon { color:#999 !important; font-size:80% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="3"] .toc-level-icon { color:#999 !important; font-size:90% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="4"] .toc-level-icon { color:#999 !important; font-size:70% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="5"] .toc-level-icon { color:#999 !important; font-size:70% !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="6"] .toc-level-icon { color:#999 !important; font-size:100% !important; }
 
             @media (prefers-color-scheme: dark) {
                 #smarttoc.octotree-edge .toc-panel { background:#282828 !important; color:#bbb !important; border-left-color:rgba(255,255,255,.10) !important; }
