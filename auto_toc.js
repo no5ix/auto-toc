@@ -3523,90 +3523,21 @@
             $topMargin,
         } = options;
 
-        let $refRect = Stream.combine($refChange, () => {
-            let refRect = ref.getBoundingClientRect();
-            let refStyle = window.getComputedStyle(ref);
-            let scrollTop = getScroll(scrollable, "top");
-            let scrollLeft = getScroll(scrollable, "left");
-            let refFullRect = {
-                top: refRect.top - scrollTop,
-                right: refRect.right - scrollLeft,
-                bottom: refRect.bottom - scrollTop,
-                left: refRect.left - scrollLeft,
-                width: refRect.width,
-                height: refRect.height,
-            };
-            if (refStyle["box-sizing"] === "border-box") {
-                refFullRect.left += num(refStyle["padding-left"]);
-                refFullRect.right -= num(refStyle["padding-right"]);
-                refFullRect.width -=
-                    num(refStyle["padding-left"]) +
-                    num(refStyle["padding-right"]);
-            }
-            return refFullRect;
-        });
-        let popperMetric = popper.getBoundingClientRect();
-        const scrollableTop =
-            scrollable === document.body
-                ? 0
-                : scrollable.getBoundingClientRect().top;
+        // Keep the edge drawer anchored to the viewport. The former 66px
+        // top margin was applied in the old article-following layout, but this
+        // fixed drawer should not inherit a content offset from that layout.
         return Stream.combine(
-            $refRect,
+            $refChange,
             $scroll,
             $offset,
             $topMargin,
-            (ref, [scrollX, scrollY], [offsetX, offsetY], topMargin) => {
-                // console.log("[makeSticky, direction]", direction)
-                // let x =
-                //     direction === 'right'
-                //         ? ref.right + gap
-                //         : ref.left - gap - popperMetric.width
-                // let y = Math.max(scrollableTop + topMargin, ref.top - scrollY)
-                // let y = Math.max(scrollableTop + topMargin, 288 - scrollY)
-
-                // 我们假定 topMargin 为 TOP_MARGIN (88), 方便固定 toc 在网页的位置
-                let y = scrollableTop + TOP_MARGIN;
-                let final_y = y + offsetY;
-                // let y = Math.max((scrollableTop + TOP_MARGIN), 888 - scrollY)
-                // let final_y = Math.max(TOP_MARGIN, offsetY + Math.max((scrollableTop + TOP_MARGIN), 288 - scrollY))
-                // let final_y = Math.max(TOP_MARGIN, offsetY + Math.max((scrollableTop + TOP_MARGIN), 288 - scrollY))
-
-                // 把 window.innerWidth 换成 window.outerWidth: 解决 safari 双指缩放导致 toc 居中遮挡网页内容的问题
-                // popperMetric.width 是 toc 挂件的宽度
-                // x = Math.min(Math.max(0, x), window.outerWidth - popperMetric.width) // restrict to visible area
-
-                // 放在右侧
-                // 我们假定 popperMetric.width 为 288, 方便固定 toc 在网页的位置
-                // 我们假定用户都开启了Edge浏览器侧边栏, 所以往左多移 36
-                // Octotree-style drawer is anchored to the left viewport edge.
-                // The panel itself slides in/out using CSS, so page-specific drag offsets
-                // must not shift it away from the edge.
-                let final_x = 0;
-                // The Octotree-style drawer is fixed to the right viewport edge.
-                // Its small handle owns its own draggable vertical position.
-
-                // console.log('[auto-toc, makeSticky, final_y]', Math.max((scrollableTop + TOP_MARGIN), 888 - scrollY), final_y)
-                // console.log('[auto-toc, makeSticky, scrollableTop, topMargin]',scrollableTop, topMargin)
-                // console.log('[auto-toc, makeSticky, window.outerWidth, popperMetric.width]',window.outerWidth, popperMetric.width)
-                // console.log('[auto-toc, makeSticky, ref.right, gap]',ref.right, gap)
-                // console.log('[auto-toc, makeSticky, x, window.outerWidth - popperMetric.width]', x, window.outerWidth - popperMetric.width)
-                // console.log('[auto-toc, makeSticky, x, y, offsetX, offsetY]', x, y, offsetX, offsetY)
-                // console.log('[auto-toc, makeSticky, scrollableTop, topMargin, ref.top, scrollY)', scrollableTop, topMargin, ref.top, scrollY)
-                // // console.log('[auto-toc, makeSticky, scrollableTop + topMargin, ref.top - scrollY)', scrollableTop + topMargin, ref.top - scrollY)
-                // console.log('[auto-toc, makeSticky, 3*(scrollableTop + TOP_MARGIN), 888 - scrollY', 3*(scrollableTop + TOP_MARGIN), 888 - scrollY)
-                // console.log('[auto-toc, makeSticky, x + offsetX, y + offsetY]',x + offsetX, y + offsetY)
-                // console.log('[auto-toc, makeSticky, ref.top, gap]',ref.top, gap)
-
-                // if (shouldLog) console.log("[makeSticky,final_x, final_y]", final_x, final_y)
-                return {
-                    position: "fixed",
-                    right: 0,
-                    left: "auto",
-                    top: 0,
-                    // CSS keeps the drawer on the right edge; only the handle is vertically draggable.
-                    transform: "none",
-                };
-            }
+            () => ({
+                position: "fixed",
+                top: 0,
+                right: 0,
+                left: "auto",
+                transform: "none",
+            })
         );
     };
 
