@@ -764,7 +764,7 @@
                 align-items:center !important; justify-content:center !important; color:#999 !important; font:12px/1 sans-serif !important;
                 cursor:pointer !important; border-radius:0 !important; transition:color 140ms ease,background 140ms ease !important;
             }
-            #smarttoc.octotree-edge .toc-expander:hover { background:rgba(0,0,0,.07) !important; color:#222 !important; }
+            #smarttoc.octotree-edge .toc-expander:hover { color:#222 !important; }
             #smarttoc.octotree-edge .toc-expander:focus-visible { outline:2px solid #0a84ff !important; outline-offset:1px !important; }
             #smarttoc.octotree-edge .toc-expander.empty { cursor:default !important; }
             #smarttoc.octotree-edge .toc-row > a {
@@ -813,7 +813,7 @@
                     border-color:rgba(255,255,255,.18) !important;
                 }
                 #smarttoc.octotree-edge .toc-expander { color:#999 !important; }
-                #smarttoc.octotree-edge .toc-expander:hover { background:rgba(255,255,255,.12) !important; color:#f5f5f5 !important; }
+                #smarttoc.octotree-edge .toc-expander:hover { color:#f5f5f5 !important; }
                 #smarttoc.octotree-edge .toc-expander:focus-visible { outline-color:#87daff !important; }
                 #smarttoc.octotree-edge .toc-row > a { color:#999 !important; }
                 #smarttoc.octotree-edge .toc-row > a:hover { color:#fff !important; }
