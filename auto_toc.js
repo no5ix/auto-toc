@@ -6115,8 +6115,21 @@
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element) || target.closest(IGNORE)) return null;
 
-        // Prefer semantic blocks, and support card text inside a strong/span in a div.
+        // Sites often wrap each word in its own span/strong element. Prefer the
+        // nearest semantic text block so holding on one word still translates
+        // the surrounding sentence instead of that tiny inline wrapper.
+        const inlineOnly = "span,strong,b,em,i,u,a,mark,small,sub,sup,code,abbr";
+        const inlineAncestor = target.closest(inlineOnly);
         let block = target.closest(BLOCKS);
+        if (inlineAncestor && (!block || inlineAncestor !== block)) {
+            const inlineText = normalize(inlineAncestor.innerText || inlineAncestor.textContent);
+            const blockText = block ? normalize(block.innerText || block.textContent) : "";
+            const blockHasContext = block && block !== inlineAncestor &&
+                blockText.length > inlineText.length &&
+                normalize(blockText.replace(inlineText, "")).length >= 3;
+            if (!blockHasContext) block = inlineAncestor;
+        }
+
         if (!block) {
             const candidate = target.closest("div,article,section");
             if (candidate) {
