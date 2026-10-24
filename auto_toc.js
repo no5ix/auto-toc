@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.94
+// @version      1.95
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -3498,109 +3498,149 @@
     let last_move_ts = 0;
 
     const Handle = function () {
+        let handleElement = null;
+        let rootElement = null;
+        let dragState = null;
+        let resizeListener = null;
+
+        const STORAGE_KEY = "auto_toc_edge_handle_top";
+        const HANDLE_HEIGHT = 100;
+        const HANDLE_WIDTH = 30;
+
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+        const viewportMaxTop = () => Math.max(0, window.innerHeight - HANDLE_HEIGHT);
+        const centeredTop = () => viewportMaxTop() / 2;
+        const readSavedTop = () => {
+            const raw = GM_getValue(STORAGE_KEY, null);
+            if (raw === null || raw === undefined || raw === "") return null;
+            const value = Number(raw);
+            return Number.isFinite(value) ? clamp(value, 0, viewportMaxTop()) : null;
+        };
+        const persistTop = (top) => GM_setValue(STORAGE_KEY, Math.round(clamp(top, 0, viewportMaxTop())));
+        const applyTop = (top) => {
+            if (!handleElement) return;
+            const value = clamp(top, 0, viewportMaxTop());
+            // Position using a transform on a top-level fixed element; no parent
+            // layout stream, CSS custom-property inheritance, or containing block
+            // can overwrite the vertical coordinate.
+            handleElement.style.setProperty("top", "0px", "important");
+            handleElement.style.setProperty("transform", "translate3d(0, " + value + "px, 0)", "important");
+            handleElement.dataset.autoTocDragTop = String(value);
+            return value;
+        };
+
+        const beginDrag = (event) => {
+            if (!handleElement || !event.target.closest(".handle-drag-grip")) return;
+            if (event.button !== 0 || dragState) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const current = Number(handleElement.dataset.autoTocDragTop);
+            const startTop = Number.isFinite(current) ? current : centeredTop();
+            dragState = {
+                pointerId: event.pointerId,
+                startY: event.clientY,
+                startTop,
+                latestY: event.clientY,
+                frame: 0,
+            };
+            handleElement.classList.add("is-dragging");
+            try { handleElement.setPointerCapture(event.pointerId); } catch (_) {}
+        };
+
+        const moveDrag = (event) => {
+            const state = dragState;
+            if (!state || (state.pointerId !== null && event.pointerId !== state.pointerId)) return;
+            if (!Number.isFinite(event.clientY)) return;
+            state.latestY = event.clientY;
+            if (!state.frame) {
+                state.frame = requestAnimationFrame(() => {
+                    if (!dragState || dragState !== state) return;
+                    state.frame = 0;
+                    const next = applyTop(state.startTop + state.latestY - state.startY);
+                    if (next !== undefined) handleElement.dataset.autoTocDragTop = String(next);
+                });
+            }
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        const endDrag = (event) => {
+            const state = dragState;
+            if (!state || (event && state.pointerId !== null && event.pointerId !== state.pointerId)) return;
+            if (state.frame) {
+                cancelAnimationFrame(state.frame);
+                state.frame = 0;
+                const next = applyTop(state.startTop + state.latestY - state.startY);
+                if (next !== undefined) handleElement.dataset.autoTocDragTop = String(next);
+            }
+            const finalTop = Number(handleElement.dataset.autoTocDragTop);
+            dragState = null;
+            handleElement.classList.remove("is-dragging");
+            if (event && handleElement.hasPointerCapture?.(event.pointerId)) {
+                try { handleElement.releasePointerCapture(event.pointerId); } catch (_) {}
+            }
+            if (Number.isFinite(finalTop)) persistTop(finalTop);
+        };
+
+        const removeHandle = () => {
+            if (dragState) endDrag();
+            if (handleElement) {
+                handleElement.removeEventListener("pointerdown", beginDrag, true);
+                handleElement.remove();
+            }
+            if (resizeListener) window.removeEventListener("resize", resizeListener);
+            handleElement = null;
+            rootElement = null;
+            resizeListener = null;
+        };
+
         return {
-            oncreate({ dom: handle }) {
-                const root = document.getElementById("smarttoc");
-                if (!root || handle.dataset.dragBound === "1") return;
-                handle.dataset.dragBound = "1";
-                if (root.classList.contains("pinned")) autoTocPinnedLayout(true);
-
-                const HANDLE_HEIGHT = 100;
-                const storageKey = "auto_toc_edge_handle_top";
-                const readSavedTop = () => {
-                    const raw = GM_getValue(storageKey, null);
-                    if (raw === null || raw === undefined || raw === "") return null;
-                    const value = Number(raw);
-                    return Number.isFinite(value) ? value : null;
-                };
-                const clampTop = (top) => Math.max(0, Math.min(Math.max(0, window.innerHeight - handle.offsetHeight || HANDLE_HEIGHT), top));
-                const centeredTop = () => Math.max(0, (window.innerHeight - HANDLE_HEIGHT) / 2);
-
-                // Position the actual draggable element. Do not route its offset
-                // through the #smarttoc wrapper: Mithril's sticky layout owns that
-                // wrapper and can update its inline style on redraw.
-                const applyTop = (top, persist = false) => {
-                    const value = clampTop(top);
-                    handle.style.setProperty("top", value + "px", "important");
-                    if (persist) GM_setValue(storageKey, Math.round(value));
-                    return value;
-                };
+            oncreate() {
+                // Reconstruct the draggable handle as a direct child of body.
+                // It intentionally does not live under #smarttoc: the TOC wrapper
+                // participates in a sticky-layout/redraw lifecycle and must not own
+                // or constrain the handle position.
+                rootElement = document.getElementById("smarttoc");
+                if (!rootElement) return;
+                const existing = document.getElementById("smarttoc-edge-handle");
+                if (existing && existing.parentElement !== document.body) existing.remove();
+                if (existing && existing.parentElement === document.body) {
+                    handleElement = existing;
+                } else {
+                    handleElement = document.createElement("div");
+                    handleElement.id = "smarttoc-edge-handle";
+                    handleElement.className = "handle";
+                    handleElement.title = "Hover to open AutoTOC";
+                    handleElement.innerHTML = '<span class="handle-chevron" aria-hidden="true">⌵</span><span class="handle-label" aria-hidden="true"></span><span class="handle-drag-grip" title="Drag to reposition" aria-label="Drag to reposition">☰</span>';
+                    document.body.appendChild(handleElement);
+                }
 
                 const savedTop = readSavedTop();
-                let currentTop = applyTop(savedTop === null ? centeredTop() : savedTop, savedTop !== null);
-                let dragging = false;
-                let pointerId = null;
-                let startY = 0;
-                let startTop = currentTop;
-                let latestY = null;
-                let frame = 0;
+                const initialTop = savedTop === null ? centeredTop() : savedTop;
+                handleElement.dataset.autoTocDragTop = String(initialTop);
+                applyTop(initialTop);
 
-                const updateFromPointer = () => {
-                    frame = 0;
-                    if (!dragging || latestY === null) return;
-                    currentTop = applyTop(startTop + latestY - startY, false);
+                handleElement.addEventListener("pointerdown", beginDrag, true);
+                window.addEventListener("pointermove", moveDrag, true);
+                window.addEventListener("pointerup", endDrag, true);
+                window.addEventListener("pointercancel", endDrag, true);
+                window.addEventListener("blur", () => endDrag());
+
+                resizeListener = () => {
+                    const top = Number(handleElement && handleElement.dataset.autoTocDragTop);
+                    applyTop(Number.isFinite(top) ? top : centeredTop());
                 };
-
-                const onPointerDown = (event) => {
-                    if (event.button !== 0 || dragging) return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    dragging = true;
-                    pointerId = event.pointerId;
-                    startY = event.clientY;
-                    startTop = currentTop;
-                    latestY = event.clientY;
-                    root.classList.add("dragging");
-                    try { handle.setPointerCapture(event.pointerId); } catch (_) {}
-                };
-
-                const onPointerMove = (event) => {
-                    if (!dragging || (pointerId !== null && event.pointerId !== pointerId)) return;
-                    if (!Number.isFinite(event.clientY)) return;
-                    latestY = event.clientY;
-                    if (!frame) frame = requestAnimationFrame(updateFromPointer);
-                    event.preventDefault();
-                    event.stopPropagation();
-                };
-
-                const stopDrag = (event) => {
-                    if (!dragging || (event && pointerId !== null && event.pointerId !== pointerId)) return;
-                    if (frame) {
-                        cancelAnimationFrame(frame);
-                        frame = 0;
-                        updateFromPointer();
-                    }
-                    dragging = false;
-                    pointerId = null;
-                    latestY = null;
-                    root.classList.remove("dragging");
-                    if (event && handle.hasPointerCapture?.(event.pointerId)) {
-                        try { handle.releasePointerCapture(event.pointerId); } catch (_) {}
-                    }
-                    currentTop = applyTop(currentTop, true);
-                };
-
-                handle.addEventListener("pointerdown", (event) => {
-                    // Only start dragging from the grip so the normal handle
-                    // remains usable as a hover target for opening the drawer.
-                    if (event.target.closest(".handle-drag-grip")) onPointerDown(event);
-                });
-                window.addEventListener("pointermove", onPointerMove, true);
-                window.addEventListener("pointerup", stopDrag, true);
-                window.addEventListener("pointercancel", stopDrag, true);
-                window.addEventListener("blur", () => stopDrag());
-
-                window.addEventListener("resize", () => {
-                    const saved = readSavedTop();
-                    currentTop = applyTop(saved === null ? centeredTop() : saved, false);
-                });
+                window.addEventListener("resize", resizeListener);
+            },
+            onremove() {
+                // The direct body child is managed independently from Mithril.
+                // Only remove listeners if its TOC instance is genuinely removed.
+                removeHandle();
             },
             view() {
-                return mithril("div.handle", { title: "Hover to open AutoTOC" }, [
-                    mithril("span.handle-chevron", "⌵"),
-                    mithril("span.handle-label", ""),
-                    mithril("span.handle-drag-grip", { title: "Drag to reposition", "aria-label": "Drag to reposition AutoTOC" }, "☰"),
-                ]);
+                // Return an inert placeholder; the visible handle is independently
+                // mounted under document.body to escape the TOC layout lifecycle.
+                return mithril("span.smarttoc-handle-placeholder", { "aria-hidden": "true" });
             },
         };
     };
