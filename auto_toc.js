@@ -5838,39 +5838,18 @@
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element) || target.closest(IGNORE)) return null;
 
-        // ChatGPT renders assistant prose as nested divs/spans rather than
-        // consistently using <p>. Prefer the nearest complete text block and
-        // only use an inline wrapper when it contains the whole sentence.
-        let block = target.closest(BLOCKS);
-        const inlineOnly = "span,strong,b,em,i,u,mark,small,sub,sup,code,abbr";
-        const inlineAncestor = target.closest(inlineOnly);
-        if (block && inlineAncestor && inlineAncestor !== block) {
-            const blockText = normalize(block.innerText || block.textContent);
-            const inlineText = normalize(inlineAncestor.innerText || inlineAncestor.textContent);
-            const hasSurroundingSentence = blockText.length > inlineText.length &&
-                normalize(blockText.replace(inlineText, "")).length >= 3;
-            if (!hasSurroundingSentence) {
-                // If the semantic ancestor is only a generic inline wrapper,
-                // climb through ChatGPT's nested content wrappers to find a
-                // complete sentence-sized container.
-                let parent = inlineAncestor.parentElement;
-                while (parent && parent !== block && parent !== document.body) {
-                    const parentText = normalize(parent.innerText || parent.textContent);
-                    if (parentText.length > inlineText.length &&
-                        parentText.length <= 1500 &&
-                        normalize(parentText.replace(inlineText, "")).length >= 3) {
-                        block = parent;
-                        break;
-                    }
-                    parent = parent.parentElement;
-                }
-            }
-        } else if (!block && inlineAncestor) {
-            let parent = inlineAncestor.parentElement;
+        // ChatGPT wraps individual words in spans and may insert our previous
+        // translations inside the same paragraph. A paragraph is the canonical
+        // translation unit: always prefer it over word-level inline wrappers.
+        const paragraph = target.closest("p");
+        let block = paragraph || target.closest(BLOCKS);
+        if (!block) {
+            const inlineAncestor = target.closest("span,strong,b,em,i,u,mark,small,sub,sup,code,abbr");
+            let parent = inlineAncestor && inlineAncestor.parentElement;
             while (parent && parent !== document.body) {
-                const parentText = normalize(parent.innerText || parent.textContent);
-                if (parentText.length >= 20 && parentText.length <= 1500 &&
-                    normalize(parentText.replace(normalize(inlineAncestor.innerText || inlineAncestor.textContent), "")).length >= 3) {
+                if (parent.closest(IGNORE)) break;
+                const parentText = getReadableBlockText(parent);
+                if (parentText.length >= 20 && parentText.length <= 1500) {
                     block = parent;
                     break;
                 }
@@ -5881,33 +5860,33 @@
         if (!block) {
             const candidate = target.closest("div,article,section");
             if (candidate) {
-                const candidateText = normalize(candidate.innerText || candidate.textContent);
+                const candidateText = getReadableBlockText(candidate);
                 if (candidateText.length >= 4 && candidateText.length <= 500 && /[A-Za-z]/.test(candidateText)) {
                     const nestedBlocks = candidate.querySelectorAll("p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,[data-as='p'],[data-as='li'],[data-as='blockquote']");
                     if (nestedBlocks.length === 0) block = candidate;
                 }
             }
         }
-        if (!block || !block.isConnected || block.closest(IGNORE) || block.dataset.autoTocTranslation === "true") return null;
-        if (block.closest("[data-auto-toc-translation='true']")) return null;
 
-        // Prefer a sentence-sized ancestor only when the current semantic block
-        // is too small. This avoids accidentally translating the whole assistant turn.
-        let text = normalize(block.innerText || block.textContent);
-        const MIN_SENTENCE_BLOCK_LENGTH = 24;
-        if (text.length < MIN_SENTENCE_BLOCK_LENGTH) {
+        if (!block || !block.isConnected || block.closest(IGNORE) ||
+            block.dataset.autoTocTranslation === "true" ||
+            block.closest("[data-auto-toc-translation='true']")) return null;
+
+        // Do not climb above a paragraph: its text is the intended sentence-sized
+        // unit, even when ChatGPT splits every word into its own span.
+        let text = getReadableBlockText(block);
+        if (!paragraph && text.length < 24) {
             let ancestor = block.parentElement;
             while (ancestor && ancestor !== document.body) {
                 if (ancestor.closest(IGNORE)) break;
-                const ancestorText = normalize(ancestor.innerText || ancestor.textContent);
-                if (ancestorText.length >= MIN_SENTENCE_BLOCK_LENGTH &&
-                    ancestorText.length <= 500 &&
+                const ancestorText = getReadableBlockText(ancestor);
+                if (ancestorText.length >= 24 && ancestorText.length <= 500 &&
                     normalize(ancestorText.replace(text, "")).length >= 3) {
                     const nestedBlocks = ancestor.querySelectorAll(BLOCKS);
-                    const hasMultipleContentBlocks = Array.from(nestedBlocks).some(
-                        candidate => candidate !== block && candidate.contains(block) === false
+                    const hasSeparateContentBlocks = Array.from(nestedBlocks).some(
+                        candidate => candidate !== block && !candidate.contains(block)
                     );
-                    if (!hasMultipleContentBlocks) {
+                    if (!hasSeparateContentBlocks) {
                         block = ancestor;
                         text = ancestorText;
                         break;
@@ -5916,11 +5895,21 @@
                 ancestor = ancestor.parentElement;
             }
         }
+
         if (text.length < 4 || text.length > 1500 || !/[A-Za-z]/.test(text)) return null;
         if (block.tagName === "PRE" && text.length > 700) return null;
         const rect = block.getBoundingClientRect();
         if (rect.width < 50 || rect.height < 8) return null;
         return { block: block, text: text };
+    }
+
+    // Read text without including AutoTOC translations injected into the block.
+    // Clone-based extraction leaves the live page and its event handlers untouched.
+    function getReadableBlockText(block) {
+        if (!block) return "";
+        const clone = block.cloneNode(true);
+        clone.querySelectorAll("[data-auto-toc-translation='true']").forEach(node => node.remove());
+        return normalize(clone.innerText || clone.textContent);
     }
     function getCache(text) { if (cache.has(text)) return cache.get(text); try { const v = localStorage.getItem(CACHE_PREFIX + hash(text)); if (v) { cache.set(text, v); return v; } } catch (_) {} return ""; }
     function setCache(text, value) { cache.set(text, value); if (cache.size > 300) cache.delete(cache.keys().next().value); try { localStorage.setItem(CACHE_PREFIX + hash(text), value); } catch (_) {} }
