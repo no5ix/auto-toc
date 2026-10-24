@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.90
+// @version      1.91
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -3505,36 +3505,80 @@
                 dom.dataset.dragBound = "1";
                 if (root.classList.contains("pinned")) autoTocPinnedLayout(true);
                 const savedTop = GM_getValue("auto_toc_edge_handle_top", null);
-                if (savedTop != null) root.style.setProperty("--smarttoc-handle-top", `${savedTop}px`);
+                const parsedSavedTop = savedTop == null ? null : Number(savedTop);
+                const defaultTop = Math.max(0, Math.round((window.innerHeight - 100) / 2));
+                const initialTop = Number.isFinite(parsedSavedTop)
+                    ? Math.max(0, Math.min(Math.max(0, window.innerHeight - 100), parsedSavedTop))
+                    : defaultTop;
+                root.style.setProperty("--smarttoc-handle-top", `${initialTop}px`);
+
                 const grip = dom.querySelector(".handle-drag-grip");
                 if (!grip) return;
                 let startY = 0;
-                let startTop = 0;
+                let startTop = initialTop;
                 let dragging = false;
+                let pointerId = null;
+
+                const clampTop = (top) => Math.max(0, Math.min(Math.max(0, window.innerHeight - dom.offsetHeight), top));
+                const persistTop = (top) => {
+                    const clampedTop = clampTop(top);
+                    root.style.setProperty("--smarttoc-handle-top", `${clampedTop}px`);
+                    GM_setValue("auto_toc_edge_handle_top", Math.round(clampedTop));
+                };
+
                 grip.addEventListener("pointerdown", (event) => {
-                    if (event.button !== 0) return;
+                    if (event.button !== 0 || dragging) return;
                     dragging = true;
+                    pointerId = event.pointerId;
                     root.classList.add("dragging");
                     startY = event.clientY;
-                    const rect = dom.getBoundingClientRect();
-                    startTop = rect.top;
-                    grip.setPointerCapture?.(event.pointerId);
+                    // The wrapper spans the viewport. Use the actual edge handle's
+                    // position, falling back to our CSS variable if layout is mid-transition.
+                    const handleRect = dom.getBoundingClientRect();
+                    const cssTop = Number.parseFloat(root.style.getPropertyValue("--smarttoc-handle-top"));
+                    startTop = clampTop(Number.isFinite(cssTop) ? cssTop : handleRect.top);
+                    try { grip.setPointerCapture(event.pointerId); } catch (_) {}
                     event.preventDefault();
                     event.stopPropagation();
                 });
-                grip.addEventListener("pointermove", (event) => {
-                    if (!dragging) return;
-                    const maxTop = Math.max(0, window.innerHeight - dom.offsetHeight);
-                    const nextTop = Math.max(0, Math.min(maxTop, startTop + event.clientY - startY));
-                    root.style.setProperty("--smarttoc-handle-top", `${nextTop}px`);
-                    GM_setValue("auto_toc_edge_handle_top", Math.round(nextTop));
-                });
-                const stopDrag = () => {
-                    dragging = false;
-                    root.classList.remove("dragging");
+
+                const moveHandle = (event) => {
+                    if (!dragging || (pointerId !== null && event.pointerId !== pointerId)) return;
+                    persistTop(startTop + event.clientY - startY);
+                    event.preventDefault();
                 };
+
+                const stopDrag = (event) => {
+                    if (!dragging || (event && pointerId !== null && event.pointerId !== pointerId)) return;
+                    const hadCapture = event && grip.hasPointerCapture?.(event.pointerId);
+                    dragging = false;
+                    pointerId = null;
+                    root.classList.remove("dragging");
+                    if (hadCapture) {
+                        try { grip.releasePointerCapture(event.pointerId); } catch (_) {}
+                    }
+                };
+
+                // Keep movement tracking even if the handle's hover transition moves
+                // the grip under the pointer and Safari loses pointer capture.
+                grip.addEventListener("pointermove", moveHandle);
+                document.addEventListener("pointermove", moveHandle, true);
                 grip.addEventListener("pointerup", stopDrag);
                 grip.addEventListener("pointercancel", stopDrag);
+                document.addEventListener("pointerup", stopDrag, true);
+                document.addEventListener("pointercancel", stopDrag, true);
+
+                // Keep the chosen top position valid after viewport resizing. A custom
+                // saved position is retained, while a first visit starts centered.
+                if (!root.dataset.dragResizeBound) {
+                    root.dataset.dragResizeBound = "1";
+                    window.addEventListener("resize", () => {
+                        const saved = GM_getValue("auto_toc_edge_handle_top", null);
+                        const parsed = saved == null ? null : Number(saved);
+                        const fallback = Math.max(0, Math.round((window.innerHeight - dom.offsetHeight) / 2));
+                        persistTop(Number.isFinite(parsed) ? parsed : fallback);
+                    });
+                }
             },
             view() {
                 return mithril("div.handle", { title: "Hover to open AutoTOC" }, [
