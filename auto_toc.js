@@ -714,7 +714,10 @@
             #smarttoc.octotree-edge .handle:hover { background:#fff !important; border-color:rgba(0,0,0,.22) !important; }
             #smarttoc.octotree-edge .handle .handle-chevron { display:block !important; font-size:20px !important; line-height:1 !important; font-weight:400 !important; color:#555 !important; }
             #smarttoc.octotree-edge .handle .handle-label { display:block !important; color:#777 !important; font-size:11px !important; line-height:1 !important; font-weight:650 !important; max-height:58px !important; overflow:hidden !important; flex:0 1 auto !important; pointer-events:none !important; }
-            #smarttoc.octotree-edge .handle .handle-drag-grip { position:absolute !important; bottom:0 !important; left:0 !important; width:100% !important; height:27px !important; display:flex !important; align-items:center !important; justify-content:center !important; writing-mode:horizontal-tb !important; color:rgba(29,29,31,.48) !important; font-size:13px !important; line-height:1 !important; letter-spacing:-2px !important; cursor:ns-resize !important; touch-action:none !important; border-radius:0 0 13px 13px !important; z-index:2 !important; }
+            #smarttoc.octotree-edge .handle .handle-drag-grip {
+             position:absolute !important; bottom:0 !important; left:0 !important; width:100% !important; height:27px !important; display:flex !important; align-items:center !important; justify-content:center !important; writing-mode:horizontal-tb !important; color:rgba(29,29,31,.48) !important; font-size:13px !important; line-height:1 !important; letter-spacing:-2px !important; cursor:ns-resize !important; touch-action:none !important; 
+                z-index:2 !important; 
+             }
             #smarttoc.octotree-edge .handle .handle-chevron { flex:0 0 auto !important; pointer-events:none !important; }
             #smarttoc.octotree-edge .handle .handle-drag-grip:hover { color:#202024 !important; background:rgba(0,0,0,.06) !important; }
 
