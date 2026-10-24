@@ -4691,9 +4691,10 @@
 
     function handleToc() {
         var domain2shouldShow = GM_getValue("menu_GAEEScript_auto_open_toc") || {};
-        // Enable TOC on every site by default; explicit false remains a legacy opt-out.
-        if (domain2shouldShow[window.location.host] !== false) {
-            domain2shouldShow[window.location.host] = true;
+        // TOC is enabled by default on every site; only an explicit false opts out.
+        const host = window.location.host;
+        if (domain2shouldShow[host] !== false) {
+            domain2shouldShow[host] = true;
             GM_setValue("menu_GAEEScript_auto_open_toc", domain2shouldShow);
         }
         if (shouldLog) console.log("[auto_toc] - handleToc domain2shouldShow: ", domain2shouldShow);
@@ -4755,9 +4756,6 @@
     //////////////////////////////////////// A watcher to browser width changes on the display.
     let lastBrowserWidth = window.innerWidth;
     function checkBrowserWidthChange() {
-        if (Date.now() - last_move_ts < 6666) {  // if we just moved auto-toc, it usually means we wanna do some actions, so we skip this check
-            return;
-        }
         // console.log("[auto_toc] - window.innerWidth = " + window.innerWidth);
         // console.log("[auto_toc] - lastBrowserWidth = " + lastBrowserWidth);
         if (window.innerWidth - lastBrowserWidth > 300 || lastBrowserWidth - window.innerWidth > 300) {
@@ -4959,7 +4957,7 @@
             GM_setValue(`${localStorageKeyName}`, domain2shouldShrinkImg);
             shrinkImg(true);
         }
-        // 因为 safari 的各个油猴平台都还没支持好 GM_unregisterMenuCommand , 所以先只让非 safari 的跑, 这会导致 safari 里用户关闭显示 toc 开关的时候, 相关菜单的✅不会变成❎
+        // Refresh the remaining menu where unregister is supported.
         if (!isSafari()) {
             // alert("非safari");
             registerMenuCommand(); // 重新注册脚本菜单
