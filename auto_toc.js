@@ -5919,7 +5919,7 @@
         if (legacy.localaiKey == null && legacy.omlxKey != null) legacy.localaiKey = legacy.omlxKey;
         const settings = Object.assign({}, DEFAULTS, legacy);
         if (!stored || stored.enabled == null) settings.enabled = true;
-        if (settings.provider === "localai") settings.provider = "localai";
+        if (settings.provider === "omlx") settings.provider = "localai";
         if (settings.provider !== "localai" && settings.provider !== "cloud") settings.provider = "cloud";
         return settings;
     }
@@ -6073,7 +6073,7 @@
         return attempt(0);
     }
     function translate(text, signal) {
-        const provider = (settings.provider === "omlx" || settings.provider === "localai") ? "localai" : "cloud";
+        const provider = (settings.provider === "localai") ? "localai" : "cloud";
         const key = provider + ":" + settings.targetLanguage + ":" + text;
         const cached = getCache(key);
         if (cached) return Promise.resolve(cached);
