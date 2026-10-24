@@ -685,7 +685,7 @@
             #smarttoc.octotree-edge.pinned { width: 300px !important; }
 
             html.autotoc-pinned-layout { width:100% !important; max-width:100% !important; box-sizing:border-box !important; overflow-x:clip !important; }
-            html.autotoc-pinned-layout body { width:calc(100vw - 300px) !important; max-width:calc(100vw - 336px) !important; margin-right:0 !important; box-sizing:border-box !important; }
+            html.autotoc-pinned-layout body { width:calc(100vw - 300px) !important; max-width:calc(100vw - 300px) !important; margin-right:0 !important; box-sizing:border-box !important; }
             html.autotoc-pinned-layout body > *,
             html.autotoc-pinned-layout body > * > * { max-width:calc(100vw - 336px) !important; box-sizing:border-box !important; }
             html.autotoc-pinned-layout body [style*="position: fixed"],
