@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.91
+// @version      1.92
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -764,7 +764,8 @@
                 align-items:center !important; justify-content:center !important; color:#999 !important; font:12px/1 sans-serif !important;
                 cursor:pointer !important; border-radius:0 !important; transition:color 140ms ease,background 140ms ease !important;
             }
-            #smarttoc.octotree-edge .toc-expander:hover { background:transparent !important; color:#222 !important; }
+            #smarttoc.octotree-edge .toc-expander:hover { background:rgba(0,0,0,.07) !important; color:#222 !important; }
+            #smarttoc.octotree-edge .toc-expander:focus-visible { outline:2px solid #0a84ff !important; outline-offset:1px !important; }
             #smarttoc.octotree-edge .toc-expander.empty { cursor:default !important; }
             #smarttoc.octotree-edge .toc-row > a {
                 all:unset !important; box-sizing:border-box !important; display:flex !important; flex:1 1 auto !important;
@@ -811,6 +812,9 @@
                     color:#fff !important; background:rgba(255,255,255,.15) !important;
                     border-color:rgba(255,255,255,.18) !important;
                 }
+                #smarttoc.octotree-edge .toc-expander { color:#999 !important; }
+                #smarttoc.octotree-edge .toc-expander:hover { background:rgba(255,255,255,.12) !important; color:#f5f5f5 !important; }
+                #smarttoc.octotree-edge .toc-expander:focus-visible { outline-color:#87daff !important; }
                 #smarttoc.octotree-edge .toc-row > a { color:#999 !important; }
                 #smarttoc.octotree-edge .toc-row > a:hover { color:#fff !important; }
                 #smarttoc.octotree-edge li.active > .toc-row > a,
@@ -3398,7 +3402,7 @@
                 const pinned = !!(smarttoc && smarttoc.classList.contains("pinned"));
                 return mithril("div.toc-panel", [
                     mithril("div.toc-toolbar", [
-                        toolbarButton("📌", pinned ? "Unpin TOC" : "Keep TOC open", () => {
+                        toolbarButton(pinned ? "📍" : "📌", pinned ? "Unpin TOC" : "Keep TOC open", () => {
                             const root = document.getElementById("smarttoc");
                             if (root) {
                                 const shouldPin = !root.classList.contains("pinned");
