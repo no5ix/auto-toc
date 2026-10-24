@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.96
+// @version      1.97
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -677,6 +677,36 @@
                 font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif !important;
                 font-size: 16px !important; line-height: 1.8 !important; -webkit-font-smoothing: antialiased !important;
             }
+            /* Standalone draggable edge handle is a direct child of body. */
+            #smarttoc-edge-handle {
+                all: initial !important;
+                position: fixed !important; top: 0 !important; right: 0 !important; left: auto !important;
+                width: 30px !important; height: 100px !important; min-height: 0 !important;
+                box-sizing: border-box !important; display: flex !important; align-items: center !important;
+                justify-content: center !important; gap: 4px !important; padding: 7px 5px 17px 14px !important;
+                border: 0 !important; border-radius: 8px 0 0 8px !important;
+                background: rgba(245,245,245,.96) !important; color: #555 !important;
+                -webkit-backdrop-filter: blur(18px) !important; backdrop-filter: blur(18px) !important;
+                font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif !important;
+                writing-mode: vertical-rl !important; opacity: 1 !important; cursor: grab !important;
+                user-select: none !important; -webkit-user-select: none !important; touch-action: none !important;
+                z-index: 2147483647 !important; box-shadow: 0 0 6px rgba(0,0,0,.4) !important;
+                transition: background 180ms ease, border-color 180ms ease !important;
+            }
+            #smarttoc-edge-handle * { all: unset; box-sizing: border-box !important; }
+            #smarttoc-edge-handle .handle-chevron { display:block !important; font-size:20px !important; line-height:1 !important; pointer-events:none !important; }
+            #smarttoc-edge-handle .handle-label { display:block !important; color:#777 !important; font-size:11px !important; line-height:1 !important; pointer-events:none !important; }
+            #smarttoc-edge-handle .handle-drag-grip {
+                position:absolute !important; bottom:0 !important; left:0 !important; width:100% !important; height:27px !important;
+                display:flex !important; align-items:center !important; justify-content:center !important;
+                writing-mode:horizontal-tb !important; color:rgba(29,29,31,.6) !important; font-size:13px !important;
+                line-height:1 !important; letter-spacing:-2px !important; cursor:ns-resize !important;
+                touch-action:none !important; border-radius:0 0 0 8px !important; z-index:2 !important;
+            }
+            #smarttoc-edge-handle:hover { background:#fff !important; }
+            #smarttoc-edge-handle:active, #smarttoc-edge-handle.is-dragging { cursor:grabbing !important; }
+            #smarttoc-edge-handle .handle-drag-grip:hover { color:#202024 !important; background:rgba(0,0,0,.06) !important; }
+
             #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
             /* Keep a continuous hover target across the tab-to-panel transition.
                A brief delay prevents repeated open/close flicker when the pointer
