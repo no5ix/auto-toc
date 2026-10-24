@@ -732,7 +732,7 @@
             #smarttoc.octotree-edge .toc-toolbar {
                 flex:0 0 68px !important; height:68px !important; box-sizing:border-box !important;
                 display:flex !important; align-items:center !important; justify-content:flex-end !important; gap:6px !important;
-                padding:0 18px 0 22px !important; border-bottom:1px solid #d8d8d8 !important; background:#eee !important;
+                padding:0 18px 0 22px !important;  background:#eee !important;
             }
             #smarttoc.octotree-edge .toc-toolbar button {
                 all:unset !important; box-sizing:border-box !important; display:inline-flex !important; flex:0 0 28px !important;
