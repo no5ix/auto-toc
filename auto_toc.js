@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.89
+// @version      1.90
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -668,7 +668,7 @@
             /* Hexo Theme Neo-inspired TOC: typography, heading markers, and tab styling */
             #smarttoc.octotree-edge {
                 position: fixed !important; top: 0 !important; right: 0 !important; left: auto !important;
-                width: 336px !important; min-width: 0 !important; height: 100vh !important; max-height: 100vh !important;
+                width: 300px !important; min-width: 0 !important; height: 100vh !important; max-height: 100vh !important;
                 padding: 0 !important; margin: 0 !important; overflow: visible !important; pointer-events: none !important;
                 box-sizing: border-box !important; border: 0 !important; border-radius: 0 !important;
                 background: transparent !important; color: #777 !important; box-shadow: none !important;
@@ -682,10 +682,10 @@
             #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)),
             #smarttoc.octotree-edge:has(.toc-panel:hover),
             #smarttoc.octotree-edge:focus-within,
-            #smarttoc.octotree-edge.pinned { width: 336px !important; }
+            #smarttoc.octotree-edge.pinned { width: 300px !important; }
 
             html.autotoc-pinned-layout { width:100% !important; max-width:100% !important; box-sizing:border-box !important; overflow-x:clip !important; }
-            html.autotoc-pinned-layout body { width:calc(100vw - 336px) !important; max-width:calc(100vw - 336px) !important; margin-right:0 !important; box-sizing:border-box !important; }
+            html.autotoc-pinned-layout body { width:calc(100vw - 300px) !important; max-width:calc(100vw - 336px) !important; margin-right:0 !important; box-sizing:border-box !important; }
             html.autotoc-pinned-layout body > *,
             html.autotoc-pinned-layout body > * > * { max-width:calc(100vw - 336px) !important; box-sizing:border-box !important; }
             html.autotoc-pinned-layout body [style*="position: fixed"],
@@ -714,7 +714,7 @@
 
             #smarttoc.octotree-edge .toc-panel {
                 position:absolute !important; top:0 !important; right:0 !important; bottom:0 !important;
-                width:336px !important; height:auto !important; box-sizing:border-box !important; overflow:hidden !important;
+                width:300px !important; height:auto !important; box-sizing:border-box !important; overflow:hidden !important;
                 background:#eee !important; color:#777 !important; border:0 !important; border-left:1px solid rgba(0,0,0,.08) !important;
                 border-radius:0 !important; box-shadow:0 0 8px rgba(0,0,0,.20) !important;
                 transform:translateX(calc(100% + 2px)) !important; transition:transform 260ms cubic-bezier(.2,.75,.25,1) !important;
