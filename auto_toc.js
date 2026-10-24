@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.95
+// @version      1.88
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -696,22 +696,25 @@
 
             #smarttoc.octotree-edge .handle {
                 position:absolute !important; top:var(--smarttoc-handle-top, 38%) !important; right:0 !important; left:auto !important;
-                width:30px !important; height:90px !important; min-height:0 !important; box-sizing:border-box !important;
+                width:30px !important; height:100px !important; min-height:0 !important; box-sizing:border-box !important;
                 display:flex !important; align-items:center !important; justify-content:center !important; gap:4px !important;
-                padding:7px 5px 16px !important; border:1px solid rgba(0,0,0,.14) !important; border-right:0 !important;
-                border-radius:14px 0 0 14px !important; background:rgba(245,245,245,.96) !important;
+                padding:7px 5px 17px 14px !important;
+                border: 0px solid rgba(0,0,0,.14) !important; border-right:0 !important;
+                border-radius:8px 0 0 8px !important; 
+                background:rgba(245,245,245,.96) !important;
                 -webkit-backdrop-filter:blur(18px) !important; backdrop-filter:blur(18px) !important;
                 color:#555 !important; font-size:12px !important; font-family:inherit !important; font-variant:normal !important;
                 font-weight:600 !important; letter-spacing:0 !important; writing-mode:vertical-rl !important; transform:none !important;
                 opacity:1 !important; cursor:grab !important; user-select:none !important; touch-action:none !important;
-                z-index:5 !important; box-shadow:0 2px 10px rgba(0,0,0,.10) !important;
+                z-index:5 !important;
+                box-shadow:0 0 6px rgba(0, 0, 0,0.65) !important;
                 transition:background 180ms ease,border-color 180ms ease !important;
             }
             #smarttoc.octotree-edge .handle:active { cursor:grabbing !important; }
             #smarttoc.octotree-edge .handle:hover { background:#fff !important; border-color:rgba(0,0,0,.22) !important; }
             #smarttoc.octotree-edge .handle .handle-chevron { display:block !important; font-size:20px !important; line-height:1 !important; font-weight:400 !important; color:#555 !important; }
             #smarttoc.octotree-edge .handle .handle-label { display:block !important; color:#777 !important; font-size:11px !important; line-height:1 !important; font-weight:650 !important; max-height:58px !important; overflow:hidden !important; flex:0 1 auto !important; pointer-events:none !important; }
-            #smarttoc.octotree-edge .handle .handle-drag-grip { position:absolute !important; bottom:0 !important; left:0 !important; width:100% !important; height:15px !important; display:flex !important; align-items:center !important; justify-content:center !important; writing-mode:horizontal-tb !important; color:rgba(29,29,31,.48) !important; font-size:13px !important; line-height:1 !important; letter-spacing:-2px !important; cursor:ns-resize !important; touch-action:none !important; border-radius:0 0 13px 13px !important; z-index:2 !important; }
+            #smarttoc.octotree-edge .handle .handle-drag-grip { position:absolute !important; bottom:0 !important; left:0 !important; width:100% !important; height:27px !important; display:flex !important; align-items:center !important; justify-content:center !important; writing-mode:horizontal-tb !important; color:rgba(29,29,31,.48) !important; font-size:13px !important; line-height:1 !important; letter-spacing:-2px !important; cursor:ns-resize !important; touch-action:none !important; border-radius:0 0 13px 13px !important; z-index:2 !important; }
             #smarttoc.octotree-edge .handle .handle-chevron { flex:0 0 auto !important; pointer-events:none !important; }
             #smarttoc.octotree-edge .handle .handle-drag-grip:hover { color:#202024 !important; background:rgba(0,0,0,.06) !important; }
 
@@ -3516,8 +3519,8 @@
             },
             view() {
                 return mithril("div.handle", { title: "Hover to open AutoTOC" }, [
-                    mithril("span.handle-chevron", "›"),
-                    mithril("span.handle-label", "AutoTOC"),
+                    mithril("span.handle-chevron", "⌵"),
+                    mithril("span.handle-label", ""),
                     mithril("span.handle-drag-grip", { title: "Drag to reposition", "aria-label": "Drag to reposition AutoTOC" }, "☰"),
                 ]);
             },
