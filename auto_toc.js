@@ -829,7 +829,7 @@
                 background: rgba(250, 250, 252, .97) !important;
                 -webkit-backdrop-filter: blur(30px) saturate(165%) !important;
                 backdrop-filter: blur(30px) saturate(165%) !important;
-                color: #e5e5ea !important;
+                color: #242428 !important;
                 border: 1px solid rgba(35,35,45,.10) !important;
                 border-radius: 0 !important;
                 box-shadow: 0 12px 42px rgba(20,20,30,.16), 0 2px 8px rgba(20,20,30,.08) !important;
@@ -862,7 +862,7 @@
 
             #smarttoc.octotree-edge .toc-toolbar {
                 flex: 0 0 68px !important;
-                height: 58px !important;
+                height: 68px !important;
                 box-sizing: border-box !important;
                 display: flex !important;
                 align-items: center !important;
@@ -1001,6 +1001,18 @@
             #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar-thumb { border-radius: 8px !important; background: rgba(142,142,147,.32) !important; border: 2px solid transparent !important; background-clip: padding-box !important; }
 
             /* Respect the system theme while keeping the same hierarchy and contrast. */
+            @media (prefers-color-scheme: dark) {
+                #smarttoc.octotree-edge .handle { background:rgba(36,37,42,.96) !important; color:#f5f5f7 !important; border-color:rgba(255,255,255,.14) !important; }
+                #smarttoc.octotree-edge .handle .handle-chevron { color:#f5f5f7 !important; }
+                #smarttoc.octotree-edge .handle .handle-label { color:#0a84ff !important; }
+                #smarttoc.octotree-edge .toc-panel { background:rgba(28,29,33,.97) !important; color:#e5e5ea !important; border-color:rgba(255,255,255,.10) !important; }
+                #smarttoc.octotree-edge .toc-toolbar { background:rgba(255,255,255,.025) !important; border-bottom-color:rgba(255,255,255,.09) !important; }
+                #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title { color:#f5f5f7 !important; }
+                #smarttoc.octotree-edge .toc-toolbar button { color:#a1a1aa !important; }
+                #smarttoc.octotree-edge .toc-row > a { color:#b7b7bf !important; }
+                #smarttoc.octotree-edge .toc-row > a:hover { color:#f5f5f7 !important; background:rgba(142,142,147,.12) !important; }
+                #smarttoc.octotree-edge li.active > .toc-row > a { color:#fff !important; font-weight:700 !important; }
+            }
             @media (prefers-color-scheme: light) {
                 #smarttoc.octotree-edge .handle { background:rgba(250,250,252,.96) !important; color:#1d1d1f !important; border-color:rgba(0,0,0,.14) !important; }
                 #smarttoc.octotree-edge .handle .handle-chevron { color:#1d1d1f !important; }
