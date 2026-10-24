@@ -6175,13 +6175,13 @@
         // Keep completed translation output visible until this document reloads.
     }
     function chooseProvider() {
-        const value = prompt("Choose translation provider: \n1. LocalAI \n2. Cloud (Google → Apple → Microsoft)", (settings.provider === "omlx" || settings.provider === "localai") ? "1" : "2");
+        const value = prompt("Choose translation provider: \n1. LocalAI \n2. Cloud (Google → Apple → Microsoft)", settings.provider === "localai" ? "1" : "2");
         if (!value) return;
         const p = value.trim().toLowerCase();
         if (p === "1" || p === "localai" || p === "omlx") settings.provider = "localai";
         else if (p === "2" || p === "cloud") settings.provider = "cloud";
         else return toast("Choose 1 (LocalAI) or 2 (Cloud).");
-        saveSettings(); toast("Translation provider set to " + ((settings.provider === "omlx" || settings.provider === "localai") ? "LocalAI" : "Cloud") + ".");
+        saveSettings(); toast("Translation provider set to " + (settings.provider === "localai" ? "LocalAI" : "Cloud") + ".");
     }
     function configureLocalAI() {
         const url = prompt("LocalAI OpenAI-compatible /v1/chat/completions URL:", settings.localaiUrl); if (url === null) return;
