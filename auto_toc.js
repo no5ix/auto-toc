@@ -5912,7 +5912,7 @@
             try { const v = localStorage.getItem(SETTINGS_KEY); if (v) stored = JSON.parse(v); } catch (_) {}
         }
         // Upgrade existing installs to free Microsoft translation and enabled-by-default
-        // behavior, while preserving explicitly configured provider choices and LocalAI keys.
+        // behavior, while preserving explicitly configured provider choices and legacy local endpoint keys.
         const legacy = stored ? Object.assign({}, stored) : {};
         if (legacy.localaiUrl == null && legacy.omlxUrl != null) legacy.localaiUrl = legacy.omlxUrl;
         if (legacy.localaiModel == null && legacy.omlxModel != null) legacy.localaiModel = legacy.omlxModel;
@@ -6034,7 +6034,7 @@
     }
     function translateLocalAI(text, signal) {
         const url = settings.localaiUrl.trim(); if (!/^https?:\/\//i.test(url)) return Promise.reject(new Error("Set a valid LocalAI OpenAI-compatible chat-completions URL."));
-        const headers = { "Content-Type": "application/json" }; if (settings.localaiKey.trim()) headers.Authorization = "Bearer " + settings.omlxKey.trim();
+        const headers = { "Content-Type": "application/json" }; if (settings.localaiKey.trim()) headers.Authorization = "Bearer " + settings.localaiKey.trim();
         const data = { model: settings.localaiModel.trim() || "Qwen", stream: false, temperature: 0.1, messages: [{ role: "system", content: "Translate the user text into Simplified Chinese. Return only the translation. Preserve meaning, names, URLs, and formatting; do not explain." }, { role: "user", content: text }] };
         return requestText({ url: url, method: "POST", headers: headers, data: JSON.stringify(data), signal: signal }).then(function (raw) { const j = JSON.parse(raw); const t = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content || j && j.message && j.message.content || j && j.response; if (!t || !String(t).trim()) throw new Error("LocalAI returned no translation; check endpoint/model/API compatibility."); return String(t).trim(); });
     }
@@ -6184,9 +6184,9 @@
         saveSettings(); toast("Translation provider set to " + ((settings.provider === "omlx" || settings.provider === "localai") ? "LocalAI" : "Cloud") + ".");
     }
     function configureLocalAI() {
-        const url = prompt("LocalAI OpenAI-compatible /v1/chat/completions URL:", settings.omlxUrl); if (url === null) return;
-        const model = prompt("Model ID served by LocalAI (Qwen model name):", settings.omlxModel); if (model === null) return;
-        const key = prompt("Optional API key (blank if none):", settings.omlxKey); if (key === null) return;
+        const url = prompt("LocalAI OpenAI-compatible /v1/chat/completions URL:", settings.localaiUrl); if (url === null) return;
+        const model = prompt("Model ID served by LocalAI (Qwen model name):", settings.localaiModel); if (model === null) return;
+        const key = prompt("Optional API key (blank if none):", settings.localaiKey); if (key === null) return;
         settings.omlxUrl = url.trim(); settings.omlxModel = model.trim(); settings.omlxKey = key.trim(); saveSettings(); toast("LocalAI / Qwen settings saved.");
     }
     function toggleEnabled() { settings.enabled = !settings.enabled; saveSettings(); if (!settings.enabled) cancelActive(); toast(settings.enabled ? "Inline translation enabled. Hold left mouse button over a text line." : "Inline translation disabled."); }
