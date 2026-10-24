@@ -5919,7 +5919,7 @@
         if (legacy.localaiKey == null && legacy.omlxKey != null) legacy.localaiKey = legacy.omlxKey;
         const settings = Object.assign({}, DEFAULTS, legacy);
         if (!stored || stored.enabled == null) settings.enabled = true;
-        if (settings.provider === "omlx") settings.provider = "localai";
+        if (settings.provider === "localai") settings.provider = "localai";
         if (settings.provider !== "localai" && settings.provider !== "cloud") settings.provider = "cloud";
         return settings;
     }
