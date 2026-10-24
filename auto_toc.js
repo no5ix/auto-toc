@@ -770,7 +770,7 @@
                 all:unset !important; box-sizing:border-box !important; display:flex !important; flex:1 1 auto !important;
                 min-width:0 !important; align-items:baseline !important; gap:8px !important; padding:2px 2px !important;
                 border:0 !important; border-radius:0 !important; color:#777 !important;
-                font:14px/1.8 "PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif !important;
+                font:13px/1.8 "PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif !important;
                 letter-spacing:0 !important; text-decoration:none !important; cursor:pointer !important;
                 white-space:normal !important; overflow-wrap:anywhere !important; transition:color 140ms ease !important;
             }
