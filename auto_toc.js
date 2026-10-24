@@ -3507,7 +3507,7 @@
         pinObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
 
-    const ARTICLE_TOC_GAP = 150;
+    const ARTICLE_TOC_GAP = 0;
     const TOP_MARGIN = 0;
 
     const makeSticky = function (options) {
