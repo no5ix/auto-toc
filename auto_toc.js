@@ -668,7 +668,8 @@
             /* Hexo Theme Neo-inspired TOC: typography, heading markers, and tab styling */
             #smarttoc.octotree-edge {
                 position: fixed !important; top: 0 !important; right: 0 !important; left: auto !important;
-                width: 300px !important; min-width: 0 !important; height: 100vh !important; max-height: 100vh !important;
+                width: 324px !important;
+                min-width: 0 !important; height: 100vh !important; max-height: 100vh !important;
                 padding: 0 !important; margin: 0 !important; overflow: visible !important; pointer-events: none !important;
                 box-sizing: border-box !important; border: 0 !important; border-radius: 0 !important;
                 background: transparent !important; color: #777 !important; box-shadow: none !important;
@@ -718,7 +719,7 @@
             #smarttoc.octotree-edge .handle .handle-chevron { flex:0 0 auto !important; pointer-events:none !important; }
             #smarttoc.octotree-edge .toc-panel {
                 position:absolute !important; top:0 !important; right:0 !important; bottom:0 !important;
-                width:300px !important; height:auto !important; box-sizing:border-box !important; overflow:hidden !important;
+                width:324px !important; height:auto !important; box-sizing:border-box !important; overflow:hidden !important;
                 background:#eee !important; color:#777 !important; border:0 !important; 
                 
                 border-radius:0 !important; box-shadow:0 0 8px rgba(0,0,0,0.65) !important;
