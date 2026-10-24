@@ -5842,7 +5842,7 @@
         // consistently using <p>. Prefer the nearest complete text block and
         // only use an inline wrapper when it contains the whole sentence.
         let block = target.closest(BLOCKS);
-        const inlineOnly = "span,strong,b,em,i,u,a,mark,small,sub,sup,code,abbr";
+        const inlineOnly = "span,strong,b,em,i,u,mark,small,sub,sup,code,abbr";
         const inlineAncestor = target.closest(inlineOnly);
         if (block && inlineAncestor && inlineAncestor !== block) {
             const blockText = normalize(block.innerText || block.textContent);
@@ -5891,26 +5891,27 @@
         if (!block || !block.isConnected || block.closest(IGNORE) || block.dataset.autoTocTranslation === "true") return null;
         if (block.closest("[data-auto-toc-translation='true']")) return null;
 
-        // Avoid translating a word-sized inline wrapper when an ancestor has
-        // substantially more readable text (common in ChatGPT's answer DOM).
+        // Prefer a sentence-sized ancestor only when the current semantic block
+        // is too small. This avoids accidentally translating the whole assistant turn.
         let text = normalize(block.innerText || block.textContent);
-        if (inlineAncestor && block === inlineAncestor) {
+        const MIN_SENTENCE_BLOCK_LENGTH = 24;
+        if (text.length < MIN_SENTENCE_BLOCK_LENGTH) {
             let ancestor = block.parentElement;
             while (ancestor && ancestor !== document.body) {
                 if (ancestor.closest(IGNORE)) break;
                 const ancestorText = normalize(ancestor.innerText || ancestor.textContent);
-                if (ancestorText.length > text.length + 12 && ancestorText.length <= 1500 &&
+                if (ancestorText.length >= MIN_SENTENCE_BLOCK_LENGTH &&
+                    ancestorText.length <= 500 &&
                     normalize(ancestorText.replace(text, "")).length >= 3) {
-                    block = ancestor;
-                    text = ancestorText;
-                    break;
-                }
-                if (BLOCKS.split(",").some(selector => {
-                    try { return ancestor.matches(selector); } catch (_) { return false; }
-                }) && ancestorText.length > text.length + 12) {
-                    block = ancestor;
-                    text = ancestorText;
-                    break;
+                    const nestedBlocks = ancestor.querySelectorAll(BLOCKS);
+                    const hasMultipleContentBlocks = Array.from(nestedBlocks).some(
+                        candidate => candidate !== block && candidate.contains(block) === false
+                    );
+                    if (!hasMultipleContentBlocks) {
+                        block = ancestor;
+                        text = ancestorText;
+                        break;
+                    }
                 }
                 ancestor = ancestor.parentElement;
             }
