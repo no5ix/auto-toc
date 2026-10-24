@@ -5838,19 +5838,44 @@
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element) || target.closest(IGNORE)) return null;
 
-        // Sites often wrap each word in its own span/strong element. Prefer the
-        // nearest semantic text block so holding on one word still translates
-        // the surrounding sentence instead of that tiny inline wrapper.
+        // ChatGPT renders assistant prose as nested divs/spans rather than
+        // consistently using <p>. Prefer the nearest complete text block and
+        // only use an inline wrapper when it contains the whole sentence.
+        let block = target.closest(BLOCKS);
         const inlineOnly = "span,strong,b,em,i,u,a,mark,small,sub,sup,code,abbr";
         const inlineAncestor = target.closest(inlineOnly);
-        let block = target.closest(BLOCKS);
-        if (inlineAncestor && (!block || inlineAncestor !== block)) {
+        if (block && inlineAncestor && inlineAncestor !== block) {
+            const blockText = normalize(block.innerText || block.textContent);
             const inlineText = normalize(inlineAncestor.innerText || inlineAncestor.textContent);
-            const blockText = block ? normalize(block.innerText || block.textContent) : "";
-            const blockHasContext = block && block !== inlineAncestor &&
-                blockText.length > inlineText.length &&
+            const hasSurroundingSentence = blockText.length > inlineText.length &&
                 normalize(blockText.replace(inlineText, "")).length >= 3;
-            if (!blockHasContext) block = inlineAncestor;
+            if (!hasSurroundingSentence) {
+                // If the semantic ancestor is only a generic inline wrapper,
+                // climb through ChatGPT's nested content wrappers to find a
+                // complete sentence-sized container.
+                let parent = inlineAncestor.parentElement;
+                while (parent && parent !== block && parent !== document.body) {
+                    const parentText = normalize(parent.innerText || parent.textContent);
+                    if (parentText.length > inlineText.length &&
+                        parentText.length <= 1500 &&
+                        normalize(parentText.replace(inlineText, "")).length >= 3) {
+                        block = parent;
+                        break;
+                    }
+                    parent = parent.parentElement;
+                }
+            }
+        } else if (!block && inlineAncestor) {
+            let parent = inlineAncestor.parentElement;
+            while (parent && parent !== document.body) {
+                const parentText = normalize(parent.innerText || parent.textContent);
+                if (parentText.length >= 20 && parentText.length <= 1500 &&
+                    normalize(parentText.replace(normalize(inlineAncestor.innerText || inlineAncestor.textContent), "")).length >= 3) {
+                    block = parent;
+                    break;
+                }
+                parent = parent.parentElement;
+            }
         }
 
         if (!block) {
@@ -5866,7 +5891,30 @@
         if (!block || !block.isConnected || block.closest(IGNORE) || block.dataset.autoTocTranslation === "true") return null;
         if (block.closest("[data-auto-toc-translation='true']")) return null;
 
-        const text = normalize(block.innerText || block.textContent);
+        // Avoid translating a word-sized inline wrapper when an ancestor has
+        // substantially more readable text (common in ChatGPT's answer DOM).
+        let text = normalize(block.innerText || block.textContent);
+        if (inlineAncestor && block === inlineAncestor) {
+            let ancestor = block.parentElement;
+            while (ancestor && ancestor !== document.body) {
+                if (ancestor.closest(IGNORE)) break;
+                const ancestorText = normalize(ancestor.innerText || ancestor.textContent);
+                if (ancestorText.length > text.length + 12 && ancestorText.length <= 1500 &&
+                    normalize(ancestorText.replace(text, "")).length >= 3) {
+                    block = ancestor;
+                    text = ancestorText;
+                    break;
+                }
+                if (BLOCKS.split(",").some(selector => {
+                    try { return ancestor.matches(selector); } catch (_) { return false; }
+                }) && ancestorText.length > text.length + 12) {
+                    block = ancestor;
+                    text = ancestorText;
+                    break;
+                }
+                ancestor = ancestor.parentElement;
+            }
+        }
         if (text.length < 4 || text.length > 1500 || !/[A-Za-z]/.test(text)) return null;
         if (block.tagName === "PRE" && text.length > 700) return null;
         const rect = block.getBoundingClientRect();
