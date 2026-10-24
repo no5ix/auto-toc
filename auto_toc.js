@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.83
+// @version      1.84
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -665,366 +665,160 @@
                 padding-left: 7em;
             }
 
-            /* Apple-inspired floating right-edge TOC drawer */
+            /* Hexo Theme Neo-inspired TOC: typography, heading markers, and tab styling */
             #smarttoc.octotree-edge {
-                position: fixed !important;
-                top: 0 !important;
-                right: 0 !important;
-                left: auto !important;
-                width: min(390px, 92vw) !important;
-                min-width: 0 !important;
-                height: 100vh !important;
-                max-height: 100vh !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                overflow: visible !important;
-                pointer-events: none !important;
-                box-sizing: border-box !important;
-                border: 0 !important;
-                border-radius: 18px 0 0 18px !important;
-                background: transparent !important;
-                color: #e5e7eb !important;
-                box-shadow: none !important;
-                transform: none !important;
-                opacity: 1 !important;
-                contain: layout style !important;
-                transition: none !important;
-                z-index: 2147483000 !important;
-                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif !important;
-                -webkit-font-smoothing: antialiased !important;
+                position: fixed !important; top: 0 !important; right: 0 !important; left: auto !important;
+                width: 336px !important; min-width: 0 !important; height: 100vh !important; max-height: 100vh !important;
+                padding: 0 !important; margin: 0 !important; overflow: visible !important; pointer-events: none !important;
+                box-sizing: border-box !important; border: 0 !important; border-radius: 0 !important;
+                background: transparent !important; color: #777 !important; box-shadow: none !important;
+                transform: none !important; opacity: 1 !important; contain: layout style !important;
+                transition: none !important; z-index: 2147483000 !important;
+                font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif !important;
+                font-size: 16px !important; line-height: 1.8 !important; -webkit-font-smoothing: antialiased !important;
             }
-
-            /* The root is a full-size, transparent interaction layer. Only the tab and
-               the open panel receive pointer events, so no invisible edge strip opens it. */
             #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
             #smarttoc.octotree-edge .toc-panel { pointer-events: none !important; }
             #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)),
             #smarttoc.octotree-edge:has(.toc-panel:hover),
             #smarttoc.octotree-edge:focus-within,
-            #smarttoc.octotree-edge.pinned { width: min(390px, 92vw) !important; }
+            #smarttoc.octotree-edge.pinned { width: 336px !important; }
 
-            /* In pinned mode reserve exactly the drawer width. Keep html full-width so
-               the body/page shell does not get shrunk twice and leave a gap. */
-            html.autotoc-pinned-layout {
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                overflow-x: clip !important;
-            }
-            html.autotoc-pinned-layout body {
-                width: calc(100vw - min(390px, 92vw)) !important;
-                max-width: calc(100vw - min(390px, 92vw)) !important;
-                margin-right: 0 !important;
-                box-sizing: border-box !important;
-            }
-            /* Keep full-width page shells and fixed/sticky headers inside the reduced viewport. */
+            html.autotoc-pinned-layout { width:100% !important; max-width:100% !important; box-sizing:border-box !important; overflow-x:clip !important; }
+            html.autotoc-pinned-layout body { width:calc(100vw - 336px) !important; max-width:calc(100vw - 336px) !important; margin-right:0 !important; box-sizing:border-box !important; }
             html.autotoc-pinned-layout body > *,
-            html.autotoc-pinned-layout body > * > * {
-                max-width: calc(100vw - 324px) !important;
-                box-sizing: border-box !important;
-            }
+            html.autotoc-pinned-layout body > * > * { max-width:calc(100vw - 336px) !important; box-sizing:border-box !important; }
             html.autotoc-pinned-layout body [style*="position: fixed"],
-            html.autotoc-pinned-layout body [style*="position:fixed"] {
-                max-width: calc(100vw - 324px) !important;
-            }
+            html.autotoc-pinned-layout body [style*="position:fixed"] { max-width:calc(100vw - 336px) !important; }
 
             #smarttoc.octotree-edge .handle {
-                position: absolute !important;
-                top: var(--smarttoc-handle-top, 38%) !important;
-                right: 0 !important;
-                left: auto !important;
-                width: 30px !important;
-                height: 90px !important;
-                min-height: 0 !important;
-                box-sizing: border-box !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                gap: 4px !important;
-                padding: 7px 5px 16px !important;
-                border: 1px solid rgba(30,30,40,.14) !important;
-                border-right: 0 !important;
-                border-radius: 14px 0 0 14px !important;
-                background: rgba(250,250,252,.96) !important;
-                -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-                backdrop-filter: blur(24px) saturate(180%) !important;
-                color: #202024 !important;
-                font-size: 12px !important;
-                font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
-                font-variant: normal !important;
-                font-weight: 600 !important;
-                letter-spacing: 0 !important;
-                writing-mode: vertical-rl !important;
-                transform: none !important;
-                opacity: 1 !important;
-                cursor: grab !important;
-                user-select: none !important;
-                touch-action: none !important;
-                z-index: 5 !important;
-                box-shadow: 0 4px 18px rgba(0,0,0,.16) !important;
-                transition: background 180ms ease, border-color 180ms ease !important;
+                position:absolute !important; top:var(--smarttoc-handle-top, 38%) !important; right:0 !important; left:auto !important;
+                width:30px !important; height:90px !important; min-height:0 !important; box-sizing:border-box !important;
+                display:flex !important; align-items:center !important; justify-content:center !important; gap:4px !important;
+                padding:7px 5px 16px !important; border:1px solid rgba(0,0,0,.14) !important; border-right:0 !important;
+                border-radius:14px 0 0 14px !important; background:rgba(245,245,245,.96) !important;
+                -webkit-backdrop-filter:blur(18px) !important; backdrop-filter:blur(18px) !important;
+                color:#555 !important; font-size:12px !important; font-family:inherit !important; font-variant:normal !important;
+                font-weight:600 !important; letter-spacing:0 !important; writing-mode:vertical-rl !important; transform:none !important;
+                opacity:1 !important; cursor:grab !important; user-select:none !important; touch-action:none !important;
+                z-index:5 !important; box-shadow:0 2px 10px rgba(0,0,0,.10) !important;
+                transition:background 180ms ease,border-color 180ms ease !important;
             }
-            #smarttoc.octotree-edge .handle:active { cursor: grabbing !important; }
-            #smarttoc.octotree-edge .handle:hover {
-                background: rgba(255,255,255,.99) !important;
-                border-color: rgba(30,30,40,.20) !important;
-            }
-            #smarttoc.octotree-edge .handle .handle-chevron {
-                display: block !important;
-                font-size: 20px !important;
-                line-height: 1 !important;
-                font-weight: 400 !important;
-                color: #f5f5f7 !important;
-            }
-            #smarttoc.octotree-edge .handle .handle-label {
-                display: block !important;
-                color: #007aff !important;
-                font-size: 11px !important;
-                line-height: 1 !important;
-                font-weight: 650 !important;
-            }
-            #smarttoc.octotree-edge .handle .handle-drag-grip {
-                position: absolute !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: 15px !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                writing-mode: horizontal-tb !important;
-                color: rgba(29,29,31,.48) !important;
-                font-size: 13px !important;
-                line-height: 1 !important;
-                letter-spacing: -2px !important;
-                cursor: ns-resize !important;
-                touch-action: none !important;
-                border-radius: 0 0 13px 13px !important;
-                z-index: 2 !important;
-            }
-            #smarttoc.octotree-edge .handle .handle-label {
-                max-height: 68px !important;
-                overflow: hidden !important;
-                flex: 0 1 auto !important;
-                pointer-events: none !important;
-            }
-            #smarttoc.octotree-edge .handle .handle-chevron {
-                flex: 0 0 auto !important;
-                pointer-events: none !important;
-            }
-            #smarttoc.octotree-edge .handle .handle-drag-grip:hover {
-                color: #f5f5f7 !important;
-                background: rgba(255,255,255,.08) !important;
-            }
+            #smarttoc.octotree-edge .handle:active { cursor:grabbing !important; }
+            #smarttoc.octotree-edge .handle:hover { background:#fff !important; border-color:rgba(0,0,0,.22) !important; }
+            #smarttoc.octotree-edge .handle .handle-chevron { display:block !important; font-size:20px !important; line-height:1 !important; font-weight:400 !important; color:#555 !important; }
+            #smarttoc.octotree-edge .handle .handle-label { display:block !important; color:#777 !important; font-size:11px !important; line-height:1 !important; font-weight:650 !important; max-height:58px !important; overflow:hidden !important; flex:0 1 auto !important; pointer-events:none !important; }
+            #smarttoc.octotree-edge .handle .handle-drag-grip { position:absolute !important; bottom:0 !important; left:0 !important; width:100% !important; height:15px !important; display:flex !important; align-items:center !important; justify-content:center !important; writing-mode:horizontal-tb !important; color:rgba(29,29,31,.48) !important; font-size:13px !important; line-height:1 !important; letter-spacing:-2px !important; cursor:ns-resize !important; touch-action:none !important; border-radius:0 0 13px 13px !important; z-index:2 !important; }
+            #smarttoc.octotree-edge .handle .handle-chevron { flex:0 0 auto !important; pointer-events:none !important; }
+            #smarttoc.octotree-edge .handle .handle-drag-grip:hover { color:#202024 !important; background:rgba(0,0,0,.06) !important; }
 
             #smarttoc.octotree-edge .toc-panel {
-                position: absolute !important;
-                top: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                width: 324px !important;
-                height: auto !important;
-                box-sizing: border-box !important;
-                overflow: hidden !important;
-                background: rgba(250, 250, 252, .97) !important;
-                -webkit-backdrop-filter: blur(30px) saturate(165%) !important;
-                backdrop-filter: blur(30px) saturate(165%) !important;
-                color: #242428 !important;
-                border: 1px solid rgba(35,35,45,.10) !important;
-                border-radius: 0 !important;
-                box-shadow: 0 12px 42px rgba(20,20,30,.16), 0 2px 8px rgba(20,20,30,.08) !important;
-                transform: translateX(calc(100% + 2px)) !important;
-                transition: transform 260ms cubic-bezier(.2,.75,.25,1) !important;
-                display: flex !important;
-                flex-direction: column !important;
+                position:absolute !important; top:0 !important; right:0 !important; bottom:0 !important;
+                width:336px !important; height:auto !important; box-sizing:border-box !important; overflow:hidden !important;
+                background:#eee !important; color:#777 !important; border:0 !important; border-left:1px solid rgba(0,0,0,.08) !important;
+                border-radius:0 !important; box-shadow:0 0 8px rgba(0,0,0,.20) !important;
+                transform:translateX(calc(100% + 2px)) !important; transition:transform 260ms cubic-bezier(.2,.75,.25,1) !important;
+                display:flex !important; flex-direction:column !important;
             }
             #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)) .toc-panel,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .toc-panel,
             #smarttoc.octotree-edge:focus-within .toc-panel,
-            #smarttoc.octotree-edge.pinned .toc-panel {
-                transform: translateX(0) !important;
-                pointer-events: auto !important;
-            }
-            /* The edge handle retreats behind the drawer as soon as it opens. */
+            #smarttoc.octotree-edge.pinned .toc-panel { transform:translateX(0) !important; pointer-events:auto !important; }
             #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)) .handle,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .handle,
             #smarttoc.octotree-edge:focus-within .handle,
-            #smarttoc.octotree-edge.pinned .handle {
-                opacity: 0 !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
-                transform: translateX(100%) !important;
-                transition: opacity 120ms ease, transform 220ms cubic-bezier(.2,.75,.25,1), visibility 0s linear 220ms !important;
-            }
-            #smarttoc.octotree-edge .handle {
-                transition: opacity 120ms ease, transform 220ms cubic-bezier(.2,.75,.25,1), background 180ms ease, border-color 180ms ease !important;
-            }
+            #smarttoc.octotree-edge.pinned .handle { opacity:0 !important; visibility:hidden !important; pointer-events:none !important; transform:translateX(100%) !important; transition:opacity 120ms ease,transform 220ms cubic-bezier(.2,.75,.25,1),visibility 0s linear 220ms !important; }
 
             #smarttoc.octotree-edge .toc-toolbar {
-                flex: 0 0 68px !important;
-                height: 68px !important;
-                box-sizing: border-box !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: flex-end !important;
-                gap: 6px !important;
-                padding: 0 18px 0 22px !important;
-                border-bottom: 1px solid rgba(35,35,45,.09) !important;
-                background: rgba(245,245,248,.94) !important;
+                flex:0 0 68px !important; height:68px !important; box-sizing:border-box !important;
+                display:flex !important; align-items:center !important; justify-content:flex-end !important; gap:6px !important;
+                padding:0 18px 0 22px !important; border-bottom:1px solid #d8d8d8 !important; background:#eee !important;
             }
             #smarttoc.octotree-edge .toc-toolbar button {
-                all: unset !important;
-                box-sizing: border-box !important;
-                display: inline-flex !important;
-                flex: 0 0 32px !important;
-                align-items: center !important;
-                justify-content: center !important;
-                width: 32px !important;
-                height: 32px !important;
-                border-radius: 10px !important;
-                color: #a1a1aa !important;
-                font: 18px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
-                cursor: pointer !important;
-                transition: color 160ms ease, background 160ms ease, transform 160ms ease !important;
+                all:unset !important; box-sizing:border-box !important; display:inline-flex !important; flex:0 0 32px !important;
+                align-items:center !important; justify-content:center !important; width:32px !important; height:32px !important;
+                border-radius:8px !important; color:#888 !important; font:18px/1 -apple-system,BlinkMacSystemFont,sans-serif !important;
+                cursor:pointer !important; transition:color 160ms ease,background 160ms ease,transform 160ms ease !important;
             }
             #smarttoc.octotree-edge .toc-toolbar button:hover,
-            #smarttoc.octotree-edge .toc-toolbar button[aria-pressed="true"] {
-                color: #0a84ff !important;
-                background: rgba(10,132,255,.12) !important;
-            }
-            #smarttoc.octotree-edge .toc-toolbar button:active { transform: scale(.94) !important; }
+            #smarttoc.octotree-edge .toc-toolbar button[aria-pressed="true"] { color:#222 !important; background:rgba(0,0,0,.06) !important; }
+            #smarttoc.octotree-edge .toc-toolbar button:active { transform:scale(.94) !important; }
             #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title {
-                margin-right: auto !important;
-                color: #202024 !important;
-                font-size: 18px !important;
-                font-weight: 650 !important;
-                letter-spacing: -.025em !important;
-                white-space: nowrap !important;
+                margin-right:auto !important; color:#111 !important; font-size:17px !important; font-weight:500 !important;
+                letter-spacing:0 !important; white-space:nowrap !important;
             }
 
             #smarttoc.octotree-edge .toc-panel > ul {
-                position: relative !important;
-                display: block !important;
-                flex: 1 1 auto !important;
-                width: 100% !important;
-                height: auto !important;
-                min-height: 0 !important;
-                box-sizing: border-box !important;
-                margin: 0 !important;
-                padding: 14px 12px 22px 12px !important;
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
-                background: transparent !important;
-                color: #e5e5ea !important;
-                opacity: 1 !important;
-                transform: none !important;
-                scrollbar-width: thin !important;
-                scrollbar-color: rgba(142,142,147,.42) transparent !important;
+                position:relative !important; display:block !important; flex:1 1 auto !important; width:100% !important;
+                height:auto !important; min-height:0 !important; box-sizing:border-box !important; margin:0 !important;
+                padding:18px 12px 22px 10px !important; overflow-y:auto !important; overflow-x:hidden !important;
+                background:transparent !important; color:#777 !important; opacity:1 !important; transform:none !important;
+                scrollbar-width:thin !important; scrollbar-color:rgba(100,100,100,.35) transparent !important;
             }
             #smarttoc.octotree-edge .toc-panel ul,
-            #smarttoc.octotree-edge .toc-panel li { list-style: none !important; }
-            #smarttoc.octotree-edge .toc-panel li { display: block !important; margin: 1px 0 !important; padding: 0 !important; }
-            #smarttoc.octotree-edge .toc-row {
-                display: flex !important;
-                align-items: center !important;
-                min-height: 43px !important;
-                gap: 3px !important;
-                border-radius: 9px !important;
-                transition: background 140ms ease !important;
-            }
+            #smarttoc.octotree-edge .toc-panel li { list-style:none !important; }
+            #smarttoc.octotree-edge .toc-panel li { display:block !important; margin:0 !important; padding:0 !important; }
+            #smarttoc.octotree-edge .toc-row { display:flex !important; align-items:baseline !important; min-height:0 !important; gap:0 !important; border-radius:0 !important; transition:background 140ms ease !important; }
             #smarttoc.octotree-edge .toc-expander {
-                all: unset !important;
-                flex: 0 0 22px !important;
-                width: 22px !important;
-                height: 30px !important;
-                display: inline-flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                color: #8e8e93 !important;
-                font: 12px/1 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif !important;
-                cursor: pointer !important;
-                border-radius: 7px !important;
-                transition: color 140ms ease, background 140ms ease !important;
+                all:unset !important; flex:0 0 18px !important; width:18px !important; height:28px !important; display:inline-flex !important;
+                align-items:center !important; justify-content:center !important; color:#999 !important; font:12px/1 sans-serif !important;
+                cursor:pointer !important; border-radius:0 !important; transition:color 140ms ease,background 140ms ease !important;
             }
-            #smarttoc.octotree-edge .toc-expander:hover { background: rgba(142,142,147,.15) !important; color: #f5f5f7 !important; }
-            #smarttoc.octotree-edge .toc-expander.empty { cursor: default !important; }
+            #smarttoc.octotree-edge .toc-expander:hover { background:transparent !important; color:#222 !important; }
+            #smarttoc.octotree-edge .toc-expander.empty { cursor:default !important; }
             #smarttoc.octotree-edge .toc-row > a {
-                all: unset !important;
-                box-sizing: border-box !important;
-                display: flex !important;
-                flex: 1 1 auto !important;
-                min-width: 0 !important;
-                align-items: baseline !important;
-                gap: 9px !important;
-                padding: 9px 11px !important;
-                border: 1px solid transparent !important;
-                border-radius: 8px !important;
-                color: #66666d !important;
-                font: 15px/1.48 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif !important;
-                letter-spacing: -.008em !important;
-                text-decoration: none !important;
-                cursor: pointer !important;
-                white-space: normal !important;
-                overflow-wrap: anywhere !important;
-                transition: color 140ms ease, background 140ms ease, border-color 140ms ease !important;
+                all:unset !important; box-sizing:border-box !important; display:flex !important; flex:1 1 auto !important;
+                min-width:0 !important; align-items:baseline !important; gap:8px !important; padding:5px 2px !important;
+                border:0 !important; border-radius:0 !important; color:#777 !important;
+                font:16px/1.8 "PingFang SC","Microsoft YaHei",-apple-system,BlinkMacSystemFont,sans-serif !important;
+                letter-spacing:0 !important; text-decoration:none !important; cursor:pointer !important;
+                white-space:normal !important; overflow-wrap:anywhere !important; transition:color 140ms ease !important;
             }
-            #smarttoc.octotree-edge .toc-row > a:hover {
-                color: #f5f5f7 !important;
-                background: rgba(142,142,147,.12) !important;
-            }
-            #smarttoc.octotree-edge li.active > .toc-row > a {
-                color: #1e1e22 !important;
-                border-color: transparent !important;
-                background: transparent !important;
-                font-weight: 650 !important;
-            }
-            #smarttoc.octotree-edge .toc-level-icon {
-                flex: 0 0 14px !important;
-                width: 14px !important;
-                display: inline-block !important;
-                color: #8e8e93 !important;
-                text-align: center !important;
-                font-size: 11px !important;
-                line-height: 1 !important;
-            }
-            #smarttoc.octotree-edge li.active > .toc-row .toc-level-icon { color: inherit !important; }
-            #smarttoc.octotree-edge .toc-children { display: block !important; margin: 0 !important; padding: 0 0 0 10px !important; }
-            #smarttoc.octotree-edge .toc-panel ul.toc-children { margin: 0 !important; padding: 0 !important; line-height: 1.45 !important; }
-            #smarttoc.octotree-edge .toc-children.is-collapsed { display: none !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="1"] { padding-left: 0 !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="2"] { padding-left: 2px !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="3"] { padding-left: 4px !important; }
-            #smarttoc.octotree-edge .toc-row[data-level="4"] { padding-left: 6px !important; }
+            #smarttoc.octotree-edge .toc-row > a:hover { color:#222 !important; background:transparent !important; }
+            #smarttoc.octotree-edge li.active > .toc-row > a { color:#111 !important; background:transparent !important; border-color:transparent !important; font-weight:500 !important; }
+            #smarttoc.octotree-edge .toc-level-icon { flex:0 0 18px !important; width:18px !important; display:inline-block !important; color:#999 !important; text-align:center !important; font-size:14px !important; line-height:1 !important; }
+            #smarttoc.octotree-edge li.active > .toc-row .toc-level-icon { color:#111 !important; }
+            #smarttoc.octotree-edge .toc-children { display:block !important; margin:0 !important; padding:0 0 0 18px !important; }
+            #smarttoc.octotree-edge .toc-panel ul.toc-children { margin:0 !important; padding:0 !important; line-height:1.8 !important; }
+            #smarttoc.octotree-edge .toc-children.is-collapsed { display:none !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="1"] { padding-left:0 !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="2"] { padding-left:2px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="3"] { padding-left:4px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="4"] { padding-left:6px !important; }
             #smarttoc.octotree-edge .toc-row[data-level="5"],
-            #smarttoc.octotree-edge .toc-row[data-level="6"] { padding-left: 8px !important; }
-            #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar { width: 6px !important; }
-            #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar-thumb { border-radius: 8px !important; background: rgba(142,142,147,.32) !important; border: 2px solid transparent !important; background-clip: padding-box !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="6"] { padding-left:8px !important; }
+            #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar { width:6px !important; }
+            #smarttoc.octotree-edge .toc-panel > ul::-webkit-scrollbar-thumb { border-radius:8px !important; background:rgba(120,120,120,.32) !important; border:2px solid transparent !important; background-clip:padding-box !important; }
 
-            /* Respect the system theme while keeping the same hierarchy and contrast. */
+            /* Mirror the user's Hexo Theme Neo marker shapes by heading depth. */
+            #smarttoc.octotree-edge .toc-row[data-level="1"] .toc-level-icon { color:#999 !important; font-size:15px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="2"] .toc-level-icon { color:#999 !important; font-size:14px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="3"] .toc-level-icon { color:#999 !important; font-size:11px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="4"] .toc-level-icon { color:#999 !important; font-size:10px !important; }
+            #smarttoc.octotree-edge .toc-row[data-level="5"] .toc-level-icon,
+            #smarttoc.octotree-edge .toc-row[data-level="6"] .toc-level-icon { color:#999 !important; font-size:10px !important; }
+
             @media (prefers-color-scheme: dark) {
-                #smarttoc.octotree-edge .handle { background:rgba(36,37,42,.96) !important; color:#f5f5f7 !important; border-color:rgba(255,255,255,.14) !important; }
-                #smarttoc.octotree-edge .handle .handle-chevron { color:#f5f5f7 !important; }
-                #smarttoc.octotree-edge .handle .handle-label { color:#0a84ff !important; }
-                #smarttoc.octotree-edge .toc-panel { background:rgba(28,29,33,.97) !important; color:#e5e5ea !important; border-color:rgba(255,255,255,.10) !important; }
-                #smarttoc.octotree-edge .toc-toolbar { background:rgba(255,255,255,.025) !important; border-bottom-color:rgba(255,255,255,.09) !important; }
-                #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title { color:#f5f5f7 !important; }
-                #smarttoc.octotree-edge .toc-toolbar button { color:#a1a1aa !important; }
-                #smarttoc.octotree-edge .toc-row > a { color:#b7b7bf !important; }
-                #smarttoc.octotree-edge .toc-row > a:hover { color:#f5f5f7 !important; background:rgba(142,142,147,.12) !important; }
-                #smarttoc.octotree-edge li.active > .toc-row > a { color:#fff !important; font-weight:700 !important; }
+                #smarttoc.octotree-edge .toc-panel { background:#282828 !important; color:#bbb !important; border-left-color:rgba(255,255,255,.10) !important; }
+                #smarttoc.octotree-edge .toc-toolbar { background:#282828 !important; border-bottom-color:#424242 !important; }
+                #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title { color:#eee !important; }
+                #smarttoc.octotree-edge .toc-toolbar button { color:#bbb !important; }
+                #smarttoc.octotree-edge .toc-row > a { color:#999 !important; }
+                #smarttoc.octotree-edge .toc-row > a:hover { color:#fff !important; }
+                #smarttoc.octotree-edge li.active > .toc-row > a,
+                #smarttoc.octotree-edge li.active > .toc-row .toc-level-icon { color:#87daff !important; }
+                #smarttoc.octotree-edge .handle { background:rgba(40,40,40,.96) !important; color:#eee !important; border-color:rgba(255,255,255,.14) !important; }
             }
-            @media (prefers-color-scheme: light) {
-                #smarttoc.octotree-edge .handle { background:rgba(250,250,252,.96) !important; color:#1d1d1f !important; border-color:rgba(0,0,0,.14) !important; }
-                #smarttoc.octotree-edge .handle .handle-chevron { color:#1d1d1f !important; }
-                #smarttoc.octotree-edge .handle .handle-label { color:#007aff !important; }
-                #smarttoc.octotree-edge .toc-panel { background:rgba(250,250,252,.98) !important; color:#1d1d1f !important; border-color:rgba(0,0,0,.10) !important; }
-                #smarttoc.octotree-edge .toc-toolbar { background:rgba(0,0,0,.018) !important; border-bottom-color:rgba(0,0,0,.08) !important; }
-                #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title { color:#1d1d1f !important; }
-                #smarttoc.octotree-edge .toc-row > a { color:#636366 !important; }
-                #smarttoc.octotree-edge .toc-row > a:hover { color:#1d1d1f !important; background:rgba(60,60,67,.07) !important; }
-                #smarttoc.octotree-edge li.active > .toc-row > a { color:#1d1d1f !important; font-weight:700 !important; }
+            @media (max-width: 520px) {
+                #smarttoc.octotree-edge { width:92vw !important; }
+                #smarttoc.octotree-edge:has(.handle:hover):not(:has(.handle-drag-grip:hover)),
+                #smarttoc.octotree-edge:has(.toc-panel:hover),
+                #smarttoc.octotree-edge:focus-within,
+                #smarttoc.octotree-edge.pinned { width:92vw !important; }
+                #smarttoc.octotree-edge .toc-panel { width:92vw !important; }
+                html.autotoc-pinned-layout body { width:calc(100vw - 92vw) !important; max-width:calc(100vw - 92vw) !important; }
             }
-            #smarttoc.octotree-edge.hidden { display: none !important; }
+            #smarttoc.octotree-edge.hidden { display:none !important; }
 
         `
         );
