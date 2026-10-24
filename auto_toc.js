@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.91
+// @version      1.92
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -695,7 +695,7 @@
             html.autotoc-pinned-layout body [style*="position:fixed"] { max-width:calc(100vw - 300px) !important; }
 
             #smarttoc.octotree-edge .handle {
-                position:absolute !important; top:var(--smarttoc-handle-top, 38%) !important; right:0 !important; left:auto !important;
+                position:fixed !important; top:var(--smarttoc-handle-top, calc(50vh - 50px)) !important; right:0 !important; left:auto !important;
                 width:30px !important; height:100px !important; min-height:0 !important; box-sizing:border-box !important;
                 display:flex !important; align-items:center !important; justify-content:center !important; gap:4px !important;
                 padding:7px 5px 17px 14px !important;
@@ -3523,60 +3523,76 @@
                     return nextTop;
                 };
 
-                // Initialize explicitly on every TOC mount. Old code only set this
-                // when a value existed, leaving the CSS percentage fallback to differ
-                // from the drag calculation.
                 const savedTop = readSavedTop();
                 let currentTop = applyTop(savedTop === null ? centeredTop() : savedTop, savedTop !== null);
 
+                // The grip is a small child of the actual handle; drag from its
+                // pointer coordinates and use the fixed-position handle rect, never
+                // the full-height wrapper, as the motion reference.
                 const grip = dom.querySelector(".handle-drag-grip");
-                if (!grip) return;
+                const handle = dom;
+                if (!grip || !handle) return;
                 let dragging = false;
                 let pointerId = null;
                 let startY = 0;
                 let startTop = currentTop;
+                let latestClientY = null;
+                let dragFrame = 0;
 
                 const onPointerDown = (event) => {
                     if (event.button !== 0 || dragging) return;
-                    // Drag only starts from the grip; prevent the parent hover/open
-                    // interaction from consuming the same event.
                     event.preventDefault();
                     event.stopPropagation();
+                    const rect = handle.getBoundingClientRect();
                     dragging = true;
                     pointerId = event.pointerId;
                     startY = event.clientY;
-                    const cssTop = Number.parseFloat(root.style.getPropertyValue("--smarttoc-handle-top"));
-                    startTop = clampTop(Number.isFinite(cssTop) ? cssTop : currentTop);
+                    // Fixed handle rect is authoritative; CSS offset is fallback.
+                    startTop = clampTop(rect.top);
+                    if (Math.abs(startTop - currentTop) > HANDLE_HEIGHT) {
+                        const cssTop = Number.parseFloat(root.style.getPropertyValue("--smarttoc-handle-top"));
+                        startTop = clampTop(Number.isFinite(cssTop) ? cssTop : currentTop);
+                    }
+                    latestClientY = event.clientY;
                     root.classList.add("dragging");
                     try { grip.setPointerCapture(event.pointerId); } catch (_) {}
+                };
+
+                const applyLatestPointer = () => {
+                    dragFrame = 0;
+                    if (!dragging || latestClientY === null) return;
+                    currentTop = applyTop(startTop + latestClientY - startY, true);
                 };
 
                 const onPointerMove = (event) => {
                     if (!dragging || (pointerId !== null && event.pointerId !== pointerId)) return;
                     if (!Number.isFinite(event.clientY)) return;
-                    currentTop = applyTop(startTop + event.clientY - startY, true);
+                    latestClientY = event.clientY;
+                    if (!dragFrame) dragFrame = requestAnimationFrame(applyLatestPointer);
                     event.preventDefault();
                 };
 
                 const stopDrag = (event) => {
                     if (!dragging || (event && pointerId !== null && event.pointerId !== pointerId)) return;
+                    if (dragFrame) {
+                        cancelAnimationFrame(dragFrame);
+                        applyLatestPointer();
+                    }
                     dragging = false;
                     pointerId = null;
+                    latestClientY = null;
                     root.classList.remove("dragging");
                     if (event && grip.hasPointerCapture?.(event.pointerId)) {
                         try { grip.releasePointerCapture(event.pointerId); } catch (_) {}
                     }
-                    const cssTop = Number.parseFloat(root.style.getPropertyValue("--smarttoc-handle-top"));
-                    if (Number.isFinite(cssTop)) currentTop = applyTop(cssTop, true);
+                    currentTop = applyTop(currentTop, true);
                 };
 
                 grip.addEventListener("pointerdown", onPointerDown);
-                grip.addEventListener("pointermove", onPointerMove);
                 document.addEventListener("pointermove", onPointerMove, true);
-                grip.addEventListener("pointerup", stopDrag);
-                grip.addEventListener("pointercancel", stopDrag);
                 document.addEventListener("pointerup", stopDrag, true);
                 document.addEventListener("pointercancel", stopDrag, true);
+                window.addEventListener("blur", () => stopDrag());
 
                 if (!root.dataset.dragResizeBound) {
                     root.dataset.dragResizeBound = "1";
