@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.90
+// @version      2.03
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -677,6 +677,45 @@
                 font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif !important;
                 font-size: 16px !important; line-height: 1.8 !important; -webkit-font-smoothing: antialiased !important;
             }
+
+            /* Rebuilt edge handle is mounted directly under body, outside #smarttoc. */
+            #smarttoc-edge-handle {
+                all: initial !important;
+                position: fixed !important; top: 0 !important; right: 0 !important; left: auto !important;
+                width: 30px !important; height: 100px !important; min-height: 0 !important;
+                box-sizing: border-box !important; display: flex !important; align-items: center !important;
+                justify-content: center !important; gap: 4px !important; padding: 7px 5px 27px 14px !important;
+                border: 0 !important; border-radius: 8px 0 0 8px !important;
+                background: rgba(245,245,245,.96) !important; color: #555 !important;
+                box-shadow: 0 0 6px rgba(0,0,0,.65) !important; z-index: 2147483647 !important;
+                cursor: grab !important; user-select: none !important; -webkit-user-select: none !important;
+                touch-action: none !important; writing-mode: vertical-rl !important;
+            }
+            #smarttoc-edge-handle * { all: unset; box-sizing: border-box !important; }
+            #smarttoc-edge-handle .handle-chevron { display: block !important; font-size: 20px !important; line-height: 1 !important; color: #555 !important; pointer-events: none !important; }
+            #smarttoc-edge-handle .handle-label { display: block !important; font: 650 11px/1 sans-serif !important; color: #777 !important; pointer-events: none !important; }
+            #smarttoc-edge-handle .handle-drag-grip {
+                position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: 27px !important;
+                display: flex !important; align-items: center !important; justify-content: center !important;
+                writing-mode: horizontal-tb !important; color: rgba(29,29,31,.55) !important;
+                font: 13px/1 sans-serif !important; cursor: ns-resize !important; touch-action: none !important;
+                border-radius: 0 0 0 8px !important; z-index: 2 !important;
+            }
+            #smarttoc-edge-handle:hover { background: #fff !important; }
+            #smarttoc-edge-handle .handle-drag-grip:hover { color: #202024 !important; background: rgba(0,0,0,.06) !important; }
+            #smarttoc-edge-handle.is-dragging { cursor: grabbing !important; }
+            #smarttoc-edge-handle.is-pinned { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) .toc-panel {
+                transform: translateX(0) !important; pointer-events: auto !important;
+            }
+            #smarttoc.octotree-edge.forced-open:not(.pinned) .toc-panel {
+                transform: translateX(0) !important; pointer-events: auto !important;
+            }
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) { width: 300px !important; }
+            #smarttoc.octotree-edge.edge-handle-hover:not(.pinned) .handle {
+                opacity: 0 !important; visibility: hidden !important; transform: translateX(100%) !important;
+            }
+
             #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
             /* Keep a continuous hover target across the tab-to-panel transition.
                A brief delay prevents repeated open/close flicker when the pointer
@@ -3498,54 +3537,207 @@
     let last_move_ts = 0;
 
     const Handle = function () {
-        return {
-            oncreate({ dom }) {
-                const root = document.getElementById("smarttoc");
-                if (!root || dom.dataset.dragBound === "1") return;
-                dom.dataset.dragBound = "1";
-                if (root.classList.contains("pinned")) autoTocPinnedLayout(true);
-                const savedTop = GM_getValue("auto_toc_edge_handle_top", null);
-                if (savedTop != null) root.style.setProperty("--smarttoc-handle-top", `${savedTop}px`);
-                const grip = dom.querySelector(".handle-drag-grip");
-                if (!grip) return;
-                let startY = 0;
-                let startTop = 0;
-                let dragging = false;
-                grip.addEventListener("pointerdown", (event) => {
-                    if (event.button !== 0) return;
-                    dragging = true;
-                    root.classList.add("dragging");
-                    startY = event.clientY;
-                    const rect = dom.getBoundingClientRect();
-                    startTop = rect.top;
-                    grip.setPointerCapture?.(event.pointerId);
+        let handleElement = null;
+        let rootElement = null;
+        let dragState = null;
+        let resizeListener = null;
+        let pinObserver = null;
+        let rootObserver = null;
+        let disposed = false;
+        let installed = false;
+
+        const STORAGE_KEY = "auto_toc_edge_handle_top";
+        const HANDLE_HEIGHT = 100;
+        const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+        const maxTop = () => Math.max(0, window.innerHeight - HANDLE_HEIGHT);
+        const centeredTop = () => maxTop() / 2;
+        const readSavedTop = () => {
+            const raw = GM_getValue(STORAGE_KEY, null);
+            if (raw === null || raw === undefined || raw === "") return null;
+            const value = Number(raw);
+            return Number.isFinite(value) ? clamp(value, 0, maxTop()) : null;
+        };
+        const setTop = (top) => {
+            if (!handleElement) return 0;
+            const value = clamp(top, 0, maxTop());
+            handleElement.style.setProperty("top", "0px", "important");
+            handleElement.style.setProperty("transform", "translate3d(0," + value + "px,0)", "important");
+            handleElement.dataset.autoTocDragTop = String(value);
+            return value;
+        };
+        const getTop = () => {
+            if (!handleElement) return centeredTop();
+            const value = Number(handleElement.dataset.autoTocDragTop);
+            return Number.isFinite(value) ? clamp(value, 0, maxTop()) : centeredTop();
+        };
+
+        const beginDrag = (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            if (!handleElement || !target || !target.closest(".handle-drag-grip")) return;
+            if (event.button !== 0 || dragState) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const state = {
+                pointerId: event.pointerId,
+                startY: event.clientY,
+                startTop: getTop(),
+                latestY: event.clientY,
+                frame: 0,
+            };
+            dragState = state;
+            handleElement.classList.add("is-dragging");
+            if (rootElement) rootElement.classList.remove("edge-handle-hover");
+            try { handleElement.setPointerCapture(event.pointerId); } catch (_) {}
+        };
+
+        const moveDrag = (event) => {
+            const state = dragState;
+            if (!state || (state.pointerId !== null && event.pointerId !== state.pointerId)) return;
+            if (!Number.isFinite(event.clientY)) return;
+            state.latestY = event.clientY;
+            if (!state.frame) {
+                state.frame = requestAnimationFrame(() => {
+                    if (dragState !== state) return;
+                    state.frame = 0;
+                    setTop(state.startTop + state.latestY - state.startY);
+                });
+            }
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        const endDrag = (event) => {
+            const state = dragState;
+            if (!state || (event && state.pointerId !== null && event.pointerId !== state.pointerId)) return;
+            if (state.frame) {
+                cancelAnimationFrame(state.frame);
+                state.frame = 0;
+                setTop(state.startTop + state.latestY - state.startY);
+            }
+            const top = getTop();
+            dragState = null;
+            if (handleElement) handleElement.classList.remove("is-dragging");
+            if (event && handleElement && handleElement.hasPointerCapture?.(event.pointerId)) {
+                try { handleElement.releasePointerCapture(event.pointerId); } catch (_) {}
+            }
+            try { GM_setValue(STORAGE_KEY, Math.round(top)); } catch (_) {}
+        };
+
+        const removeHandle = () => {
+            disposed = true;
+            if (rootObserver) rootObserver.disconnect();
+            rootObserver = null;
+            if (dragState) endDrag();
+            if (handleElement) {
+                handleElement.removeEventListener("pointerdown", beginDrag, true);
+                handleElement.remove();
+            }
+            window.removeEventListener("pointermove", moveDrag, true);
+            window.removeEventListener("pointerup", endDrag, true);
+            window.removeEventListener("pointercancel", endDrag, true);
+            if (resizeListener) window.removeEventListener("resize", resizeListener);
+            if (pinObserver) pinObserver.disconnect();
+            handleElement = null;
+            rootElement = null;
+            resizeListener = null;
+            pinObserver = null;
+            installed = false;
+        };
+
+        const mountHandleWhenReady = () => {
+            if (disposed || installed) return;
+            rootElement = document.getElementById("smarttoc");
+            if (!rootElement || !document.body) return;
+
+            let existing = document.getElementById("smarttoc-edge-handle");
+            if (existing && existing.parentElement !== document.body) existing.remove();
+            if (existing && existing.parentElement === document.body) {
+                handleElement = existing;
+            } else {
+                handleElement = document.createElement("div");
+                handleElement.id = "smarttoc-edge-handle";
+                handleElement.className = "handle";
+                handleElement.title = "AutoTOC edge handle — drag the grip to reposition";
+                handleElement.innerHTML = '<span class="handle-chevron" aria-hidden="true">‹</span><span class="handle-label" aria-hidden="true">TOC</span><span class="handle-drag-grip" title="Drag to reposition" aria-label="Drag to reposition AutoTOC">⠿</span>';
+                document.body.appendChild(handleElement);
+            }
+
+            setTop(readSavedTop() ?? centeredTop());
+            handleElement.addEventListener("pointerdown", beginDrag, true);
+            window.addEventListener("pointermove", moveDrag, true);
+            window.addEventListener("pointerup", endDrag, true);
+            window.addEventListener("pointercancel", endDrag, true);
+
+            handleElement.addEventListener("click", (event) => {
+                if (event.target.closest(".handle-drag-grip")) {
                     event.preventDefault();
                     event.stopPropagation();
+                    return;
+                }
+                if (rootElement && rootElement.classList.contains("pinned")) return;
+                rootElement && rootElement.classList.toggle("forced-open");
+            }, true);
+
+            resizeListener = () => setTop(getTop());
+            window.addEventListener("resize", resizeListener);
+
+            const syncHover = () => {
+                if (!rootElement) return;
+                if (dragState) {
+                    rootElement.classList.remove("edge-handle-hover");
+                    return;
+                }
+                if (rootElement.classList.contains("pinned")) return;
+                const active = handleElement.matches(":hover") || !!rootElement.querySelector(".toc-panel:hover");
+                rootElement.classList.toggle("edge-handle-hover", active);
+            };
+            handleElement.addEventListener("pointerenter", syncHover);
+            handleElement.addEventListener("pointermove", syncHover);
+            handleElement.addEventListener("pointerleave", () => {
+                requestAnimationFrame(() => {
+                    if (!rootElement || dragState) return;
+                    const panel = rootElement.querySelector(".toc-panel");
+                    rootElement.classList.toggle("edge-handle-hover", !!(panel && panel.matches(":hover")));
                 });
-                grip.addEventListener("pointermove", (event) => {
-                    if (!dragging) return;
-                    const maxTop = Math.max(0, window.innerHeight - dom.offsetHeight);
-                    const nextTop = Math.max(0, Math.min(maxTop, startTop + event.clientY - startY));
-                    root.style.setProperty("--smarttoc-handle-top", `${nextTop}px`);
-                    GM_setValue("auto_toc_edge_handle_top", Math.round(nextTop));
-                });
-                const stopDrag = () => {
-                    dragging = false;
-                    root.classList.remove("dragging");
-                };
-                grip.addEventListener("pointerup", stopDrag);
-                grip.addEventListener("pointercancel", stopDrag);
+            });
+            rootElement.addEventListener("pointerenter", syncHover);
+            rootElement.addEventListener("pointermove", syncHover);
+            rootElement.addEventListener("pointerleave", () => {
+                if (rootElement && !handleElement.matches(":hover")) rootElement.classList.remove("edge-handle-hover");
+            });
+
+            pinObserver = new MutationObserver(() => {
+                const pinned = rootElement && rootElement.classList.contains("pinned");
+                handleElement.classList.toggle("is-pinned", !!pinned);
+            });
+            pinObserver.observe(rootElement, { attributes: true, attributeFilter: ["class"] });
+            handleElement.classList.toggle("is-pinned", rootElement.classList.contains("pinned"));
+            installed = true;
+        };
+
+        return {
+            oncreate() {
+                disposed = false;
+                mountHandleWhenReady();
+                if (!installed && document.documentElement) {
+                    rootObserver = new MutationObserver(() => {
+                        if (!installed) mountHandleWhenReady();
+                        if (installed && rootObserver) {
+                            rootObserver.disconnect();
+                            rootObserver = null;
+                        }
+                    });
+                    rootObserver.observe(document.documentElement, { childList: true, subtree: true });
+                }
+            },
+            onremove() {
+                removeHandle();
             },
             view() {
-                return mithril("div.handle", { title: "Hover to open AutoTOC" }, [
-                    mithril("span.handle-chevron", "⌵"),
-                    mithril("span.handle-label", ""),
-                    mithril("span.handle-drag-grip", { title: "Drag to reposition", "aria-label": "Drag to reposition AutoTOC" }, "☰"),
-                ]);
+                return mithril("span.smarttoc-handle-placeholder", { "aria-hidden": "true" });
             },
         };
     };
-
     // Restore the page layout if the userscript removes its TOC root during navigation.
     if (document.documentElement && !document.documentElement.dataset.autoTocPinObserver) {
         document.documentElement.dataset.autoTocPinObserver = "1";
