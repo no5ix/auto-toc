@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.90
+// @version      1.91
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -737,12 +737,15 @@
             #smarttoc.octotree-edge .toc-toolbar button {
                 all:unset !important; box-sizing:border-box !important; display:inline-flex !important; flex:0 0 28px !important;
                 align-items:center !important; justify-content:center !important; width:28px !important; height:28px !important;
-                border-radius:8px !important; color:#888 !important; font:14px/1 -apple-system,BlinkMacSystemFont,sans-serif !important;
-                cursor:pointer !important; transition:color 160ms ease,background 160ms ease,transform 160ms ease !important;
+                border:1px solid rgba(0,0,0,.07) !important; border-radius:8px !important;
+                background:rgba(0,0,0,.045) !important; color:#777 !important;
+                font:14px/1 -apple-system,BlinkMacSystemFont,sans-serif !important;
+                cursor:pointer !important; transition:color 160ms ease,background 160ms ease,border-color 160ms ease,transform 160ms ease !important;
             }
             #smarttoc.octotree-edge .toc-toolbar button:hover,
-            #smarttoc.octotree-edge .toc-toolbar button[aria-pressed="true"] { color:#222 !important; background:rgba(0,0,0,.06) !important; }
+            #smarttoc.octotree-edge .toc-toolbar button[aria-pressed="true"] { color:#222 !important; background:rgba(0,0,0,.09) !important; border-color:rgba(0,0,0,.12) !important; }
             #smarttoc.octotree-edge .toc-toolbar button:active { transform:scale(.94) !important; }
+            #smarttoc.octotree-edge .toc-toolbar button:focus-visible { outline:2px solid #0a84ff !important; outline-offset:2px !important; }
             #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title { display:none !important; }
 
             #smarttoc.octotree-edge .toc-panel > ul {
@@ -799,7 +802,15 @@
                 #smarttoc.octotree-edge .toc-panel { background:#282828 !important; color:#bbb !important; border-left-color:rgba(255,255,255,.10) !important; }
                 #smarttoc.octotree-edge .toc-toolbar { background:#282828 !important; border-bottom-color:#424242 !important; }
                 #smarttoc.octotree-edge .toc-toolbar .toc-toolbar-title { color:#eee !important; }
-                #smarttoc.octotree-edge .toc-toolbar button { color:#bbb !important; }
+                #smarttoc.octotree-edge .toc-toolbar button {
+                    color:#d0d0d5 !important; background:rgba(255,255,255,.08) !important;
+                    border-color:rgba(255,255,255,.10) !important;
+                }
+                #smarttoc.octotree-edge .toc-toolbar button:hover,
+                #smarttoc.octotree-edge .toc-toolbar button[aria-pressed="true"] {
+                    color:#fff !important; background:rgba(255,255,255,.15) !important;
+                    border-color:rgba(255,255,255,.18) !important;
+                }
                 #smarttoc.octotree-edge .toc-row > a { color:#999 !important; }
                 #smarttoc.octotree-edge .toc-row > a:hover { color:#fff !important; }
                 #smarttoc.octotree-edge li.active > .toc-row > a,
