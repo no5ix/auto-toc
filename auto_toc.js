@@ -5870,17 +5870,26 @@
         const settings = Object.assign({}, DEFAULTS, stored || {});
         // Migrate existing oMLX-named preferences so the LocalAI rename does not
         // discard a user's configured local endpoint, model, key, or provider choice.
+        let migratedLegacyProviderSettings = false;
         if (stored) {
             Object.keys(LEGACY_PROVIDER_KEYS).forEach(function (newKey) {
                 const oldKey = LEGACY_PROVIDER_KEYS[newKey];
                 if (stored[newKey] == null && stored[oldKey] != null) {
                     settings[newKey] = stored[oldKey];
+                    migratedLegacyProviderSettings = true;
                 }
             });
-            if (stored.provider === "omlx") settings.provider = "localai";
+            if (stored.provider === "omlx") {
+                settings.provider = "localai";
+                migratedLegacyProviderSettings = true;
+            }
         }
         if (!stored || stored.enabled == null) settings.enabled = true;
         if (settings.provider !== "localai" && settings.provider !== "cloud") settings.provider = "cloud";
+        if (migratedLegacyProviderSettings) {
+            try { GM_setValue(SETTINGS_KEY, settings); } catch (_) {}
+            try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {}
+        }
         return settings;
     }
     function saveSettings() { try { GM_setValue(SETTINGS_KEY, settings); } catch (_) {} try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (_) {} }
