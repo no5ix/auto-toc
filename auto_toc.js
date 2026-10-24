@@ -739,7 +739,7 @@
                 align-items:center !important; justify-content:center !important; width:28px !important; height:28px !important;
                 border:0px solid rgba(0,0,0,.07) !important; border-radius:8px !important;
                 background:rgba(0,0,0,.045) !important; color:#777 !important;
-                font:14px/1 -apple-system,BlinkMacSystemFont,sans-serif !important;
+                font:12px/1 -apple-system,BlinkMacSystemFont,sans-serif !important;
                 cursor:pointer !important; transition:color 160ms ease,background 160ms ease,border-color 160ms ease,transform 160ms ease !important;
             }
             #smarttoc.octotree-edge .toc-toolbar button:hover,
@@ -3407,7 +3407,9 @@
                                 mithril.redraw();
                             }
                         }, pinned),
-                        toolbarButton(expandedAll ? "⊟" : "⊞", expandedAll ? "Collapse all headings" : "Expand all headings", () => setAllExpanded(!expandedAll), expandedAll),
+                        // toolbarButton(expandedAll ? "⊟" : "⊞", expandedAll ? "Collapse all headings" : "Expand all headings", () => setAllExpanded(!expandedAll), expandedAll),
+                        // toolbarButton(expandedAll ? "⊖" : "⊕", expandedAll ? "Collapse all headings" : "Expand all headings", () => setAllExpanded(!expandedAll), expandedAll),
+                        toolbarButton(expandedAll ? "✖" : "✚", expandedAll ? "Collapse all headings" : "Expand all headings", () => setAllExpanded(!expandedAll), expandedAll),
                     ]),
                     renderNodes(latestTree, true),
                 ]);
