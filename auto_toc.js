@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.92
+// @version      1.93
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -3518,20 +3518,16 @@
                 const centeredTop = () => clampTop((window.innerHeight - HANDLE_HEIGHT) / 2);
                 const applyTop = (top, persist = false) => {
                     const nextTop = clampTop(top);
-                    root.style.setProperty("--smarttoc-handle-top", `${nextTop}px`);
+                    root.style.setProperty("--smarttoc-handle-top", nextTop + "px");
                     if (persist) GM_setValue(storageKey, Math.round(nextTop));
                     return nextTop;
                 };
 
                 const savedTop = readSavedTop();
                 let currentTop = applyTop(savedTop === null ? centeredTop() : savedTop, savedTop !== null);
-
-                // The grip is a small child of the actual handle; drag from its
-                // pointer coordinates and use the fixed-position handle rect, never
-                // the full-height wrapper, as the motion reference.
                 const grip = dom.querySelector(".handle-drag-grip");
-                const handle = dom;
-                if (!grip || !handle) return;
+                if (!grip) return;
+
                 let dragging = false;
                 let pointerId = null;
                 let startY = 0;
@@ -3539,29 +3535,27 @@
                 let latestClientY = null;
                 let dragFrame = 0;
 
+                const applyLatestPointer = () => {
+                    dragFrame = 0;
+                    if (!dragging || latestClientY === null) return;
+                    // Use the pointer delta rather than the element's measured top:
+                    // the root has position:fixed and is also updated by Mithril's
+                    // sticky-layout stream, so getBoundingClientRect() is not a
+                    // reliable source of the persisted custom-property offset.
+                    currentTop = applyTop(startTop + latestClientY - startY, false);
+                };
+
                 const onPointerDown = (event) => {
                     if (event.button !== 0 || dragging) return;
                     event.preventDefault();
                     event.stopPropagation();
-                    const rect = handle.getBoundingClientRect();
                     dragging = true;
                     pointerId = event.pointerId;
                     startY = event.clientY;
-                    // Fixed handle rect is authoritative; CSS offset is fallback.
-                    startTop = clampTop(rect.top);
-                    if (Math.abs(startTop - currentTop) > HANDLE_HEIGHT) {
-                        const cssTop = Number.parseFloat(root.style.getPropertyValue("--smarttoc-handle-top"));
-                        startTop = clampTop(Number.isFinite(cssTop) ? cssTop : currentTop);
-                    }
+                    startTop = currentTop;
                     latestClientY = event.clientY;
                     root.classList.add("dragging");
                     try { grip.setPointerCapture(event.pointerId); } catch (_) {}
-                };
-
-                const applyLatestPointer = () => {
-                    dragFrame = 0;
-                    if (!dragging || latestClientY === null) return;
-                    currentTop = applyTop(startTop + latestClientY - startY, true);
                 };
 
                 const onPointerMove = (event) => {
@@ -3570,12 +3564,14 @@
                     latestClientY = event.clientY;
                     if (!dragFrame) dragFrame = requestAnimationFrame(applyLatestPointer);
                     event.preventDefault();
+                    event.stopPropagation();
                 };
 
                 const stopDrag = (event) => {
                     if (!dragging || (event && pointerId !== null && event.pointerId !== pointerId)) return;
                     if (dragFrame) {
                         cancelAnimationFrame(dragFrame);
+                        dragFrame = 0;
                         applyLatestPointer();
                     }
                     dragging = false;
@@ -3589,16 +3585,18 @@
                 };
 
                 grip.addEventListener("pointerdown", onPointerDown);
-                document.addEventListener("pointermove", onPointerMove, true);
-                document.addEventListener("pointerup", stopDrag, true);
-                document.addEventListener("pointercancel", stopDrag, true);
+                // Keep tracking at document/window level because Safari/Stay can
+                // retarget or cancel pointer capture when the drawer animates.
+                window.addEventListener("pointermove", onPointerMove, true);
+                window.addEventListener("pointerup", stopDrag, true);
+                window.addEventListener("pointercancel", stopDrag, true);
                 window.addEventListener("blur", () => stopDrag());
 
                 if (!root.dataset.dragResizeBound) {
                     root.dataset.dragResizeBound = "1";
                     window.addEventListener("resize", () => {
                         const saved = readSavedTop();
-                        currentTop = applyTop(saved === null ? centeredTop() : saved, saved !== null);
+                        currentTop = applyTop(saved === null ? centeredTop() : saved, false);
                     });
                 }
             },
