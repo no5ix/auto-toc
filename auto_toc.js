@@ -5847,6 +5847,11 @@
         localaiUrl: "http://127.0.0.1:8000/v1/chat/completions", localaiModel: "Qwen", localaiKey: "",
         showOriginal: false
     };
+    const LEGACY_PROVIDER_KEYS = {
+        localaiUrl: "omlxUrl",
+        localaiModel: "omlxModel",
+        localaiKey: "omlxKey"
+    };
     const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,strong,span,[data-as='p'],[data-as='li'],[data-as='blockquote'],#page-title,.eyebrow";
     const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,footer,aside,[aria-hidden=true],#page-context-menu";
     let settings = loadSettings();
@@ -5863,6 +5868,17 @@
         // Upgrade existing installs to free Microsoft translation and enabled-by-default
         // behavior, while preserving explicitly configured provider choices and LocalAI keys.
         const settings = Object.assign({}, DEFAULTS, stored || {});
+        // Migrate existing oMLX-named preferences so the LocalAI rename does not
+        // discard a user's configured local endpoint, model, key, or provider choice.
+        if (stored) {
+            Object.keys(LEGACY_PROVIDER_KEYS).forEach(function (newKey) {
+                const oldKey = LEGACY_PROVIDER_KEYS[newKey];
+                if (stored[newKey] == null && stored[oldKey] != null) {
+                    settings[newKey] = stored[oldKey];
+                }
+            });
+            if (stored.provider === "omlx") settings.provider = "localai";
+        }
         if (!stored || stored.enabled == null) settings.enabled = true;
         if (settings.provider !== "localai" && settings.provider !== "cloud") settings.provider = "cloud";
         return settings;
