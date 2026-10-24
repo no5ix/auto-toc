@@ -2,7 +2,7 @@
 // @name         auto-toc
 // @name:zh-CN   auto-toc
 // @namespace    EX
-// @version      1.90
+// @version      1.91
 // @license MIT
 // @description Generate table of contents for any website. By default, it is not open. You need to go to the plug-in menu to open the switch for the website that wants to open the toc. The plug-in will remember this switch, and the toc will be generated automatically according to the switch when you open the website the next time.
 // @description:zh-cn 可以为任何网站生成TOC网站目录大纲，默认显示为左侧边缘的窄标签，鼠标悬停时滑出目录面板。
@@ -3504,37 +3504,87 @@
                 if (!root || dom.dataset.dragBound === "1") return;
                 dom.dataset.dragBound = "1";
                 if (root.classList.contains("pinned")) autoTocPinnedLayout(true);
-                const savedTop = GM_getValue("auto_toc_edge_handle_top", null);
-                if (savedTop != null) root.style.setProperty("--smarttoc-handle-top", `${savedTop}px`);
+
+                const HANDLE_HEIGHT = 100;
+                const storageKey = "auto_toc_edge_handle_top";
+                const readSavedTop = () => {
+                    const raw = GM_getValue(storageKey, null);
+                    if (raw === null || raw === undefined || raw === "") return null;
+                    const parsed = Number(raw);
+                    return Number.isFinite(parsed) ? parsed : null;
+                };
+                const maxTop = () => Math.max(0, window.innerHeight - HANDLE_HEIGHT);
+                const clampTop = (top) => Math.max(0, Math.min(maxTop(), top));
+                const centeredTop = () => clampTop((window.innerHeight - HANDLE_HEIGHT) / 2);
+                const applyTop = (top, persist = false) => {
+                    const nextTop = clampTop(top);
+                    root.style.setProperty("--smarttoc-handle-top", `${nextTop}px`);
+                    if (persist) GM_setValue(storageKey, Math.round(nextTop));
+                    return nextTop;
+                };
+
+                // Initialize explicitly on every TOC mount. Old code only set this
+                // when a value existed, leaving the CSS percentage fallback to differ
+                // from the drag calculation.
+                const savedTop = readSavedTop();
+                let currentTop = applyTop(savedTop === null ? centeredTop() : savedTop, savedTop !== null);
+
                 const grip = dom.querySelector(".handle-drag-grip");
                 if (!grip) return;
-                let startY = 0;
-                let startTop = 0;
                 let dragging = false;
-                grip.addEventListener("pointerdown", (event) => {
-                    if (event.button !== 0) return;
-                    dragging = true;
-                    root.classList.add("dragging");
-                    startY = event.clientY;
-                    const rect = dom.getBoundingClientRect();
-                    startTop = rect.top;
-                    grip.setPointerCapture?.(event.pointerId);
+                let pointerId = null;
+                let startY = 0;
+                let startTop = currentTop;
+
+                const onPointerDown = (event) => {
+                    if (event.button !== 0 || dragging) return;
+                    // Drag only starts from the grip; prevent the parent hover/open
+                    // interaction from consuming the same event.
                     event.preventDefault();
                     event.stopPropagation();
-                });
-                grip.addEventListener("pointermove", (event) => {
-                    if (!dragging) return;
-                    const maxTop = Math.max(0, window.innerHeight - dom.offsetHeight);
-                    const nextTop = Math.max(0, Math.min(maxTop, startTop + event.clientY - startY));
-                    root.style.setProperty("--smarttoc-handle-top", `${nextTop}px`);
-                    GM_setValue("auto_toc_edge_handle_top", Math.round(nextTop));
-                });
-                const stopDrag = () => {
-                    dragging = false;
-                    root.classList.remove("dragging");
+                    dragging = true;
+                    pointerId = event.pointerId;
+                    startY = event.clientY;
+                    const cssTop = Number.parseFloat(root.style.getPropertyValue("--smarttoc-handle-top"));
+                    startTop = clampTop(Number.isFinite(cssTop) ? cssTop : currentTop);
+                    root.classList.add("dragging");
+                    try { grip.setPointerCapture(event.pointerId); } catch (_) {}
                 };
+
+                const onPointerMove = (event) => {
+                    if (!dragging || (pointerId !== null && event.pointerId !== pointerId)) return;
+                    if (!Number.isFinite(event.clientY)) return;
+                    currentTop = applyTop(startTop + event.clientY - startY, true);
+                    event.preventDefault();
+                };
+
+                const stopDrag = (event) => {
+                    if (!dragging || (event && pointerId !== null && event.pointerId !== pointerId)) return;
+                    dragging = false;
+                    pointerId = null;
+                    root.classList.remove("dragging");
+                    if (event && grip.hasPointerCapture?.(event.pointerId)) {
+                        try { grip.releasePointerCapture(event.pointerId); } catch (_) {}
+                    }
+                    const cssTop = Number.parseFloat(root.style.getPropertyValue("--smarttoc-handle-top"));
+                    if (Number.isFinite(cssTop)) currentTop = applyTop(cssTop, true);
+                };
+
+                grip.addEventListener("pointerdown", onPointerDown);
+                grip.addEventListener("pointermove", onPointerMove);
+                document.addEventListener("pointermove", onPointerMove, true);
                 grip.addEventListener("pointerup", stopDrag);
                 grip.addEventListener("pointercancel", stopDrag);
+                document.addEventListener("pointerup", stopDrag, true);
+                document.addEventListener("pointercancel", stopDrag, true);
+
+                if (!root.dataset.dragResizeBound) {
+                    root.dataset.dragResizeBound = "1";
+                    window.addEventListener("resize", () => {
+                        const saved = readSavedTop();
+                        currentTop = applyTop(saved === null ? centeredTop() : saved, saved !== null);
+                    });
+                }
             },
             view() {
                 return mithril("div.handle", { title: "Hover to open AutoTOC" }, [
