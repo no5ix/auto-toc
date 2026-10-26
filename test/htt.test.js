@@ -35,6 +35,34 @@ test("word-level spans inside a plain container resolve to the whole sentence", 
     t.diagnostic("resolved block: <" + info.block.tagName.toLowerCase() + ">");
 });
 
+test("word-level spans in a generic heading wrapper translate as one sibling group", async function () {
+    const page = await createPage();
+    const heading = ["2.", "Open-source", "maintainers", "benefit", "disproportionately", "from", "memory", "safety"];
+    mount(page, '<div class="heading-wrapper"><h2>' + wordSpanHtml(heading, 'data-d-text-flow="word"') + "</h2></div>");
+    const spans = spansIn(page.document);
+    // A real heading is a semantic block and must win over its inline spans.
+    const headingInfo = page.htt.getBlock(spans[3]);
+    assert.ok(headingInfo);
+    assert.equal(headingInfo.block.tagName.toLowerCase(), "h2");
+    assert.equal(headingInfo.text, "2. Open-source maintainers benefit disproportionately from memory safety");
+
+    mount(page, '<div class="heading-wrapper">' + wordSpanHtml(heading, 'data-d-text-flow="word"') + "</div>");
+    const info = page.htt.getBlock(spansIn(page.document)[3]);
+    assert.ok(info);
+    assert.equal(info.text, "2. Open-source maintainers benefit disproportionately from memory safety");
+    assert.notEqual(info.block.tagName.toLowerCase(), "span");
+    assert.equal(info.block.className, "heading-wrapper");
+});
+
+test("sibling inline children without ChatGPT-specific attributes are grouped", async function () {
+    const page = await createPage();
+    mount(page, '<div class="generic">' + wordSpanHtml(["Translate", "the", "complete", "sentence."], "") + "</div>");
+    const info = page.htt.getBlock(spansIn(page.document)[2]);
+    assert.ok(info);
+    assert.equal(info.text, "Translate the complete sentence.");
+    assert.equal(info.block.className, "generic");
+});
+
 test("word-level spans inside nested list-item wrappers resolve to the list item sentence", async function (t) {
     const page = await createPage();
     mount(page,
