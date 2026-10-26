@@ -47,7 +47,8 @@ test("word-level spans in a generic heading wrapper translate as one sibling gro
     assert.equal(headingInfo.text, "2. Open-source maintainers benefit disproportionately from memory safety");
 
     mount(page, '<div class="heading-wrapper">' + wordSpanHtml(heading, 'data-d-text-flow="word"') + "</div>");
-    const info = page.htt.getBlock(spansIn(page.document)[3]);
+    const genericSpans = spansIn(page.document);
+    const info = page.htt.getBlock(genericSpans[3]);
     assert.ok(info);
     assert.equal(info.text, "2. Open-source maintainers benefit disproportionately from memory safety");
     assert.notEqual(info.block.tagName.toLowerCase(), "span");
