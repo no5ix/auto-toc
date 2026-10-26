@@ -1,0 +1,12 @@
+{
+    "name": "auto-toc",
+    "version": "0.0.0",
+    "private": true,
+    "description": "Tests for the AutoTOC userscript (auto_toc.js). The userscript itself stays dependency-free; jsdom is used only by the test harness.",
+    "scripts": {
+        "test": "node --test \"test/*.test.js\""
+    },
+    "devDependencies": {
+        "jsdom": "^30.1.3"
+    }
+}

@@ -5786,7 +5786,12 @@
         localaiModel: "omlxModel",
         localaiKey: "omlxKey"
     };
-    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,strong,span,[data-as='p'],[data-as='li'],[data-as='blockquote'],#page-title,.eyebrow";
+    // Block-level translation candidates only. Inline wrappers (span/strong/…) must
+    // stay out of this list: ChatGPT renders sentences as word-level spans, and
+    // closest() would stop at the first span, turning a single word into the
+    // translation unit. Inline wrappers are handled separately via INLINE.
+    const INLINE = "span,strong,b,em,i,u,a,mark,small,sub,sup,code,abbr";
+    const BLOCKS = "p,li,blockquote,td,th,h1,h2,h3,h4,h5,h6,figcaption,dd,dt,summary,[data-as='p'],[data-as='li'],[data-as='blockquote'],#page-title,.eyebrow";
     const IGNORE = "#smarttoc,#smarttoc-toast,[id^=auto-toc-inline-translate],#yd-mg-huaci-host,input,textarea,select,option,button,[role=button],[contenteditable=true],[contenteditable=''],script,style,nav,footer,aside,[aria-hidden=true],#page-context-menu";
     let settings = loadSettings();
     let activePointer = null, activeBlock = null, activeLine = null, holdTimer = null, request = null, requestSequence = 0;
@@ -5844,7 +5849,7 @@
         const paragraph = target.closest("p");
         let block = paragraph || target.closest(BLOCKS);
         if (!block) {
-            const inlineAncestor = target.closest("span,strong,b,em,i,u,mark,small,sub,sup,code,abbr");
+            const inlineAncestor = target.closest(INLINE);
             let parent = inlineAncestor && inlineAncestor.parentElement;
             while (parent && parent !== document.body) {
                 if (parent.closest(IGNORE)) break;
