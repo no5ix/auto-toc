@@ -5843,11 +5843,26 @@
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element) || target.closest(IGNORE)) return null;
 
-        // ChatGPT wraps individual words in spans and may insert our previous
-        // translations inside the same paragraph. A paragraph is the canonical
-        // translation unit: always prefer it over word-level inline wrappers.
+        // Prefer the nearest semantic block (paragraph, list item, heading, etc.).
+        // Some ChatGPT content has no semantic paragraph: a heading or sentence is
+        // rendered as many sibling word spans inside a generic parent. In that case,
+        // promote the hovered inline span to the smallest parent that owns the sibling
+        // text as one unit, rather than translating only the hovered span.
         const paragraph = target.closest("p");
-        let block = paragraph || target.closest(BLOCKS);
+        const semanticBlock = target.closest(BLOCKS);
+        let block = paragraph || semanticBlock;
+        if (!block) {
+            const inline = target.closest(INLINE);
+            const parent = inline && inline.parentElement;
+            if (parent && parent !== document.body && !parent.closest(IGNORE)) {
+                const wordSpans = parent.querySelectorAll(":scope > span[data-d-text-flow='word']");
+                const directInlineChildren = Array.from(parent.children).filter(child => child.matches(INLINE));
+                const hasSiblingWordSpans = wordSpans.length > 1 &&
+                    wordSpans.length === Array.from(parent.children).filter(child => child.matches("span[data-d-text-flow='word']")).length;
+                const hasSiblingInlineText = directInlineChildren.length > 1;
+                if (hasSiblingWordSpans || hasSiblingInlineText) block = parent;
+            }
+        }
         if (!block) {
             const inlineAncestor = target.closest(INLINE);
             let parent = inlineAncestor && inlineAncestor.parentElement;
