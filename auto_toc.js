@@ -5843,24 +5843,29 @@
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element) || target.closest(IGNORE)) return null;
 
-        // Prefer the nearest semantic block (paragraph, list item, heading, etc.).
-        // Some ChatGPT content has no semantic paragraph: a heading or sentence is
-        // rendered as many sibling word spans inside a generic parent. In that case,
-        // promote the hovered inline span to the smallest parent that owns the sibling
-        // text as one unit, rather than translating only the hovered span.
+        // Resolve in this order: semantic block, then a generic parent that owns
+        // sibling inline spans as a sentence/heading, then the legacy fallback.
+        // ChatGPT may render a heading without <p>/<h*> semantics and split it into
+        // word-level spans, so the nearest sibling-span parent is the intended unit.
         const paragraph = target.closest("p");
-        const semanticBlock = target.closest(BLOCKS);
-        let block = paragraph || semanticBlock;
+        let block = paragraph || target.closest(BLOCKS);
         if (!block) {
             const inline = target.closest(INLINE);
-            const parent = inline && inline.parentElement;
-            if (parent && parent !== document.body && !parent.closest(IGNORE)) {
-                const wordSpans = parent.querySelectorAll(":scope > span[data-d-text-flow='word']");
-                const directInlineChildren = Array.from(parent.children).filter(child => child.matches(INLINE));
-                const hasSiblingWordSpans = wordSpans.length > 1 &&
-                    wordSpans.length === Array.from(parent.children).filter(child => child.matches("span[data-d-text-flow='word']")).length;
-                const hasSiblingInlineText = directInlineChildren.length > 1;
-                if (hasSiblingWordSpans || hasSiblingInlineText) block = parent;
+            let parent = inline && inline.parentElement;
+            while (parent && parent !== document.body) {
+                if (parent.closest(IGNORE)) break;
+                const directChildren = Array.from(parent.children);
+                const directWordSpans = directChildren.filter(child =>
+                    child.matches("span[data-d-text-flow='word']")
+                );
+                const directInlineChildren = directChildren.filter(child =>
+                    child.matches(INLINE)
+                );
+                if (directWordSpans.length > 1 || directInlineChildren.length > 1) {
+                    block = parent;
+                    break;
+                }
+                parent = parent.parentElement;
             }
         }
         if (!block) {
