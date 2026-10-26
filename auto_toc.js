@@ -5843,10 +5843,10 @@
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element) || target.closest(IGNORE)) return null;
 
-        // Resolve in this order: semantic block, then a generic parent that owns
-        // sibling inline spans as a sentence/heading, then the legacy fallback.
-        // ChatGPT may render a heading without <p>/<h*> semantics and split it into
-        // word-level spans, so the nearest sibling-span parent is the intended unit.
+        // Resolve the nearest semantic block first, then a sibling-inline group.
+        // Generic ChatGPT headings may be plain <div> elements with each word in a
+        // separate span. Group the direct siblings, but avoid climbing into wrappers
+        // that contain additional block content.
         const paragraph = target.closest("p");
         let block = paragraph || target.closest(BLOCKS);
         if (!block) {
@@ -5855,13 +5855,13 @@
             while (parent && parent !== document.body) {
                 if (parent.closest(IGNORE)) break;
                 const directChildren = Array.from(parent.children);
-                const directWordSpans = directChildren.filter(child =>
-                    child.matches("span[data-d-text-flow='word']")
+                const directInlineChildren = directChildren.filter(child => child.matches(INLINE));
+                const directWordSpans = directChildren.filter(child => child.matches("span[data-d-text-flow='word']"));
+                const hasSiblingInlineGroup = directWordSpans.length > 1 || directInlineChildren.length > 1;
+                const containsSeparateBlocks = Array.from(parent.querySelectorAll(BLOCKS)).some(candidate =>
+                    candidate !== parent && !candidate.contains(inline)
                 );
-                const directInlineChildren = directChildren.filter(child =>
-                    child.matches(INLINE)
-                );
-                if (directWordSpans.length > 1 || directInlineChildren.length > 1) {
+                if (hasSiblingInlineGroup && !containsSeparateBlocks) {
                     block = parent;
                     break;
                 }
