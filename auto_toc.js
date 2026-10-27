@@ -5499,6 +5499,18 @@
         // selected English word and link directly to both Youdao pages.
         let toolbar = null;
         let rememberedWord = "";
+        let toolbarHideTimer = null;
+        const TOOLBAR_VISIBLE_MS = 3000;
+
+        function scheduleToolbarHide() {
+            if (toolbarHideTimer !== null) {
+                window.clearTimeout(toolbarHideTimer);
+            }
+            toolbarHideTimer = window.setTimeout(() => {
+                toolbarHideTimer = null;
+                hideToolbar();
+            }, TOOLBAR_VISIBLE_MS);
+        }
 
         function getSelectedWord() {
             const selection = window.getSelection();
@@ -5508,6 +5520,10 @@
         }
 
         function hideToolbar() {
+            if (toolbarHideTimer !== null) {
+                window.clearTimeout(toolbarHideTimer);
+                toolbarHideTimer = null;
+            }
             if (toolbar) toolbar.style.display = "none";
         }
 
@@ -5684,6 +5700,9 @@
             links[0].href = `https://dict.youdao.com/w/${encodeURIComponent(word)}`;
             links[1].href = `https://dict.youdao.com/result?word=${encodeURIComponent(word)}&lang=en`;
             bar.style.display = "inline-flex";
+            // Each newly shown toolbar gets a fresh, fixed three-second lifetime.
+            // Pointer/keyboard events do not keep it alive indefinitely.
+            scheduleToolbarHide();
 
             // Place the toolbar just below the selected word, clamped to viewport.
             const left = Math.max(8, Math.min(rect.left, window.innerWidth - 90));
