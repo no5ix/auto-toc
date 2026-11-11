@@ -4,3 +4,4 @@ temp.js
 temp2.js
 node_modules/
 .playwright-mcp/
+.pi/
