@@ -681,10 +681,14 @@
             #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
             /* Keep a continuous hover target across the tab-to-panel transition.
                A brief delay prevents repeated open/close flicker when the pointer
-               approaches the edge tab slowly. */
+               approaches the edge tab slowly.
+               .edge-hover-open is set by the right-edge activation module: it keeps the
+               drawer open while the pointer travels between the invisible viewport-edge
+               strip and the panel, and closes it after a grace delay. */
             #smarttoc.octotree-edge .toc-panel { pointer-events: none !important; }
             #smarttoc.octotree-edge:has(.handle:hover),
             #smarttoc.octotree-edge:has(.toc-panel:hover),
+            #smarttoc.octotree-edge.edge-hover-open,
             #smarttoc.octotree-edge:focus-within,
             #smarttoc.octotree-edge.pinned { width: 324px !important; }
 
@@ -728,12 +732,14 @@
             }
             #smarttoc.octotree-edge:has(.handle:hover) .toc-panel,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .toc-panel,
+            #smarttoc.octotree-edge.edge-hover-open .toc-panel,
             #smarttoc.octotree-edge:focus-within .toc-panel,
             #smarttoc.octotree-edge.pinned .toc-panel { transform:translateX(0) !important; pointer-events:auto !important; }
             /* Do not remove the handle from hit testing as soon as it opens:
                its disappearing hit area causes Safari hover to toggle repeatedly. */
             #smarttoc.octotree-edge:has(.handle:hover) .handle,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .handle,
+            #smarttoc.octotree-edge.edge-hover-open .handle,
             #smarttoc.octotree-edge:focus-within .handle,
             #smarttoc.octotree-edge.pinned .handle { opacity:0 !important; visibility:hidden !important; transform:translateX(100%) !important; transition:opacity 120ms ease,transform 220ms cubic-bezier(.2,.75,.25,1),visibility 0s linear 220ms !important; }
 
@@ -840,6 +846,7 @@
                 #smarttoc.octotree-edge { width:92vw !important; }
                 #smarttoc.octotree-edge:has(.handle:hover),
                 #smarttoc.octotree-edge:has(.toc-panel:hover),
+                #smarttoc.octotree-edge.edge-hover-open,
                 #smarttoc.octotree-edge:focus-within,
                 #smarttoc.octotree-edge.pinned { width:92vw !important; }
                 #smarttoc.octotree-edge .toc-panel { width:92vw !important; }
@@ -5784,6 +5791,316 @@
 // pass: https://mp.weixin.qq.com/s/f3TKUPy63-U61wjfvIC4zA
 // pass: https://mp.weixin.qq.com/s/CrmouLum_XHlRmjnKW8BrQ
 
+
+// ============================================================
+// Right-edge hover activation for the fixed edge drawer
+//
+// Why this module exists: the visible handle is a 10x80px tab, so the CSS-only
+// ":has(.handle:hover)" rule opens the drawer only inside that short band, and it
+// closes the drawer the moment the pointer leaves the tab. Pointing at the right
+// edge of the webpage is therefore unreliable. This module adds a narrow,
+// transparent strip along the full height of the viewport's right edge and drives
+// the drawer from pointer boundary events with a closing grace delay, so the
+// pointer can travel between the strip and the panel without closing it.
+// ============================================================
+(function initRightEdgeHoverActivation() {
+    "use strict";
+
+    const STYLE_ID = "smarttoc-edge-activation__css";
+    const ZONE_ID = "smarttoc-edge-activation-zone";
+    const ZONE_CLASS = "edge-activation-zone";
+    const OPEN_CLASS = "edge-hover-open";
+    const PINNED_CLASS = "pinned";
+    const EDGE_CLASS = "octotree-edge";
+    const OBSERVER_FLAG = "autoTocEdgeObserver";
+    const MIN_WIDTH = 12;
+    const MAX_WIDTH = 16;
+
+    // Tunables. widthPx stays inside the 12-16px band on purpose: wide enough to
+    // hit with a pointer flick, narrow enough not to cover page content.
+    const settings = { widthPx: 14, closeDelayMs: 400 };
+
+    let attachedRoot = null;
+    let attachedZone = null;
+    let closeTimer = null;
+    let observer = null;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+
+    function clampWidth(px) {
+        const n = Number(px);
+        if (!isFinite(n) || n <= 0) return MIN_WIDTH;
+        return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(n)));
+    }
+
+    function getCss() {
+        return (
+            `
+            /* Transparent viewport-edge activation strip for the edge drawer.
+               It is positioned inside #smarttoc, which is itself fixed to the
+               viewport, so the geometry follows the layout viewport (browser zoom,
+               window resize, and the page scrollbar area all come out for free).
+               Never use fixed pixel screen coordinates here. */
+            #smarttoc.octotree-edge .${ZONE_CLASS} {
+                position: absolute !important; top: 0 !important; right: 0 !important;
+                bottom: 0 !important; left: auto !important;
+                width: var(--autotoc-edge-width, ${MIN_WIDTH + 2}px) !important;
+                min-width: ${MIN_WIDTH}px !important; max-width: ${MAX_WIDTH}px !important;
+                height: auto !important; max-height: 100% !important;
+                margin: 0 !important; padding: 0 !important; box-sizing: border-box !important;
+                border: 0 !important; border-radius: 0 !important; outline: none !important;
+                background: transparent !important; box-shadow: none !important;
+                display: block !important; overflow: hidden !important;
+                opacity: 1 !important; transform: none !important; transition: none !important;
+                pointer-events: auto !important; cursor: default !important;
+                touch-action: pan-y !important; user-select: none !important;
+                -webkit-user-select: none !important;
+                z-index: 4 !important; /* below the visible handle (z-index 5) */
+            }
+            /* Once the drawer is expanded the panel owns the pointer: the strip must
+               stop hit testing so it never blocks the panel body, its toolbar, or the
+               list scrollbar that sits next to the edge. It is re-armed (and kept inert
+               while a close is pending) from JS via the visibility declaration below. */
+            #smarttoc.octotree-edge.edge-hover-open .${ZONE_CLASS},
+            #smarttoc.octotree-edge.pinned .${ZONE_CLASS},
+            #smarttoc.octotree-edge:focus-within .${ZONE_CLASS},
+            #smarttoc.octotree-edge:has(.toc-panel:hover) .${ZONE_CLASS} {
+                pointer-events: none !important;
+            }
+        `
+        );
+    }
+
+    function insertCss() {
+        if (!document.head && !document.documentElement) return;
+        if (document.getElementById(STYLE_ID)) return;
+        const style = document.createElement("STYLE");
+        style.id = STYLE_ID;
+        style.type = "text/css";
+        style.textContent = getCss();
+        (document.head || document.documentElement).appendChild(style);
+    }
+
+    function isPinned(root) {
+        return !!(root && root.classList.contains(PINNED_CLASS));
+    }
+
+    // The expanded panel is the drawer's hit area at the viewport edge. Its box is
+    // measured in viewport (client) coordinates, so browser zoom and resizes are fine.
+    function drawerBox() {
+        if (!attachedRoot) return null;
+        const panel = attachedRoot.querySelector(".toc-panel") || attachedRoot;
+        if (typeof panel.getBoundingClientRect !== "function") return null;
+        const box = panel.getBoundingClientRect();
+        if (!box || !isFinite(box.left) || !isFinite(box.right)) return null;
+        return box;
+    }
+
+    function pointerInsidePanel(event) {
+        const box = drawerBox();
+        if (!box || !event) return false;
+        const x = event.clientX, y = event.clientY;
+        if (!isFinite(x) || !isFinite(y)) return false;
+        return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom;
+    }
+
+    // Chrome fires a pointerleave with no relatedTarget and 0,0 coordinates when a
+    // re-render replaces the element sitting under a stationary pointer, and fires the
+    // same kind of leave when the strip stops hit testing as the drawer opens. The
+    // pointer never moved, so that "leave" is an artifact: hit-test the last position
+    // the pointer actually reported before treating it as an exit.
+    function isPositionless(event) {
+        return !!event && !event.clientX && !event.clientY;
+    }
+
+    function pointerIsOnDrawer() {
+        if (!attachedRoot) return false;
+        if (!lastPointerX && !lastPointerY) return false;
+        if (typeof document.elementFromPoint !== "function") return false;
+        const hit = document.elementFromPoint(lastPointerX, lastPointerY);
+        return !!(hit && attachedRoot.contains(hit));
+    }
+
+    function isOpen() {
+        return !!attachedRoot && attachedRoot.classList.contains(OPEN_CLASS);
+    }
+
+    function cancelClose() {
+        if (closeTimer !== null) {
+            clearTimeout(closeTimer);
+            closeTimer = null;
+        }
+        // Re-arming the strip is what makes the strip clickable again after a
+        // close that never happened.
+        if (attachedZone) attachedZone.style.visibility = "visible";
+    }
+
+    function open() {
+        if (!attachedRoot) return;
+        cancelClose();
+        attachedRoot.classList.add(OPEN_CLASS);
+    }
+
+    function closeNow() {
+        cancelClose();
+        if (attachedRoot) attachedRoot.classList.remove(OPEN_CLASS);
+    }
+
+    function scheduleClose() {
+        if (!attachedRoot || closeTimer !== null) return;
+        if (isPinned(attachedRoot)) return;
+        // Disarm the strip for the whole grace window: with the drawer still open the
+        // panel covers this exact area, and a strip that keeps hit testing there would
+        // keep firing pointerenter/pointerleave on a stationary pointer (flicker).
+        if (attachedZone) attachedZone.style.visibility = "hidden";
+        closeTimer = setTimeout(() => {
+            closeTimer = null;
+            closeNow();
+        }, settings.closeDelayMs);
+    }
+
+    function onPointerEnter() {
+        open();
+    }
+
+    function onPointerMove(event) {
+        // Track where the pointer really is. Re-render artifacts report 0,0, so those
+        // must not overwrite the last position the pointer genuinely reported.
+        if (!event) return;
+        const x = event.clientX, y = event.clientY;
+        if (isFinite(x) && isFinite(y) && (x || y)) {
+            lastPointerX = x;
+            lastPointerY = y;
+        }
+    }
+
+    function onPointerLeave(event) {
+        const next = event && event.relatedTarget;
+        // Moving between the strip, the handle, and the panel stays inside the root:
+        // only a pointer that leaves every AutoTOC part may close the drawer.
+        if (next && attachedRoot && attachedRoot.contains(next)) return;
+        // A leave with no destination is only real when the pointer coordinates say the
+        // pointer is off the expanded drawer.
+        if (!next && isOpen()) {
+            if (isPositionless(event) ? pointerIsOnDrawer() : pointerInsidePanel(event)) return;
+        }
+        scheduleClose();
+    }
+
+    function onPointerDown() {
+        // A click on the edge (or on the panel) always keeps the drawer available.
+        open();
+    }
+
+    function ensureZone(root) {
+        let zone = root.querySelector("." + ZONE_CLASS);
+        if (!zone) {
+            zone = document.createElement("div");
+            zone.id = ZONE_ID;
+            zone.className = ZONE_CLASS;
+            root.appendChild(zone);
+        } else if (zone.parentElement !== root) {
+            // Mithril reconciles the root's children and parks unknown nodes inside the
+            // panel. The strip must stay a direct child of the fixed root, because that
+            // is what makes it full viewport height (the panel is a 324px box, and in
+            // overlay mode it is a small centred box).
+            root.appendChild(zone);
+        }
+        zone.setAttribute("aria-hidden", "true");
+        zone.setAttribute("data-auto-toc-edge-activation", "true");
+        const widthPx = clampWidth(settings.widthPx) + "px";
+        zone.dataset.autoTocEdgeWidth = widthPx;
+        zone.style.setProperty("--autotoc-edge-width", widthPx);
+        if (zone.dataset.autoTocEdgeBound !== "1") {
+            zone.dataset.autoTocEdgeBound = "1";
+            zone.addEventListener("pointerenter", onPointerEnter);
+            zone.addEventListener("pointerleave", onPointerLeave);
+            zone.addEventListener("pointercancel", onPointerLeave);
+        }
+        return zone;
+    }
+
+    function attach(root) {
+        if (attachedRoot === root) {
+            attachedZone = ensureZone(root);
+            return;
+        }
+        detach();
+        if (!root) return;
+        attachedZone = ensureZone(root);
+        attachedRoot = root;
+        // pointerenter/pointerleave do not bubble, so capture is what lets one pair of
+        // listeners observe the strip, the handle, and the panel together.
+        root.addEventListener("pointerenter", onPointerEnter, true);
+        root.addEventListener("pointerleave", onPointerLeave, true);
+        root.addEventListener("pointermove", onPointerMove, true);
+        root.addEventListener("pointerdown", onPointerDown, true);
+    }
+
+    function detach() {
+        cancelClose();
+        if (attachedRoot) {
+            closeNow();
+            attachedRoot.removeEventListener("pointerenter", onPointerEnter, true);
+            attachedRoot.removeEventListener("pointerleave", onPointerLeave, true);
+            attachedRoot.removeEventListener("pointermove", onPointerMove, true);
+            attachedRoot.removeEventListener("pointerdown", onPointerDown, true);
+            const zone = attachedZone;
+            if (zone && zone.dataset.autoTocEdgeBound === "1") {
+                zone.dataset.autoTocEdgeBound = "0";
+                zone.removeEventListener("pointerenter", onPointerEnter);
+                zone.removeEventListener("pointerleave", onPointerLeave);
+                zone.removeEventListener("pointercancel", onPointerLeave);
+            }
+        }
+        attachedRoot = null;
+        attachedZone = null;
+    }
+
+    function sync() {
+        const root = document.getElementById("smarttoc");
+        if (root === attachedRoot) {
+            if (root) attachedZone = ensureZone(root);
+            return;
+        }
+        if (root && root.classList.contains(EDGE_CLASS)) attach(root);
+        else detach();
+    }
+
+    function destroy() {
+        if (observer) {
+            observer.disconnect();
+            observer = null;
+        }
+        detach();
+        const style = document.getElementById(STYLE_ID);
+        if (style && style.parentNode) style.parentNode.removeChild(style);
+        if (document.documentElement) delete document.documentElement.dataset[OBSERVER_FLAG];
+    }
+
+    function install() {
+        insertCss();
+        sync();
+        if (!observer) {
+            // The drawer is re-created by the SPA (Mithril re-mounts #smarttoc when the
+            // article changes), so the zone is re-attached to the live root instead of
+            // registering duplicate listeners. One observer for the whole document.
+            observer = new MutationObserver(() => sync());
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+        }
+    }
+
+    if (document.documentElement && document.documentElement.dataset[OBSERVER_FLAG] === "1") {
+        return;
+    }
+    if (document.documentElement) document.documentElement.dataset[OBSERVER_FLAG] = "1";
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", install, { once: true });
+    } else {
+        install();
+    }
+})();
 
 // ============================================================
 // Inline hold-to-translate (Immersive Translate-inspired)
