@@ -679,12 +679,19 @@
                 font-size: 16px !important; line-height: 1.8 !important; -webkit-font-smoothing: antialiased !important;
             }
             #smarttoc.octotree-edge .handle { pointer-events: auto !important; }
-            /* Keep a continuous hover target across the tab-to-panel transition.
-               A brief delay prevents repeated open/close flicker when the pointer
-               approaches the edge tab slowly. */
+            /* A narrow, transparent viewport-edge target supplements the visible tab.
+               Its 14px hit area is confined to the outer edge of the webpage. */
+            #smarttoc.octotree-edge .edge-activation-zone {
+                position: fixed !important; top: 0 !important; right: 0 !important;
+                bottom: 0 !important; width: 14px !important; height: 100vh !important;
+                display: block !important; background: transparent !important;
+                pointer-events: auto !important; z-index: 4 !important;
+            }
+            /* Keep a continuous hover target across the tab-to-panel transition. */
             #smarttoc.octotree-edge .toc-panel { pointer-events: none !important; }
             #smarttoc.octotree-edge:has(.handle:hover),
             #smarttoc.octotree-edge:has(.toc-panel:hover),
+            #smarttoc.octotree-edge:has(.edge-activation-zone:hover),
             #smarttoc.octotree-edge:focus-within,
             #smarttoc.octotree-edge.pinned { width: 324px !important; }
 
@@ -728,12 +735,14 @@
             }
             #smarttoc.octotree-edge:has(.handle:hover) .toc-panel,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .toc-panel,
+            #smarttoc.octotree-edge:has(.edge-activation-zone:hover) .toc-panel,
             #smarttoc.octotree-edge:focus-within .toc-panel,
             #smarttoc.octotree-edge.pinned .toc-panel { transform:translateX(0) !important; pointer-events:auto !important; }
             /* Do not remove the handle from hit testing as soon as it opens:
                its disappearing hit area causes Safari hover to toggle repeatedly. */
             #smarttoc.octotree-edge:has(.handle:hover) .handle,
             #smarttoc.octotree-edge:has(.toc-panel:hover) .handle,
+            #smarttoc.octotree-edge:has(.edge-activation-zone:hover) .handle,
             #smarttoc.octotree-edge:focus-within .handle,
             #smarttoc.octotree-edge.pinned .handle { opacity:0 !important; visibility:hidden !important; transform:translateX(100%) !important; transition:opacity 120ms ease,transform 220ms cubic-bezier(.2,.75,.25,1),visibility 0s linear 220ms !important; }
 
@@ -3616,6 +3625,15 @@
         return {
             oncreate({ dom }) {
                 toc_dom = dom;
+                // Keep the edge hit area present across Mithril redraws without
+                // changing the visible handle or panel markup.
+                if (!dom.querySelector(".edge-activation-zone")) {
+                    const edgeZone = document.createElement("div");
+                    edgeZone.className = "edge-activation-zone";
+                    edgeZone.setAttribute("aria-hidden", "true");
+                    edgeZone.setAttribute("data-auto-toc-edge-activation", "true");
+                    dom.appendChild(edgeZone);
+                }
                 const { direction } = getOptimalContainerPos(article);
                 this.$style = makeSticky({
                     ref: article,
