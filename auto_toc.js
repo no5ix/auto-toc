@@ -687,6 +687,12 @@
                 display: block !important; background: transparent !important;
                 pointer-events: auto !important; z-index: 4 !important;
             }
+            /* Once expanded, the edge zone joins the panel's hover region. */
+            #smarttoc.octotree-edge:has(.edge-activation-zone:hover) .edge-activation-zone,
+            #smarttoc.octotree-edge:has(.handle:hover) .edge-activation-zone,
+            #smarttoc.octotree-edge:has(.toc-panel:hover) .edge-activation-zone {
+                pointer-events: none !important;
+            }
             /* Keep a continuous hover target across the tab-to-panel transition. */
             #smarttoc.octotree-edge .toc-panel { pointer-events: none !important; }
             #smarttoc.octotree-edge:has(.handle:hover),
