@@ -94,7 +94,7 @@ async function createPage(options) {
         htt: window.__htt,
         setHitTarget(el) { window.__hitTarget = el || null; },
         pointer(type, target, extra) {
-            const init = Object.assign({ bubbles: true, cancelable: true, button: 0, clientX: 100, clientY: 20 }, extra || {});
+            const init = Object.assign({ bubbles: true, cancelable: true, composed: true, button: 0, clientX: 100, clientY: 20 }, extra || {});
             target.dispatchEvent(new window.PointerEvent(type, init));
         },
         translationLines() {
