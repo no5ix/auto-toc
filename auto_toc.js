@@ -5189,11 +5189,6 @@
         word: "📚",
     };
 
-    window.__dictionaryToolbarTest = {
-        getSelectedWord: function (event) { return normalizeEnglishWord(currentSelection(event)?.toString()); },
-        showForSelection: function () { return installSafariFallback; }
-    };
-
     const processedRoots = new WeakSet();
     const cardWords = new WeakMap();
     let lastSelectedEnglishWord = "";
