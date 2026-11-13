@@ -5541,10 +5541,15 @@
         let shadowRootObserver = null;
 
         function handleSelectionEvent(event) {
-            const target = selectionEventTarget(event);
-            const selection = target ? selectionForEvent(event) : currentSelection();
-            if (selection && selection.rangeCount) lastSelectionRoot = selection.anchorNode && selection.anchorNode.getRootNode ? selection.anchorNode.getRootNode() : lastSelectionRoot;
-            scheduleShow(event);
+            // The document receives composed mouse events, but Selection inside
+            // a shadow tree is not guaranteed to be available from window.getSelection().
+            // Read the selection using the original event target's root.
+            const selection = selectionForEvent(event);
+            if (selection && selection.rangeCount) {
+                const anchor = selection.anchorNode;
+                lastSelectionRoot = anchor && anchor.getRootNode ? anchor.getRootNode() : document;
+            }
+            scheduleShow(event, selection);
         }
 
         function observeSelectionRoot(root) {
@@ -5755,8 +5760,8 @@
             return toolbar;
         }
 
-        function captureSelection(event) {
-            const selection = currentSelection(event);
+        function captureSelection(event, selectionOverride) {
+            const selection = selectionOverride || currentSelection(event);
             if (!selection || !selection.rangeCount || selection.isCollapsed) return null;
             if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) return null;
             const word = normalizeEnglishWord(selection.toString());
@@ -5773,7 +5778,7 @@
         function showForSelection(event) {
             // Capture the range during the real selection event. Some browser
             // engines clear or retarget ShadowRoot selections before a timer runs.
-            const captured = captureSelection(event) || pendingSelection;
+            const captured = pendingSelection || captureSelection(event);
             if (!captured) return;
             const word = captured.word;
             const selectedRange = captured.range;
@@ -5796,14 +5801,14 @@
             bar.style.top = `${top}px`;
         }
 
-        function scheduleShow(event) {
+        function scheduleShow(event, selectionOverride) {
             const target = event ? selectionEventTarget(event) : null;
             if (isTextEntryElement(target) || isTextEntryElement(document.activeElement)) {
                 pendingSelection = null;
                 hideToolbar();
                 return;
             }
-            const captured = captureSelection(event);
+            const captured = captureSelection(event, selectionOverride);
             if (captured) pendingSelection = captured;
             window.setTimeout(() => showForSelection(event), 0);
         }
