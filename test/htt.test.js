@@ -252,7 +252,7 @@ test("deep hit testing descends through nested open Shadow Roots", async functio
     const outerRoot = outer.attachShadow({ mode: "open" });
     const inner = page.document.createElement("article");
     const innerRoot = inner.attachShadow({ mode: "open" });
-    innerRoot.innerHTML = '<p>' + wordSpanHtml(SENTENCE_SPANS, 'data-d-text-flow="word') + "</p>";
+    innerRoot.innerHTML = '<p>' + wordSpanHtml(SENTENCE_SPANS, 'data-d-text-flow="word"') + "</p>";
     outerRoot.appendChild(inner);
     page.document.body.appendChild(outer);
 
@@ -267,7 +267,7 @@ test("hold gesture translates text inside an open Shadow Root", async function (
     const page = await createPage({ translation: "影子 DOM 翻译" });
     const host = page.document.createElement("article");
     const root = host.attachShadow({ mode: "open" });
-    root.innerHTML = '<p>' + wordSpanHtml(SENTENCE_SPANS, 'data-d-text-flow="word') + "</p>";
+    root.innerHTML = '<p>' + wordSpanHtml(SENTENCE_SPANS, 'data-d-text-flow="word"') + "</p>";
     page.document.getElementById("conv").appendChild(host);
     const span = root.querySelectorAll("span")[4];
 
