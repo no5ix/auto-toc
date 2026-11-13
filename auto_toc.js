@@ -5239,8 +5239,13 @@
     }
 
     function isTextEntryElement(element) {
-        if (!(element instanceof Element)) return false;
-        return !!element.closest("input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox']");
+        if (element && element.nodeType !== Node.ELEMENT_NODE) element = element.parentElement;
+        while (element instanceof Element) {
+            if (element.matches("input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox']")) return true;
+            const root = element.getRootNode && element.getRootNode();
+            element = element.parentElement || (root && root.host) || null;
+        }
+        return false;
     }
 
     function selectionComesFromTextEntry(selection) {
@@ -5540,11 +5545,8 @@
             if (!root || observedSelectionRoots.has(root) || typeof root.addEventListener !== "function") return;
             observedSelectionRoots.add(root);
             if (root !== document) {
+                // selectionchange does not reliably cross a Shadow DOM boundary.
                 root.addEventListener("selectionchange", handleSelectionEvent, true);
-                root.addEventListener("mouseup", handleSelectionEvent, true);
-                root.addEventListener("dblclick", handleSelectionEvent, true);
-                root.addEventListener("keyup", handleSelectionEvent, true);
-                root.addEventListener("pointerdown", handleSelectionPointerDown, true);
             }
             root.querySelectorAll?.("*").forEach(element => {
                 if (element.shadowRoot) observeSelectionRoot(element.shadowRoot);
@@ -5559,7 +5561,7 @@
         }
 
         function handleSelectionPointerDown(event) {
-            if (toolbar && toolbar.contains(deepEventTarget(event))) return;
+            if (toolbar && toolbar.contains(selectionEventTarget(event))) return;
             window.setTimeout(() => {
                 if (!getSelectedWord()) hideToolbar();
             }, 0);
@@ -5693,7 +5695,7 @@
                 copyButton.style.boxShadow = "none";
             });
             copyButton.addEventListener("pointerdown", (event) => {
-                const selection = window.getSelection();
+                const selection = currentSelection();
                 if (selection && selection.toString().trim()) rememberedWord = normalizeEnglishWord(selection.toString()) || rememberedWord;
                 event.preventDefault();
             });
@@ -5783,7 +5785,7 @@
         }
 
         function scheduleShow(event) {
-            const target = event ? deepEventTarget(event) : null;
+            const target = event ? selectionEventTarget(event) : null;
             if (isTextEntryElement(target) || isTextEntryElement(document.activeElement)) {
                 hideToolbar();
                 return;
@@ -5796,6 +5798,7 @@
         document.addEventListener("dblclick", handleSelectionEvent, true);
         document.addEventListener("keyup", handleSelectionEvent, true);
         document.addEventListener("selectionchange", handleSelectionEvent, true);
+        document.addEventListener("pointerdown", handleSelectionPointerDown, true);
 
         observeOpenShadowRoots();
         shadowRootObserver = new MutationObserver(() => observeOpenShadowRoots());
@@ -5930,7 +5933,7 @@
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
     // Events crossing a Shadow DOM boundary are retargeted to the host. Prefer
     // the original node from composedPath() when resolving the clicked text.
-    function deepEventTarget(event) {
+    function selectionEventTarget(event) {
         const path = event && typeof event.composedPath === "function" ? event.composedPath() : [];
         return path.find(node => node instanceof Element || node instanceof Text) || (event && event.target) || null;
     }
@@ -5962,7 +5965,7 @@
     let lastSelectionRoot = document;
     function currentSelection(event) {
         if (event) {
-            const target = deepEventTarget(event);
+            const target = selectionEventTarget(event);
             const element = target instanceof Element ? target : target && target.parentElement;
             const root = element && element.getRootNode ? element.getRootNode() : document;
             if (root && typeof root.getSelection === "function") {
@@ -6242,7 +6245,7 @@
     }
     function onPointerDown(event) {
         if (!settings.enabled || event.button !== 0 || !event.isPrimary || hasSelectedText()) return;
-        const info = getBlock(deepEventTarget(event)); if (!info) return;
+        const info = getBlock(selectionEventTarget(event)); if (!info) return;
         cancelPending();
         activePointer = null;
         requestSequence++;
