@@ -232,3 +232,55 @@ test("movement, early release and cancellation suppress translation without left
     assert.equal(page.translationLines().length, 0, "no suppressed gesture left a translation behind");
     assert.equal(page.requestLog.length, 0, "no provider call was made");
 });
+
+test("open Shadow DOM word targets resolve through the composed event path", async function () {
+    const page = await createPage();
+    const host = page.document.createElement("article");
+    const root = host.attachShadow({ mode: "open" });
+    root.innerHTML = '<p>' + wordSpanHtml(SENTENCE_SPANS, 'data-d-text-flow="word"') + "</p>";
+    page.document.getElementById("conv").appendChild(host);
+    const span = root.querySelectorAll("span")[4];
+    const info = page.htt.getBlock(span);
+    assert.ok(info);
+    assert.equal(info.text, SENTENCE);
+    assert.equal(info.block.tagName.toLowerCase(), "p");
+});
+
+test("deep hit testing descends through nested open Shadow Roots", async function () {
+    const page = await createPage();
+    const outer = page.document.createElement("section");
+    const outerRoot = outer.attachShadow({ mode: "open" });
+    const inner = page.document.createElement("article");
+    const innerRoot = inner.attachShadow({ mode: "open" });
+    innerRoot.innerHTML = '<p>' + wordSpanHtml(SENTENCE_SPANS, 'data-d-text-flow="word') + "</p>";
+    outerRoot.appendChild(inner);
+    page.document.body.appendChild(outer);
+
+    const target = innerRoot.querySelectorAll("span")[2];
+    page.document.elementFromPoint = () => outer;
+    outerRoot.elementFromPoint = () => inner;
+    innerRoot.elementFromPoint = () => target;
+    assert.equal(page.htt.deepElementFromPoint(page.document, 10, 10), target);
+});
+
+test("hold gesture translates text inside an open Shadow Root", async function () {
+    const page = await createPage({ translation: "影子 DOM 翻译" });
+    const host = page.document.createElement("article");
+    const root = host.attachShadow({ mode: "open" });
+    root.innerHTML = '<p>' + wordSpanHtml(SENTENCE_SPANS, 'data-d-text-flow="word') + "</p>";
+    page.document.getElementById("conv").appendChild(host);
+    const span = root.querySelectorAll("span")[4];
+
+    // The document listener sees the host as event.target, but composedPath()
+    // still contains the original span.
+    page.setHitTarget(host);
+    page.pointer("pointerdown", span);
+    await page.sleep(180);
+    page.pointer("pointerup", span);
+    await page.sleep(30);
+
+    const line = root.querySelector("[data-auto-toc-translation='true']");
+    assert.ok(line, "translation is inserted in the Shadow Root next to its text block");
+    assert.equal(line.textContent, "影子 DOM 翻译");
+    assert.equal(page.requestLog.length, 1);
+});
