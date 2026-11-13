@@ -5193,6 +5193,37 @@
     const cardWords = new WeakMap();
     let lastSelectedEnglishWord = "";
 
+    function selectionEventTarget(event) {
+        const path = event && typeof event.composedPath === "function" ? event.composedPath() : [];
+        return path.find(node => node instanceof Element || node instanceof Text) || (event && event.target) || null;
+    }
+
+    function selectionForEvent(event) {
+        const target = event ? selectionEventTarget(event) : null;
+        const element = target instanceof Element ? target : target && target.parentElement;
+        const root = element && element.getRootNode ? element.getRootNode() : null;
+        if (root && typeof root.getSelection === "function") {
+            try { const selection = root.getSelection(); if (selection) return selection; } catch (_) {}
+        }
+        return window.getSelection ? window.getSelection() : null;
+    }
+
+    let lastSelectionRoot = document;
+    function currentSelection(event) {
+        if (event) {
+            const selection = selectionForEvent(event);
+            if (selection && selection.rangeCount) {
+                const anchor = selection.anchorNode;
+                lastSelectionRoot = anchor && anchor.getRootNode ? anchor.getRootNode() : document;
+                return selection;
+            }
+        }
+        if (lastSelectionRoot && typeof lastSelectionRoot.getSelection === "function") {
+            try { const selection = lastSelectionRoot.getSelection(); if (selection) return selection; } catch (_) {}
+        }
+        return window.getSelection ? window.getSelection() : null;
+    }
+
     function normalizeEnglishWord(value) {
         const word = String(value || "").trim();
         // Accept a single English word, including common apostrophe/hyphen forms.
@@ -5499,8 +5530,8 @@
         let shadowRootObserver = null;
 
         function handleSelectionEvent(event) {
-            const target = deepEventTarget(event);
-            const selection = target ? selectionForNode(target) : currentSelection();
+            const target = selectionEventTarget(event);
+            const selection = target ? selectionForEvent(event) : currentSelection();
             if (selection && selection.rangeCount) lastSelectionRoot = selection.anchorNode && selection.anchorNode.getRootNode ? selection.anchorNode.getRootNode() : lastSelectionRoot;
             scheduleShow(event);
         }
