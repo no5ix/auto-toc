@@ -5753,10 +5753,17 @@
         }
 
         function showForSelection(event) {
-            // Resolve the selection and its range from the same root. A page may
-            // contain a Youdao extension host unrelated to the selected text, so
-            // its mere presence must not suppress this fallback toolbar.
+            // Avoid overlapping the native Youdao toolbar only when the selected
+            // text itself belongs to that extension's Shadow DOM.
             const selection = currentSelection(event);
+            const anchor = selection && selection.anchorNode;
+            const anchorElement = anchor instanceof Element ? anchor : anchor && anchor.parentElement;
+            const anchorRoot = anchorElement && anchorElement.getRootNode ? anchorElement.getRootNode() : null;
+            const anchorHost = anchorRoot && anchorRoot.host;
+            if (anchorHost && (anchorHost.matches?.(HOST_SELECTOR) || anchorHost.matches?.(HOST_FALLBACK_SELECTOR))) {
+                hideToolbar();
+                return;
+            }
             if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) {
                 hideToolbar();
                 return;
