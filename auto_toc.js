@@ -5199,6 +5199,12 @@
     }
 
     function selectionForEvent(event) {
+        // selectionchange is dispatched on its owning ShadowRoot in browsers
+        // that expose root-scoped selections; its target may be the root itself.
+        const currentRoot = event && event.currentTarget;
+        if (currentRoot && typeof currentRoot.getSelection === "function") {
+            try { const selection = currentRoot.getSelection(); if (selection) return selection; } catch (_) {}
+        }
         const target = event ? selectionEventTarget(event) : null;
         const element = target instanceof Element ? target : target && target.parentElement;
         const root = element && element.getRootNode ? element.getRootNode() : null;
