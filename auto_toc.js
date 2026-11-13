@@ -5589,6 +5589,7 @@
         let toolbar = null;
         let rememberedWord = "";
         let toolbarHideTimer = null;
+        let pendingSelection = null;
         const TOOLBAR_VISIBLE_MS = 3000;
 
         function scheduleToolbarHide() {
@@ -5754,34 +5755,28 @@
             return toolbar;
         }
 
-        function showForSelection(event) {
-            // Avoid overlapping the native Youdao toolbar only when the selected
-            // text itself belongs to that extension's Shadow DOM.
+        function captureSelection(event) {
             const selection = currentSelection(event);
-            const anchor = selection && selection.anchorNode;
+            if (!selection || !selection.rangeCount || selection.isCollapsed) return null;
+            if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) return null;
+            const word = normalizeEnglishWord(selection.toString());
+            if (!word) return null;
+            const range = selection.getRangeAt(0).cloneRange();
+            const anchor = selection.anchorNode;
             const anchorElement = anchor instanceof Element ? anchor : anchor && anchor.parentElement;
             const anchorRoot = anchorElement && anchorElement.getRootNode ? anchorElement.getRootNode() : null;
             const anchorHost = anchorRoot && anchorRoot.host;
-            if (anchorHost && (anchorHost.matches?.(HOST_SELECTOR) || anchorHost.matches?.(HOST_FALLBACK_SELECTOR))) {
-                hideToolbar();
-                return;
-            }
-            if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) {
-                hideToolbar();
-                return;
-            }
+            if (anchorHost && (anchorHost.matches?.(HOST_SELECTOR) || anchorHost.matches?.(HOST_FALLBACK_SELECTOR))) return null;
+            return { word, range, root: anchorRoot };
+        }
 
-            const word = getSelectedWord(event);
-            if (!word) {
-                // Keep the toolbar visible while its own controls are focused.
-                return;
-            }
-
-            rememberedWord = word;
-            lastSelectedEnglishWord = word;
-
-            const selectedRange = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
-            if (!selectedRange) return;
+        function showForSelection(event) {
+            // Capture the range during the real selection event. Some browser
+            // engines clear or retarget ShadowRoot selections before a timer runs.
+            const captured = captureSelection(event) || pendingSelection;
+            if (!captured) return;
+            const word = captured.word;
+            const selectedRange = captured.range;
             const rect = selectedRange.getBoundingClientRect();
             if (!rect || (!rect.width && !rect.height)) return;
 
@@ -5804,10 +5799,12 @@
         function scheduleShow(event) {
             const target = event ? selectionEventTarget(event) : null;
             if (isTextEntryElement(target) || isTextEntryElement(document.activeElement)) {
+                pendingSelection = null;
                 hideToolbar();
                 return;
             }
-            if (event) currentSelection(event);
+            const captured = captureSelection(event);
+            if (captured) pendingSelection = captured;
             window.setTimeout(() => showForSelection(event), 0);
         }
 
