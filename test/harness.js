@@ -14,6 +14,8 @@ const SEAM = `
     // ---- test-only seam (injected by the harness, never present in auto_toc.js) ----
     window.__htt = {
         getBlock: getBlock,
+        deepEventTarget: deepEventTarget,
+        deepElementFromPoint: deepElementFromPoint,
         getReadableBlockText: getReadableBlockText,
         settings: settings,
         holdState: function () { return { holdTimer: holdTimer, activePointer: activePointer, activeBlock: activeBlock, activeLine: activeLine }; },
