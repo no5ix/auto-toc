@@ -5495,6 +5495,45 @@
     }
 
     function installSafariFallback() {
+        const observedSelectionRoots = new WeakSet();
+        let shadowRootObserver = null;
+
+        function handleSelectionEvent(event) {
+            const target = deepEventTarget(event);
+            const selection = target ? selectionForNode(target) : currentSelection();
+            if (selection && selection.rangeCount) lastSelectionRoot = selection.anchorNode && selection.anchorNode.getRootNode ? selection.anchorNode.getRootNode() : lastSelectionRoot;
+            scheduleShow(event);
+        }
+
+        function observeSelectionRoot(root) {
+            if (!root || observedSelectionRoots.has(root) || typeof root.addEventListener !== "function") return;
+            observedSelectionRoots.add(root);
+            if (root !== document) {
+                root.addEventListener("selectionchange", handleSelectionEvent, true);
+                root.addEventListener("mouseup", handleSelectionEvent, true);
+                root.addEventListener("dblclick", handleSelectionEvent, true);
+                root.addEventListener("keyup", handleSelectionEvent, true);
+                root.addEventListener("pointerdown", handleSelectionPointerDown, true);
+            }
+            root.querySelectorAll?.("*").forEach(element => {
+                if (element.shadowRoot) observeSelectionRoot(element.shadowRoot);
+            });
+        }
+
+        function observeOpenShadowRoots() {
+            observeSelectionRoot(document);
+            document.querySelectorAll("*").forEach(element => {
+                if (element.shadowRoot) observeSelectionRoot(element.shadowRoot);
+            });
+        }
+
+        function handleSelectionPointerDown(event) {
+            if (toolbar && toolbar.contains(deepEventTarget(event))) return;
+            window.setTimeout(() => {
+                if (!getSelectedWord()) hideToolbar();
+            }, 0);
+        }
+
         // Safari has no Youdao floating-translation extension in this setup.
         // When that extension host is absent, show a small toolbar for a
         // selected English word and link directly to both Youdao pages.
@@ -5513,8 +5552,8 @@
             }, TOOLBAR_VISIBLE_MS);
         }
 
-        function getSelectedWord() {
-            const selection = window.getSelection();
+        function getSelectedWord(event) {
+            const selection = currentSelection(event);
             if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) return "";
             const word = normalizeEnglishWord(selection?.toString());
             return word;
@@ -5676,7 +5715,7 @@
 
             // Keyboard selections inside inputs, textareas, and editable fields
             // should never open the floating dictionary toolbar.
-            const selection = window.getSelection();
+            const selection = currentSelection();
             if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) {
                 hideToolbar();
                 return;
@@ -5691,9 +5730,9 @@
             rememberedWord = word;
             lastSelectedEnglishWord = word;
 
-            const currentSelection = window.getSelection();
-            if (!currentSelection || currentSelection.rangeCount === 0) return;
-            const rect = currentSelection.getRangeAt(0).getBoundingClientRect();
+            const selectedRange = selection && selection.rangeCount ? selection.getRangeAt(0) : null;
+            if (!selectedRange) return;
+            const rect = selectedRange.getBoundingClientRect();
             if (!rect || (!rect.width && !rect.height)) return;
 
             const bar = ensureToolbar();
@@ -5712,26 +5751,25 @@
             bar.style.top = `${top}px`;
         }
 
-        const scheduleShow = (event) => {
-            // Ignore keyboard and mouse selection activity in form/editable fields.
-            if (isTextEntryElement(event?.target) || isTextEntryElement(document.activeElement)) {
+        function scheduleShow(event) {
+            const target = event ? deepEventTarget(event) : null;
+            if (isTextEntryElement(target) || isTextEntryElement(document.activeElement)) {
                 hideToolbar();
                 return;
             }
+            if (event) currentSelection(event);
             window.setTimeout(showForSelection, 0);
-        };
+        }
 
-        document.addEventListener("mouseup", scheduleShow, true);
-        document.addEventListener("dblclick", scheduleShow, true);
-        document.addEventListener("keyup", scheduleShow, true);
+        document.addEventListener("mouseup", handleSelectionEvent, true);
+        document.addEventListener("dblclick", handleSelectionEvent, true);
+        document.addEventListener("keyup", handleSelectionEvent, true);
+        document.addEventListener("selectionchange", handleSelectionEvent, true);
 
-        document.addEventListener("pointerdown", (event) => {
-            if (toolbar && toolbar.contains(event.target)) return;
-            // Defer so a new text selection can be read after pointer events.
-            window.setTimeout(() => {
-                if (!getSelectedWord()) hideToolbar();
-            }, 0);
-        }, true);
+        observeOpenShadowRoots();
+        shadowRootObserver = new MutationObserver(() => observeOpenShadowRoots());
+        shadowRootObserver.observe(document.documentElement, { childList: true, subtree: true });
+
 
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") hideToolbar();
@@ -5882,13 +5920,37 @@
         const element = node instanceof Element ? node : node && node.parentElement;
         const root = element && typeof element.getRootNode === "function" ? element.getRootNode() : null;
         if (root && typeof root.getSelection === "function") {
-            try { return root.getSelection(); } catch (_) {}
+            try {
+                const selection = root.getSelection();
+                if (selection) return selection;
+            } catch (_) {}
         }
         return window.getSelection ? window.getSelection() : null;
     }
 
+    let lastSelectionRoot = document;
     function currentSelection(event) {
-        return selectionForNode(event ? deepEventTarget(event) : null);
+        if (event) {
+            const target = deepEventTarget(event);
+            const element = target instanceof Element ? target : target && target.parentElement;
+            const root = element && element.getRootNode ? element.getRootNode() : document;
+            if (root && typeof root.getSelection === "function") {
+                try {
+                    const selection = root.getSelection();
+                    if (selection) {
+                        lastSelectionRoot = root;
+                        return selection;
+                    }
+                } catch (_) {}
+            }
+        }
+        if (lastSelectionRoot && typeof lastSelectionRoot.getSelection === "function") {
+            try {
+                const selection = lastSelectionRoot.getSelection();
+                if (selection) return selection;
+            } catch (_) {}
+        }
+        return window.getSelection ? window.getSelection() : null;
     }
     function getBlock(target) {
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
