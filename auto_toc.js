@@ -5551,25 +5551,27 @@
             if (!root || observedSelectionRoots.has(root) || typeof root.addEventListener !== "function") return;
             observedSelectionRoots.add(root);
             if (root !== document) {
-                // These events stay inside their ShadowRoot instead of reaching
-                // document. Register them on every open root so mouse selection
-                // can trigger the toolbar after a double-click.
+                // Mouse and keyboard events are composed and cross open Shadow
+                // DOM boundaries. Listen only for selectionchange on the root;
+                // registering mouse handlers on every nested root causes duplicate
+                // scheduling and can race selection updates.
                 root.addEventListener("selectionchange", handleSelectionEvent, true);
-                root.addEventListener("mouseup", handleSelectionEvent, true);
-                root.addEventListener("dblclick", handleSelectionEvent, true);
-                root.addEventListener("keyup", handleSelectionEvent, true);
-                root.addEventListener("pointerdown", handleSelectionPointerDown, true);
             }
             root.querySelectorAll?.("*").forEach(element => {
                 if (element.shadowRoot) observeSelectionRoot(element.shadowRoot);
             });
         }
 
-        function observeOpenShadowRoots() {
-            observeSelectionRoot(document);
-            document.querySelectorAll("*").forEach(element => {
-                if (element.shadowRoot) observeSelectionRoot(element.shadowRoot);
+        function observeRootTree(root) {
+            if (!root) return;
+            observeSelectionRoot(root);
+            root.querySelectorAll?.("*").forEach(element => {
+                if (element.shadowRoot) observeRootTree(element.shadowRoot);
             });
+        }
+
+        function observeOpenShadowRoots() {
+            observeRootTree(document);
         }
 
         function handleSelectionPointerDown(event) {
