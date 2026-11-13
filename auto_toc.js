@@ -5199,9 +5199,9 @@
         return /^[A-Za-z][A-Za-z'-]*$/.test(word) ? word : "";
     }
 
-    function readSelectedEnglishWord() {
+    function readSelectedEnglishWord(event) {
         try {
-            return normalizeEnglishWord(window.getSelection()?.toString());
+            return normalizeEnglishWord(currentSelection(event)?.toString());
         } catch (_) {
             return "";
         }
@@ -5222,9 +5222,10 @@
         return isTextEntryElement(document.activeElement);
     }
 
-    function rememberSelection() {
-        if (selectionComesFromTextEntry(window.getSelection())) return;
-        const word = readSelectedEnglishWord();
+    function rememberSelection(event) {
+        const selection = currentSelection(event);
+        if (selectionComesFromTextEntry(selection)) return;
+        const word = readSelectedEnglishWord(event);
         if (word) lastSelectedEnglishWord = word;
     }
 
@@ -5858,6 +5859,37 @@
     }
     function normalize(text) { return String(text || "").replace(/\u00a0/g, " ").replace(/\s+/g, " ").trim(); }
     function hash(text) { let h = 2166136261; for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+    // Events crossing a Shadow DOM boundary are retargeted to the host. Prefer
+    // the original node from composedPath() when resolving the clicked text.
+    function deepEventTarget(event) {
+        const path = event && typeof event.composedPath === "function" ? event.composedPath() : [];
+        return path.find(node => node instanceof Element || node instanceof Text) || (event && event.target) || null;
+    }
+
+    // document.elementFromPoint() stops at a shadow host. Descend through open
+    // roots so a hold gesture can resolve the actual text node under the pointer.
+    function deepElementFromPoint(root, x, y) {
+        let element = root && typeof root.elementFromPoint === "function" ? root.elementFromPoint(x, y) : null;
+        while (element && element.shadowRoot && typeof element.shadowRoot.elementFromPoint === "function") {
+            const inner = element.shadowRoot.elementFromPoint(x, y);
+            if (!inner || inner === element) break;
+            element = inner;
+        }
+        return element;
+    }
+
+    function selectionForNode(node) {
+        const element = node instanceof Element ? node : node && node.parentElement;
+        const root = element && typeof element.getRootNode === "function" ? element.getRootNode() : null;
+        if (root && typeof root.getSelection === "function") {
+            try { return root.getSelection(); } catch (_) {}
+        }
+        return window.getSelection ? window.getSelection() : null;
+    }
+
+    function currentSelection(event) {
+        return selectionForNode(event ? deepEventTarget(event) : null);
+    }
     function getBlock(target) {
         if (target && target.nodeType === Node.TEXT_NODE) target = target.parentElement;
         if (!(target instanceof Element) || target.closest(IGNORE)) return null;
@@ -6112,12 +6144,12 @@
         });
     }
     function hasSelectedText() {
-        const selection = window.getSelection && window.getSelection();
+        const selection = currentSelection();
         return !!(selection && !selection.isCollapsed && String(selection).trim());
     }
     function onPointerDown(event) {
         if (!settings.enabled || event.button !== 0 || !event.isPrimary || hasSelectedText()) return;
-        const info = getBlock(event.target); if (!info) return;
+        const info = getBlock(deepEventTarget(event)); if (!info) return;
         cancelPending();
         activePointer = null;
         requestSequence++;
@@ -6135,7 +6167,7 @@
             const dx = Math.abs(lastPointer.x - pointerDownPoint.x);
             const dy = Math.abs(lastPointer.y - pointerDownPoint.y);
             if (dx > 4 || dy > 4) return;
-            const infoNow = getBlock(document.elementFromPoint(lastPointer.x, lastPointer.y));
+            const infoNow = getBlock(deepElementFromPoint(document, lastPointer.x, lastPointer.y));
             if (!infoNow) return;
             showTranslation(infoNow, ++requestSequence);
         }, Math.max(100, Math.min(800, Number(settings.holdDelayMs) || 280)));
