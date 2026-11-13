@@ -5573,7 +5573,9 @@
         }
 
         function handleSelectionPointerDown(event) {
-            if (toolbar && toolbar.contains(selectionEventTarget(event))) return;
+            const target = selectionEventTarget(event);
+            if (toolbar && toolbar.contains(target)) return;
+            currentSelection(event);
             window.setTimeout(() => {
                 if (!getSelectedWord()) hideToolbar();
             }, 0);
@@ -5750,23 +5752,17 @@
             return toolbar;
         }
 
-        function showForSelection() {
-            // Don't duplicate the native Youdao-extension buttons on Chrome.
-            if (document.querySelector(HOST_SELECTOR) ||
-                document.querySelector(HOST_FALLBACK_SELECTOR)) {
-                hideToolbar();
-                return;
-            }
-
-            // Keyboard selections inside inputs, textareas, and editable fields
-            // should never open the floating dictionary toolbar.
-            const selection = currentSelection();
+        function showForSelection(event) {
+            // Resolve the selection and its range from the same root. A page may
+            // contain a Youdao extension host unrelated to the selected text, so
+            // its mere presence must not suppress this fallback toolbar.
+            const selection = currentSelection(event);
             if (selectionComesFromTextEntry(selection) || isTextEntryElement(document.activeElement)) {
                 hideToolbar();
                 return;
             }
 
-            const word = getSelectedWord();
+            const word = getSelectedWord(event);
             if (!word) {
                 // Keep the toolbar visible while its own controls are focused.
                 return;
@@ -5803,7 +5799,7 @@
                 return;
             }
             if (event) currentSelection(event);
-            window.setTimeout(showForSelection, 0);
+            window.setTimeout(() => showForSelection(event), 0);
         }
 
         document.addEventListener("mouseup", handleSelectionEvent, true);
