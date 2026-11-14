@@ -5541,9 +5541,11 @@
         let shadowRootObserver = null;
 
         function handleSelectionEvent(event) {
-            // The document receives composed mouse events, but Selection inside
-            // a shadow tree is not guaranteed to be available from window.getSelection().
-            // Read the selection using the original event target's root.
+            // Only an actual double-click opens the floating word toolbar.
+            // Selectionchange and mouseup also fire during drag selection, so
+            // they may update the saved selection but must never display UI.
+            if (event && event.type !== "dblclick" && event.type !== "keyup") return;
+
             const selection = selectionForEvent(event);
             if (selection && selection.rangeCount) {
                 const anchor = selection.anchorNode;
@@ -5581,11 +5583,14 @@
 
         function handleSelectionPointerDown(event) {
             const target = selectionEventTarget(event);
+            // Clicking any toolbar control must leave it visible only until the
+            // original three-second deadline; it must not restart the timer or
+            // briefly hide/recreate the toolbar.
             if (toolbar && toolbar.contains(target)) return;
+
+            // A click on page content does not represent a new word-selection
+            // gesture. Do not touch visibility or the existing expiry timer.
             currentSelection(event);
-            window.setTimeout(() => {
-                if (!getSelectedWord()) hideToolbar();
-            }, 0);
         }
 
         // Safari has no Youdao floating-translation extension in this setup.
@@ -5806,8 +5811,9 @@
         }
 
         function showForSelection(event) {
-            // Capture the range during the real selection event. Some browser
-            // engines clear or retarget ShadowRoot selections before a timer runs.
+            // A stale scheduled callback must never show the toolbar after a
+            // non-double-click event or after a newer interaction invalidated it.
+            if (!pendingSelection) return;
             const captured = pendingSelection || captureSelection(event);
             if (!captured) return;
             const word = captured.word;
@@ -5831,22 +5837,27 @@
             bar.style.top = `${top}px`;
         }
 
+        let showRequestId = 0;
         function scheduleShow(event, selectionOverride) {
             const target = event ? selectionEventTarget(event) : null;
             if (isTextEntryElement(target) || isTextEntryElement(document.activeElement)) {
                 pendingSelection = null;
-                hideToolbar();
+                showRequestId++;
                 return;
             }
+
             const captured = captureSelection(event, selectionOverride);
-            if (captured) pendingSelection = captured;
-            window.setTimeout(() => showForSelection(event), 0);
+            if (!captured) return;
+            pendingSelection = captured;
+            const requestId = ++showRequestId;
+            window.setTimeout(() => {
+                if (requestId !== showRequestId || !pendingSelection) return;
+                showForSelection(event);
+            }, 0);
         }
 
-        document.addEventListener("mouseup", handleSelectionEvent, true);
         document.addEventListener("dblclick", handleSelectionEvent, true);
         document.addEventListener("keyup", handleSelectionEvent, true);
-        document.addEventListener("selectionchange", handleSelectionEvent, true);
         document.addEventListener("pointerdown", handleSelectionPointerDown, true);
 
         observeOpenShadowRoots();
