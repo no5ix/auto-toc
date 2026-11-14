@@ -5558,10 +5558,10 @@
             if (!root || observedSelectionRoots.has(root) || typeof root.addEventListener !== "function") return;
             observedSelectionRoots.add(root);
             if (root !== document) {
-                // Mouse and keyboard events are composed and cross open Shadow
-                // DOM boundaries. Listen only for selectionchange on the root;
-                // registering mouse handlers on every nested root causes duplicate
-                // scheduling and can race selection updates.
+                // The document-level dblclick/keyup listeners are composed and
+                // receive these events from open shadow trees. Only selectionchange
+                // needs root-local observation to remember which Selection API owns
+                // the selected word; it must not open the toolbar during a drag.
                 root.addEventListener("selectionchange", handleSelectionEvent, true);
             }
             root.querySelectorAll?.("*").forEach(element => {
