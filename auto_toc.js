@@ -5677,21 +5677,47 @@
                     link.style.boxShadow = "none";
                 });
 
-                link.addEventListener("click", (event) => {
-                    // Rebuild the URL from the captured word immediately
-                    // before navigation. Keep native anchor behavior.
-                    if (!rememberedWord) {
-                        event.preventDefault();
-                        return;
+                function resolveSelectedWord(event) {
+                    // Read the selection from the originating event before the
+                    // browser retargets focus into the toolbar. This matters when
+                    // the selected text lives inside an open ShadowRoot.
+                    const selection = currentSelection(event);
+                    const selectedWord = normalizeEnglishWord(selection?.toString());
+                    if (selectedWord) rememberedWord = selectedWord;
+                    return selectedWord || rememberedWord;
+                }
+
+                function updateDestination(event) {
+                    const word = resolveSelectedWord(event);
+                    if (!word) {
+                        link.removeAttribute("href");
+                        link.setAttribute("aria-disabled", "true");
+                        return "";
                     }
-                    link.href = urlBuilder(rememberedWord);
+                    const url = urlBuilder(word);
+                    link.href = url;
+                    link.removeAttribute("aria-disabled");
+                    return url;
+                }
+
+                // Prepare the URL before the browser's default anchor navigation.
+                // pointerdown runs while the original selection is still available;
+                // click is a fallback for keyboard activation.
+                link.addEventListener("pointerdown", (event) => {
+                    updateDestination(event);
+                }, true);
+                link.addEventListener("mousedown", (event) => {
+                    updateDestination(event);
+                }, true);
+                link.addEventListener("click", (event) => {
+                    if (!updateDestination(event)) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
                 });
 
                 link.dataset.urlKind = icon === BUTTON_ICONS.word ? "word" : "result";
                 link.dataset.urlBuilder = "";
-                link.addEventListener("pointerdown", () => {
-                    if (rememberedWord) link.href = urlBuilder(rememberedWord);
-                });
                 return link;
             }
 
