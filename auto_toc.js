@@ -5604,6 +5604,10 @@
             toolbarHideTimer = window.setTimeout(() => {
                 toolbarHideTimer = null;
                 hideToolbar();
+                // Expiration also discards the saved selection so a later click
+                // cannot act on a stale word after the toolbar has disappeared.
+                pendingSelection = null;
+                rememberedWord = "";
             }, TOOLBAR_VISIBLE_MS);
         }
 
