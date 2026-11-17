@@ -784,7 +784,7 @@
                 white-space:normal !important; overflow-wrap:anywhere !important; transition:color 140ms ease !important;
             }
             #smarttoc.octotree-edge .toc-row > a:hover { color:#222 !important; background:transparent !important; }
-            #smarttoc.octotree-edge li.active > .toc-row > a { color:#111 !important; background:transparent !important; border-color:transparent !important; font-weight:500 !important; }
+            #smarttoc.octotree-edge li.active > .toc-row > a { color:#111 !important; background:transparent !important; border-color:transparent !important; font-weight:400 !important; }
             #smarttoc.octotree-edge .toc-level-icon { flex:0 0 18px !important; width:18px !important; display:inline-block !important; color:#999 !important; text-align:center !important; font-size:14px !important; line-height:1 !important; }
             #smarttoc.octotree-edge li.active > .toc-row .toc-level-icon { color:#111 !important; }
             #smarttoc.octotree-edge .toc-children { display:block !important; margin:0 !important; padding:0 0 0 18px !important; }
