@@ -3509,7 +3509,8 @@
     }
 
     const ARTICLE_TOC_GAP = 0;
-    const TOP_MARGIN = 0;
+    // Leave room for sticky/fixed site headers when navigating to a heading.
+    const TOP_MARGIN = 100;
 
     const makeSticky = function (options) {
         let {
