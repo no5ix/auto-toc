@@ -1,0 +1,15 @@
+{
+  "skills": {
+    "version": 2,
+    "disabled": [
+      {
+        "id": "sk1:g:c8cc9e807bbb24f00887",
+        "name": "nestjs-code-audit"
+      },
+      {
+        "id": "sk1:g:abb4434db403140241a8",
+        "name": "nestjs-feature-audit"
+      }
+    ]
+  }
+}
