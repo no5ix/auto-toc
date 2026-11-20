@@ -3980,20 +3980,12 @@
         //   Extender({ $headings, scrollable, $isShow, $relayout })
         // )
 
-        const onScrollEnd = function (node) {
+        // The default top margin is already applied on the first click. Do not
+        // measure it after the initial animation and trigger a second corrective
+        // scroll, which makes the first navigation visibly jump twice.
+        const onScrollEnd = function () {
             if ($topbarHeight() == null) {
-                setTimeout(() => {
-                    $topbarHeight(getTopBarHeight(node));
-                    log("topBarHeight", $topbarHeight());
-                    if ($topbarHeight()) {
-                        scrollToHeading(
-                            { node },
-                            scrollable,
-                            null,
-                            $topbarHeight() + 10
-                        );
-                    }
-                }, 300);
+                $topbarHeight(getTopBarHeight());
             }
         };
 
