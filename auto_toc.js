@@ -3980,22 +3980,15 @@
         //   Extender({ $headings, scrollable, $isShow, $relayout })
         // )
 
-        const onScrollEnd = function (node) {
-            if ($topbarHeight() == null) {
-                setTimeout(() => {
-                    $topbarHeight(getTopBarHeight(node));
-                    log("topBarHeight", $topbarHeight());
-                    if ($topbarHeight()) {
-                        scrollToHeading(
-                            { node },
-                            scrollable,
-                            null,
-                            $topbarHeight() + 10
-                        );
-                    }
-                }, 300);
-            }
-        };
+        // Resolve the configured heading offset before the first navigation.
+        // The offset is stable (TOP_MARGIN), so measuring it after the first scroll
+        // would cause that first click to land at the top before later clicks use it.
+        if ($topbarHeight() == null) {
+            $topbarHeight(getTopBarHeight());
+            log("topBarHeight", $topbarHeight());
+        }
+
+        const onScrollEnd = function () {};
 
         const onClickHeading = function (e) {
             e.redraw = false;
